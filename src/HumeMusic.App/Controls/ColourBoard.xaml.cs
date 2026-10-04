@@ -67,7 +67,7 @@ public sealed partial class ColourBoard : UserControl
         _colour = null;
         Panel.BackgroundTransition = Motion.Brush(Motion.Emphasized);
         ApplyNeutral();
-        var mix = item is ArtistMix or TagMix or NicheMix ? item : null;
+        var mix = item is ArtistMix or TagMix ? item : null;
         SmartIcon.Visibility = item is Playlist { IsSmart: true } ? Visibility.Visible : Visibility.Collapsed;
         MixArt.Visibility = mix is not null ? Visibility.Visible : Visibility.Collapsed;
         Art.Visibility = mix is not null ? Visibility.Collapsed : Visibility.Visible;
@@ -153,8 +153,8 @@ public sealed partial class ColourBoard : UserControl
         if (!ReferenceEquals(mix, Item)) return;
         var colourSeed = mix switch
         {
-            TagMix tag => tag.Tag,
             NicheMix niche => niche.ColourSeed,
+            TagMix tag => tag.Tag,
             ArtistMix artist => artist.Artist.Title,
             _ => mix.Title,
         };
