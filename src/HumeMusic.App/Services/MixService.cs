@@ -226,10 +226,10 @@ public sealed class MixService
                                                                && !string.Equals(t.ArtistTitle, a.Artist.Title, StringComparison.OrdinalIgnoreCase)));
                     return new MixInfo(a.Title, [new MixArtist(a.Artist.Title, a.Artist.Thumb), .. others]);
                 }
+                case TagMix t when NicheMixRecipe.TryFrom(t, out _):
+                    return tracks.Count < 12 ? new MixInfo(t.Title, [], LeadIsSubject: false) : new MixInfo(t.Title, RankArtists(tracks).ToList(), LeadIsSubject: false);
                 case TagMix t:
                     return tracks.Count < 12 ? new MixInfo(t.Title, [], LeadIsSubject: false) : new MixInfo(t.Title, RankArtists(tracks).ToList(), LeadIsSubject: false);
-                case NicheMix n:
-                    return tracks.Count < 12 ? new MixInfo(n.Title, [], LeadIsSubject: false) : new MixInfo(n.Title, RankArtists(tracks).ToList(), LeadIsSubject: false);
                 default:
                     return null;
             }
@@ -285,10 +285,10 @@ public sealed class MixService
                 var radio = sample ? _local.ForArtist(a.Artist) : RadioFor(a);
                 return await radio.NextAsync(LocalRadio.BatchSize).ConfigureAwait(false);
             }
+            case TagMix t when NicheMixRecipe.TryFrom(t, out var niche):
+                return await NicheTracksAsync(client, niche, disliked, default).ConfigureAwait(false);
             case TagMix t:
                 return await TagTracksAsync(client, t, disliked, default).ConfigureAwait(false);
-            case NicheMix n:
-                return await NicheTracksAsync(client, n, disliked, default).ConfigureAwait(false);
             case Station st:
                 return await StationTracksAsync(client, st, disliked, batches, default).ConfigureAwait(false);
             case BuiltMix b:
@@ -311,10 +311,10 @@ public sealed class MixService
                 return plex.Count > 0 ? plex : await RadioFor(a).NextAsync(LocalRadio.BatchSize, ct).ConfigureAwait(false);
             },
             ArtistMix a => ct => RadioFor(a).NextAsync(LocalRadio.BatchSize, ct),
+            TagMix t when NicheMixRecipe.TryFrom(t, out _) => null,
             TagMix t => async ct => await TagTracksAsync(client, t, await _dislikes.GetAsync().ConfigureAwait(false), ct).ConfigureAwait(false),
             Station st => async ct => await StationTracksAsync(client, st, await _dislikes.GetAsync().ConfigureAwait(false), 1, ct).ConfigureAwait(false),
             BuiltMix b => async ct => await BuiltTracksAsync(client, b, await _dislikes.GetAsync().ConfigureAwait(false), ct).ConfigureAwait(false),
-            // NicheMix is intentionally absent. It is a finite mix, not an endless station.
             _ => null,
         };
     }
@@ -397,7 +397,7 @@ public sealed class MixService
     /// A niche mix is an exact intersection of its dimensions. Within that boundary, it balances
     /// familiar music, older favourites and underplayed library tracks instead of drifting outward.
     /// </summary>
-    private async Task<IReadOnlyList<Track>> NicheTracksAsync(PlexServerClient client, NicheMix mix, DislikedSet disliked, CancellationToken ct)
+    private async Task<IReadOnlyList<Track>> NicheTracksAsync(PlexServerClient client, NicheMixRecipe mix, DislikedSet disliked, CancellationToken ct)
     {
         if (_session.Section is not { } section) return [];
         var filters = new List<KeyValuePair<string, string?>>(4);
