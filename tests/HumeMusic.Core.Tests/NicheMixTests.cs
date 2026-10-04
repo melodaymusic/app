@@ -49,16 +49,19 @@ public class NicheMixTests
     }
 
     [Fact]
-    public void Recipe_round_trips_through_mix_card_key()
+    public void Recipe_becomes_first_class_niche_mix()
     {
         var original = new NicheMixRecipe("Alternative R&B", "Atmospheric", 2020, 2.5);
-        var card = original.ToMix();
+        var mix = original.ToMix();
 
-        Assert.True(NicheMixRecipe.TryFrom(card, out var parsed));
-        Assert.Equal(original.Genre, parsed.Genre);
-        Assert.Equal(original.Mood, parsed.Mood);
-        Assert.Equal(original.Decade, parsed.Decade);
-        Assert.Equal("Atmospheric 2020s Alternative R&B Mix", card.Title);
+        Assert.Equal(MediaKind.Mix, mix.Kind);
+        Assert.Equal("Niche mix", mix.Subtitle);
+        Assert.Equal(original.Genre, mix.Genre);
+        Assert.Equal(original.Mood, mix.Mood);
+        Assert.Equal(original.Decade, mix.Decade);
+        Assert.Equal(original.Support, mix.Support);
+        Assert.Equal("Atmospheric 2020s Alternative R&B Mix", mix.Title);
+        Assert.StartsWith(NicheMixRecipe.RatingKeyPrefix, mix.RatingKey);
     }
 
     [Fact]
