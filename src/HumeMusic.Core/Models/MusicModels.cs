@@ -309,13 +309,16 @@ public enum MixTagKind
 /// <summary>
 /// A mix around a genre or mood from the listener's recent history ("Dance Pop Mix", "Campy Mix"):
 /// random tracks from the library with that genre or mood, topped up as it plays.
+/// NicheMix inherits this transport so old pin/reference plumbing can still carry it safely.
 /// </summary>
-public sealed class TagMix : MediaItem
+public class TagMix : MediaItem
 {
     public override MediaKind Kind => MediaKind.Mix;
     public required MixTagKind TagKind { get; init; }
     public required string Tag { get; init; }
-    public override string Subtitle => TagKind == MixTagKind.Genre ? "Genre mix" : "Mood mix";
+    public override string Subtitle => RatingKey.StartsWith("mix:niche:", StringComparison.Ordinal)
+        ? "Niche mix"
+        : TagKind == MixTagKind.Genre ? "Genre mix" : "Mood mix";
 }
 
 /// <summary>A tag with Plex's id for it ("Pop-Rap", 95727).</summary>
@@ -384,4 +387,3 @@ public enum ArtworkKind
     /// <summary>The wide backdrop (Plex's art).</summary>
     Backdrop,
 }
-
