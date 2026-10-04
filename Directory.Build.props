@@ -1,0 +1,15 @@
+<Project>
+  <!--
+    Meloday Music's version: the one place it is set. The app (Settings > About, the Plex client
+    header), the installer and its file name all read it from here.
+
+    Semantic versioning. Before the public launch the app stays below 1.0:
+      0.MINOR.0  a run of work that adds or changes features
+      0.MINOR.PATCH  a run of fixes only
+    1.0.0 is the launch. Each version is described in CHANGELOG.md.
+    (src/HumeMusic.App/app.manifest carries the same number for Windows; keep it in step.)
+  -->
+  <PropertyGroup>
+    <Version>0.33.0</Version>
+  </PropertyGroup>
+</Project>

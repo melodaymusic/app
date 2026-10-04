@@ -1,0 +1,75 @@
+<UserControl
+    x:Class="HumeMusic.Controls.MediaRowControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:models="using:HumeMusic.Core.Models"
+    xmlns:vm="using:HumeMusic.ViewModels"
+    IsTabStop="False">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="TileTemplate" x:DataType="models:MediaItem">
+            <controls:MediaTile Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="BillboardTemplate" x:DataType="vm:BoardItem">
+            <controls:Billboard Board="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="EditorialTemplate" x:DataType="vm:BoardItem">
+            <controls:Billboard Board="{x:Bind}" IsEditorial="True" />
+        </DataTemplate>
+        <DataTemplate x:Key="ColourBoardTemplate" x:DataType="models:MediaItem">
+            <controls:ColourBoard Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="SquareBoardTemplate" x:DataType="models:MediaItem">
+            <controls:SquareBoard Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="StationBoardTemplate" x:DataType="models:MediaItem">
+            <controls:SquareBoard Item="{x:Bind}" IsLarge="True" />
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <controls:SectionHeader x:Name="SectionHead" />
+
+        <!--
+            The row runs out to the edges of the page (Apple Music style): cards scroll in from and off
+            the page's edges, and at rest the next card peeks in at the right. The arrows sit over the
+            row's ends and appear while it is hovered, only where there is more to see.
+        -->
+        <Grid Grid.Row="1">
+        <ListView x:Name="List"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ContainerContentChanging="OnContainerContentChanging" controls:QueueDrag.IsSource="True"
+                  ScrollViewer.HorizontalScrollMode="Enabled"
+                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                  ScrollViewer.VerticalScrollMode="Disabled"
+                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                  ScrollViewer.IsHorizontalRailEnabled="True"
+                  ItemContainerStyle="{StaticResource HumeRowTileItemStyle}" ItemTemplate="{StaticResource TileTemplate}"
+                  Margin="-6,0,-6,0" Padding="0">
+            <ListView.Resources>
+                <!-- Tile hosts (focus ring, pressed state) follow the tile's rounded shape. -->
+                <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="HumeRadiusTileHost" />
+            </ListView.Resources>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" Background="Transparent" controls:ScrollBehavior.PassVerticalWheel="True" />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+        </ListView>
+        <Button x:Name="LeftButton" Style="{StaticResource HumeRowArrowButtonStyle}" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Opacity="0" IsHitTestVisible="False" Click="OnScrollLeft" AutomationProperties.Name="Scroll left">
+            <controls:LucideIcon Icon="ChevronLeft" StrokeWidth="1.75" Width="{StaticResource HumeIconXL}" Height="{StaticResource HumeIconXL}" />
+        </Button>
+        <Button x:Name="RightButton" Style="{StaticResource HumeRowArrowButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Opacity="0" IsHitTestVisible="False" Click="OnScrollRight" AutomationProperties.Name="Scroll right">
+            <controls:LucideIcon Icon="ChevronRight" StrokeWidth="1.75" Width="{StaticResource HumeIconXL}" Height="{StaticResource HumeIconXL}" />
+        </Button>
+        </Grid>
+    </Grid>
+</UserControl>

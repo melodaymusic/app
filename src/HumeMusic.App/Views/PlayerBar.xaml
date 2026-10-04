@@ -1,0 +1,214 @@
+<UserControl
+    x:Class="HumeMusic.Views.PlayerBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:helpers="using:HumeMusic.Helpers">
+
+    <!--
+        Floating player. Radius is concentric with the artwork inside it: glass 20 = artwork 8 + the
+        12 around it (the bar is 80 high, the artwork 56).
+    -->
+    <Grid x:Name="Pill" controls:QueueDrag.IsTarget="True" MaxWidth="940" Height="{StaticResource HumePlayerHeight}" Padding="12,0,12,0" ColumnSpacing="16"
+          CornerRadius="{StaticResource HumeRadiusGlass}" Background="{ThemeResource HumePlayerAcrylicBrush}"
+          BorderBrush="{ThemeResource HumeHairlineBrush}" BorderThickness="1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition x:Name="InfoColumn" Width="*" MinWidth="180" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Transport: previous, play and next, then shuffle over repeat. -->
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
+            <Button Style="{StaticResource HumeIconButtonStyle}" Command="{x:Bind Player.PreviousCommand}"
+                    IsEnabled="{x:Bind Player.HasPrevious, Mode=OneWay}"
+                    ToolTipService.ToolTip="Previous (Ctrl+Left)" AutomationProperties.Name="Previous" AutomationProperties.AutomationId="PreviousButton">
+                <controls:LucideIcon Icon="SkipBack" IsFilled="True" />
+            </Button>
+            <Button Style="{StaticResource HumePlayButtonStyle}" Width="{StaticResource HumeButtonL}" Height="{StaticResource HumeButtonL}" Margin="2,0"
+                    Command="{x:Bind Player.PlayPauseCommand}" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind Player.PlayPauseLabel, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind Player.PlayPauseLabel, Mode=OneWay}" AutomationProperties.AutomationId="PlayPauseButton">
+                <Grid>
+                    <controls:LucideIcon Icon="{x:Bind Player.PlayPauseIcon, Mode=OneWay}" IsFilled="True" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}"
+                                         Visibility="{x:Bind helpers:Format.CollapsedIf(Player.IsBuffering), Mode=OneWay}" />
+                    <ProgressRing IsActive="{x:Bind Player.IsBuffering, Mode=OneWay}" Width="20" Height="20"
+                                  Foreground="{ThemeResource HumeOnPlayButtonBrush}" />
+                </Grid>
+            </Button>
+            <Button Style="{StaticResource HumeIconButtonStyle}" Command="{x:Bind Player.NextCommand}"
+                    IsEnabled="{x:Bind Player.HasNext, Mode=OneWay}"
+                    ToolTipService.ToolTip="Next (Ctrl+Right)" AutomationProperties.Name="Next" AutomationProperties.AutomationId="NextButton">
+                <controls:LucideIcon Icon="SkipForward" IsFilled="True" />
+            </Button>
+            <StackPanel x:Name="ModeButtons" VerticalAlignment="Center" Margin="4,0,0,0">
+                <ToggleButton x:Name="ShuffleToggle" Style="{StaticResource HumeIconToggleStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}"
+                              IsChecked="{x:Bind Player.IsShuffled, Mode=TwoWay}"
+                              ToolTipService.ToolTip="{x:Bind Player.ShuffleLabel, Mode=OneWay}" AutomationProperties.Name="Shuffle"
+                              AutomationProperties.AutomationId="ShuffleButton">
+                    <controls:LucideIcon Icon="Shuffle" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                </ToggleButton>
+                <!-- Three states (off, all, one): shown like the shuffle toggle above it. -->
+                <controls:RepeatToggle Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" IconSize="{StaticResource HumeIconM}" />
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Now playing "LCD": artwork, title, artist and a slim progress bar -->
+        <Grid Grid.Column="1" ColumnSpacing="12" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ArtButton" Style="{StaticResource HumeTileButtonStyle}" Padding="0" CornerRadius="{StaticResource HumeRadiusArtwork}"
+                    Click="OnOpenNowPlaying" ToolTipService.ToolTip="Open Now Playing (Ctrl+L)" AutomationProperties.Name="Open Now Playing">
+                <controls:ArtworkImage Width="{StaticResource HumeArtLcd}" Height="{StaticResource HumeArtLcd}" DecodeSize="64" ArtworkCornerRadius="{StaticResource HumeRadiusArtwork}"
+                                       SourcePath="{x:Bind Player.ArtworkPath, Mode=OneWay}" PlaceholderIcon="Music" />
+            </Button>
+            <Grid Grid.Column="1" VerticalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <HyperlinkButton Style="{StaticResource HumeLinkButtonStyle}" Click="OnOpenNowPlaying" HorizontalAlignment="Left"
+                                     Foreground="{ThemeResource HumeTextPrimaryBrush}" FontWeight="SemiBold" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind Player.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                   AutomationProperties.AutomationId="NowPlayingTitle" />
+                    </HyperlinkButton>
+                    <TextBlock x:Name="TimeText" helpers:Anim.Appear="True" Grid.Column="1" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center"
+                               Typography.NumeralAlignment="Tabular" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                        <Run Text="{x:Bind Player.PositionText, Mode=OneWay}" /><Run Text=" / " /><Run Text="{x:Bind Player.DurationText, Mode=OneWay}" />
+                    </TextBlock>
+                </Grid>
+                <HyperlinkButton Grid.Row="1" Style="{StaticResource HumeLinkButtonStyle}" Command="{x:Bind Player.OpenArtistCommand}"
+                                 HorizontalAlignment="Left" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" FontSize="{StaticResource HumeFontCaption}" />
+                </HyperlinkButton>
+                <Slider x:Name="ProgressSlider" Grid.Row="2" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False" Margin="0,-4,0,-10"
+                        Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}"
+                        Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
+                        IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                        AutomationProperties.Name="Playback position" AutomationProperties.AutomationId="ProgressSlider" />
+            </Grid>
+        </Grid>
+
+        <!--
+            The playing track's rating over the volume (the stars scaled to the volume row's width), then
+            the tools. Narrower bars drop the rating first; the narrowest turn volume into a button stacked
+            over the queue button.
+        -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
+            <StackPanel x:Name="RatingVolume" VerticalAlignment="Center" Spacing="2">
+                <Viewbox x:Name="RatingBox" helpers:Anim.Appear="True" Stretch="Uniform" HorizontalAlignment="Stretch" Margin="6,0,4,0"
+                         Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                    <controls:StarRating x:Name="BarRating" Item="{x:Bind Player.Track, Mode=OneWay}" StarSize="{StaticResource HumeStarS}" AutomationProperties.Name="Rating" />
+                </Viewbox>
+                <StackPanel x:Name="VolumeRow" Orientation="Horizontal">
+                    <Button x:Name="MuteButton" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" Command="{x:Bind Player.ToggleMuteCommand}"
+                            ToolTipService.ToolTip="Mute (Ctrl+M)" AutomationProperties.Name="Mute">
+                        <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                    </Button>
+                    <Slider x:Name="VolumeSlider" Width="100" Minimum="0" Maximum="100" StepFrequency="1" VerticalAlignment="Center" Margin="2,0,0,0"
+                            Value="{x:Bind Player.Volume, Mode=TwoWay}" AutomationProperties.Name="Volume" AutomationProperties.AutomationId="VolumeSlider" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel x:Name="Tools" Orientation="Horizontal" VerticalAlignment="Center">
+                <!-- Two groups: side by side, or (in the compact bar) one row above the other. -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="VolumeFlyoutButton" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" Visibility="Collapsed"
+                    ToolTipService.ToolTip="Volume" AutomationProperties.Name="Volume">
+                <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Style="{StaticResource HumeIconButtonStyle}" Command="{x:Bind Player.ToggleMuteCommand}" AutomationProperties.Name="Mute">
+                                <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                            </Button>
+                            <Slider Width="160" Minimum="0" Maximum="100" StepFrequency="1" VerticalAlignment="Center"
+                                    Value="{x:Bind Player.Volume, Mode=TwoWay}" AutomationProperties.Name="Volume" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+                <Button x:Name="MiniPlayerButton" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}"
+                        Click="OnMiniPlayer" ToolTipService.ToolTip="Mini player (Ctrl+Shift+M)" AutomationProperties.Name="Mini player" AutomationProperties.AutomationId="MiniPlayerButton">
+                    <controls:LucideIcon Icon="PictureInPicture2" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                </Button>
+                <controls:CastButton x:Name="CastToggle" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" IconSize="{StaticResource HumeIconM}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <ToggleButton x:Name="LyricsToggle" Style="{StaticResource HumeIconToggleStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}"
+                          Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
+                          ToolTipService.ToolTip="Lyrics (Ctrl+Shift+L)" AutomationProperties.Name="Lyrics" AutomationProperties.AutomationId="LyricsButton">
+                <controls:LucideIcon Icon="MessageSquareQuote" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+            </ToggleButton>
+                <ToggleButton x:Name="QueueToggle" Style="{StaticResource HumeIconToggleStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}"
+                          Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
+                          ToolTipService.ToolTip="Queue (Ctrl+Q)" AutomationProperties.Name="Queue" AutomationProperties.AutomationId="QueueButton">
+                <controls:LucideIcon Icon="ListVideo" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+            </ToggleButton>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <!-- Chosen from the bar's own width (see code): with the queue open it has far less room than the window. -->
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="WideState" />
+                <!-- Less room: the rating goes first. -->
+                <VisualState x:Name="MediumState">
+                    <VisualState.Setters>
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+                <!-- Least room: volume becomes a button stacked over the queue button, and the times go. -->
+                <VisualState x:Name="CompactState">
+                    <VisualState.Setters>
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="12" />
+                    </VisualState.Setters>
+                </VisualState>
+                <!-- The smallest bar: the mini player and Cast step out (both are on Now Playing, and the
+                     mini player has Ctrl+Shift+M), leaving volume above lyrics and the queue. -->
+                <VisualState x:Name="TightState">
+                    <VisualState.Setters>
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="12" />
+                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
+                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+                <!-- A very narrow window: shuffle and repeat move to Now Playing, and the song shrinks to fit
+                     (its title trims) rather than pushing the controls out of the bar. -->
+                <VisualState x:Name="NarrowState">
+                    <VisualState.Setters>
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="8" />
+                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
+                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                        <Setter Target="ModeButtons.Visibility" Value="Collapsed" />
+                        <Setter Target="InfoColumn.MinWidth" Value="0" />
+                        <Setter Target="ArtButton.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</UserControl>

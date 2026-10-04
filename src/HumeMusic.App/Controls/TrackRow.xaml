@@ -1,0 +1,72 @@
+<UserControl
+    x:Class="HumeMusic.Controls.TrackRow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:helpers="using:HumeMusic.Helpers"
+    IsTabStop="False">
+
+    <!-- No ColumnSpacing: it would add a gap after every column, even the empty ones; spacing is on the cells. -->
+    <Grid x:Name="Root" Height="{StaticResource HumeTrackRowHeight}" Background="Transparent"
+          PointerEntered="OnPointerEntered" PointerExited="OnPointerExited" PointerCanceled="OnPointerExited"
+          ContextRequested="OnContextRequested">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition x:Name="RankColumn" Width="0" />
+            <ColumnDefinition x:Name="LeadColumn" Width="Auto" />
+            <ColumnDefinition Width="3*" />
+            <ColumnDefinition x:Name="AlbumColumn" Width="2*" />
+            <ColumnDefinition x:Name="PlaysColumn" Width="0" />
+            <ColumnDefinition x:Name="RatingColumn" Width="0" />
+            <ColumnDefinition Width="Auto" MinWidth="{StaticResource HumeButtonXXL}" />
+            <ColumnDefinition x:Name="RemoveColumn" Width="0" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <!-- Rank (top songs). -->
+        <TextBlock x:Name="RankText" Style="{StaticResource HumeBodyStrongText}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,8,0"
+                   Typography.NumeralAlignment="Tabular" Visibility="Collapsed" />
+
+        <!-- Lead: artwork or track number; becomes a play button on hover. -->
+        <Grid Grid.Column="1" Width="{StaticResource HumeArtThumb}" Height="{StaticResource HumeArtThumb}" VerticalAlignment="Center">
+            <controls:ArtworkImage x:Name="Art" DecodeSize="48" ArtworkCornerRadius="{StaticResource HumeRadiusThumb}" PlaceholderIcon="Music" />
+            <!-- Hover over artwork: the art dims and a white play glyph sits on it (no box). -->
+            <Border x:Name="ArtShade" Background="{StaticResource HumeArtworkShadeBrush}" CornerRadius="{StaticResource HumeRadiusThumb}" Visibility="Collapsed" IsHitTestVisible="False" />
+            <TextBlock x:Name="NumberText" Style="{StaticResource HumeSecondaryText}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Typography.NumeralAlignment="Tabular" Visibility="Collapsed" />
+            <controls:LucideIcon x:Name="PlayingIcon" Icon="AudioWaveform" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" Foreground="{ThemeResource HumeAccentBrush}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" Visibility="Collapsed" />
+            <!-- Hover over a track number: the number is replaced by a play glyph (never drawn over it). -->
+            <Button x:Name="PlayButton" Style="{StaticResource HumeRowPlayButtonStyle}" Visibility="Collapsed" IsTabStop="False"
+                    Click="OnPlayClick" AutomationProperties.Name="Play">
+                <controls:LucideIcon x:Name="PlayGlyph" Icon="Play" IsFilled="True" Width="{StaticResource HumeIconS}" Height="{StaticResource HumeIconS}" />
+            </Button>
+        </Grid>
+
+        <StackPanel Grid.Column="2" VerticalAlignment="Center" Spacing="1" Margin="12,0,0,0">
+            <TextBlock x:Name="TitleText" Style="{StaticResource HumeBodyText}" />
+            <TextBlock x:Name="ArtistText" Style="{StaticResource HumeSecondaryText}" />
+        </StackPanel>
+
+        <TextBlock x:Name="AlbumText" Grid.Column="3" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center" Margin="12,0,0,0" />
+        <TextBlock x:Name="PlaysText" Grid.Column="4" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="12,0,0,0" />
+        <!-- Rating: shown when the track is rated, and on hover so it can be set. -->
+        <controls:StarRating x:Name="Rating" Grid.Column="5" StarSize="{StaticResource HumeStarS}" VerticalAlignment="Center" HorizontalAlignment="Left" Opacity="0" Margin="12,0,0,0"
+                             helpers:Anim.Fade="True" />
+        <TextBlock x:Name="DurationText" Grid.Column="6" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center" Margin="12,0,4,0"
+                   HorizontalAlignment="Right" Typography.NumeralAlignment="Tabular" />
+
+        <!-- Hairline separator from the title column onwards, so the lead column stays clean. -->
+        <Rectangle x:Name="Separator" Grid.Column="2" Grid.ColumnSpan="7" Height="1" VerticalAlignment="Bottom"
+                   Fill="{ThemeResource HumeDividerBrush}" IsHitTestVisible="False" />
+
+        <!-- Remove (queue, playlists): only while the row is hovered or selected. -->
+        <Button x:Name="RemoveButton" Grid.Column="7" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
+                Opacity="0" IsHitTestVisible="False" helpers:Anim.Fade="True" Click="OnRemoveClick" ToolTipService.ToolTip="Remove" AutomationProperties.Name="Remove">
+            <controls:LucideIcon Icon="X" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+        </Button>
+        <Button x:Name="MoreButton" Grid.Column="8" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
+                Opacity="0" helpers:Anim.Fade="True" Click="OnMoreClick" ToolTipService.ToolTip="More options" AutomationProperties.Name="More options">
+            <controls:LucideIcon Icon="Ellipsis" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+        </Button>
+    </Grid>
+</UserControl>

@@ -1,0 +1,116 @@
+<Page
+    x:Class="HumeMusic.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:helpers="using:HumeMusic.Helpers"
+    xmlns:vm="using:HumeMusic.ViewModels"
+    xmlns:models="using:HumeMusic.Core.Models"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                  AutomationProperties.AutomationId="PageScroller">
+        <StackPanel Padding="{StaticResource HumePagePadding}" Spacing="{StaticResource HumeSectionSpacing}">
+            <!-- The greeting and "Jump back in" (or "Home"), and how long the listener has listened today. -->
+            <controls:PageHeader Eyebrow="{x:Bind ViewModel.Greeting, Mode=OneWay}" Title="{x:Bind ViewModel.HeaderTitle, Mode=OneWay}">
+                <StackPanel HorizontalAlignment="Right" Spacing="2" AutomationProperties.AutomationId="TodaysListening" AutomationProperties.Name="Today's listening">
+                    <TextBlock x:Name="ListeningLabel" Text="Today's listening" Style="{StaticResource HumeOverlineText}" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="ListeningTime" Text="{x:Bind ViewModel.TodayListening, Mode=OneWay}" Style="{StaticResource HumeDisplayText}" HorizontalAlignment="Right" />
+                </StackPanel>
+            </controls:PageHeader>
+
+            <!-- Jump back in: the last thing played, large; the eight before it as glass tabs beside it. -->
+            <!-- Pinned and every other section are rows below, in the listener's order (Settings > Home). -->
+            <Grid x:Name="Featured" ColumnSpacing="32" RowSpacing="20" helpers:Anim.Appear="True" Visibility="{x:Bind ViewModel.ShowFeatured, Mode=OneWay}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition x:Name="TilesColumn" Width="1.15*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Button x:Name="FeaturedArtButton" Style="{StaticResource HumeTileButtonStyle}" Padding="0" CornerRadius="{StaticResource HumeRadiusLargeArtwork}"
+                        Click="OnFeaturedClick" AutomationProperties.Name="Open">
+                    <!-- As tall as the four rows of tabs beside it (4 x 56 and three gaps of 8). -->
+                    <controls:ArtworkImage x:Name="FeaturedArt" Width="248" Height="248" DecodeSize="320"
+                                           ArtworkCornerRadius="{StaticResource HumeRadiusLargeArtwork}"
+                                           SourcePath="{x:Bind ViewModel.FeaturedCover, Mode=OneWay}" />
+                </Button>
+                <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
+                    <TextBlock Text="{x:Bind ViewModel.FeaturedTitle, Mode=OneWay}" Style="{StaticResource HumeHeroText}" FontSize="{StaticResource HumeFontFeature}" LineHeight="{StaticResource HumeLineFeature}"
+                               TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                    <HyperlinkButton Style="{StaticResource HumeFeatureSubtitleLinkStyle}" Click="OnFeaturedArtistClick"
+                                     Visibility="{x:Bind ViewModel.FeaturedHasArtist, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind ViewModel.FeaturedSubtitle, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                    </HyperlinkButton>
+                    <TextBlock Text="{x:Bind ViewModel.FeaturedSubtitle, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" TextTrimming="CharacterEllipsis"
+                               Visibility="{x:Bind helpers:Format.CollapsedIf(ViewModel.FeaturedHasArtist), Mode=OneWay}" />
+                    <TextBlock Text="{x:Bind ViewModel.FeaturedMeta, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" />
+                    <StackPanel Orientation="Horizontal" Spacing="8" Margin="0,16,0,0">
+                        <Button Style="{StaticResource HumePrimaryButtonStyle}" Click="OnFeaturedPlay" AutomationProperties.AutomationId="FeaturedPlayButton" AutomationProperties.Name="Play">
+                            <controls:IconLabel Icon="Play" IsFilled="True" Text="Play" />
+                        </Button>
+                        <Button Style="{StaticResource HumeSecondaryButtonStyle}" Click="OnFeaturedShuffle">
+                            <controls:IconLabel Icon="Shuffle" Text="Shuffle" />
+                        </Button>
+                        <controls:PinButton Item="{x:Bind ViewModel.Featured, Mode=OneWay}" />
+                    </StackPanel>
+                </StackPanel>
+                <!-- The eight played before it: cover and name on a glass tab, two across. -->
+                <ItemsControl x:Name="JumpTiles" Grid.Column="2" MaxWidth="560" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsTabStop="False"
+                              ItemsSource="{x:Bind ViewModel.JumpBackIn}" AutomationProperties.Name="Played before">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <controls:UniformColumns Columns="2" ColumnSpacing="8" RowSpacing="8" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:MediaItem">
+                            <Button Style="{StaticResource HumeTileButtonStyle}" Padding="0" Background="{ThemeResource HumeGlassFillBrush}"
+                                    CornerRadius="{StaticResource HumeRadiusControl}" Click="OnJumpTileClick" Tag="{x:Bind}"
+                                    AutomationProperties.Name="{x:Bind Title}" ToolTipService.ToolTip="{x:Bind Subtitle}">
+                                <Grid ColumnSpacing="12" Height="56">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="56" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <controls:ArtworkImage Width="56" Height="56" DecodeSize="112" ShowOutline="False" ArtworkCornerRadius="8,0,0,8"
+                                                           PlaceholderIcon="{x:Bind helpers:Format.PlaceholderIcon((models:MediaItem))}"
+                                                           SourcePath="{x:Bind helpers:Format.NavThumb((models:MediaItem))}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Title}" Style="{StaticResource HumeBodyStrongText}" VerticalAlignment="Center"
+                                               TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" Margin="0,0,12,0" />
+                                </Grid>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </Grid>
+
+            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                    ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                    IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                                    EmptyText="Your music library is empty. Add music to your Plex library and it will appear here."
+                                    RetryCommand="{x:Bind ViewModel.LoadCommand}" />
+
+            <!-- A plain stack: Home has a handful of rows, and a virtualizing repeater around rows that
+                 themselves virtualize is a known source of layout cycles. -->
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Rows}" IsTabStop="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="{StaticResource HumeSectionSpacing}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MediaRow">
+                        <controls:MediaRowControl Header="{x:Bind Title}" Subheader="{x:Bind Subtitle}" ItemsSource="{x:Bind Items}" SeeAllCommand="{x:Bind SeeAllCommand}"
+                                                  CardStyle="{x:Bind CardStyle}" CanReorder="{x:Bind CanReorder}" ItemsReordered="OnRowReordered" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+
+</Page>

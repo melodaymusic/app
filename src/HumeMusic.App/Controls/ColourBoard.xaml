@@ -1,0 +1,55 @@
+<UserControl
+    x:Class="HumeMusic.Controls.ColourBoard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    IsTabStop="False">
+
+    <!-- Colour board: square cover over a panel filled with the cover's most common colour. -->
+    <Grid>
+    <!-- Hover plate: grows from the centre behind the card (see CardHover). -->
+    <Border x:Name="Plate" Background="{ThemeResource HumeHoverOverlayBrush}" />
+    <Grid x:Name="Root" Width="{StaticResource HumeBoard}" CornerRadius="{StaticResource HumeRadiusBoard}" Background="Transparent"
+          PointerEntered="OnPointerEntered" PointerExited="OnPointerExited" PointerCanceled="OnPointerExited"
+          ContextRequested="OnContextRequested">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <controls:AspectBox>
+        <Grid x:Name="ArtHost">
+            <controls:ArtworkImage x:Name="Art" DecodeSize="320" ArtworkCornerRadius="{StaticResource HumeRadiusBoardTop}" ShowOutline="False" />
+            <!-- Artist mixes: the mix's three main artists as floating circles on the mix colour. -->
+            <Border x:Name="MixArt" Visibility="Collapsed" CornerRadius="{StaticResource HumeRadiusBoardTop}">
+                <controls:MixCircles>
+                    <controls:ArtworkImage x:Name="MixArtist1" DecodeSize="200" ArtworkCornerRadius="999" ShowOutline="False" PlaceholderIcon="MicVocal" />
+                    <controls:ArtworkImage x:Name="MixArtist2" DecodeSize="200" ArtworkCornerRadius="999" ShowOutline="False" PlaceholderIcon="MicVocal" />
+                    <controls:ArtworkImage x:Name="MixArtist3" DecodeSize="200" ArtworkCornerRadius="999" ShowOutline="False" PlaceholderIcon="MicVocal" />
+                </controls:MixCircles>
+            </Border>
+            <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource HumeOverlayButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,12,12" IsTabStop="False" ToolTipService.ToolTip="Play" AutomationProperties.Name="Play" Click="OnPlayClick">
+                <controls:LucideIcon Icon="Play" IsFilled="True" Width="{StaticResource HumeIconS}" Height="{StaticResource HumeIconS}" Margin="2,0,0,0" />
+            </Button>
+        </Grid>
+        </controls:AspectBox>
+
+        <Border x:Name="Panel" Grid.Row="1" Height="{StaticResource HumeColourPanel}" Padding="16,12,16,14" CornerRadius="{StaticResource HumeRadiusBoardBottom}"
+                Background="#2A2930">
+            <Grid>
+                <StackPanel Spacing="2">
+                    <TextBlock x:Name="TitleText" Style="{StaticResource HumeTextBase}" FontSize="{StaticResource HumeFontColourTitle}" FontWeight="SemiBold" Foreground="White"
+                               TextTrimming="CharacterEllipsis" Margin="0,0,18,0" />
+                    <TextBlock x:Name="SummaryText" Style="{StaticResource HumeTextBase}" FontSize="{StaticResource HumeFontCaption}" Foreground="#D1FFFFFF"
+                               TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <!-- A smart playlist: a small sparkle in the corner of its panel. -->
+                <controls:LucideIcon x:Name="SmartIcon" Icon="Sparkles" Width="14" Height="14" Foreground="#D1FFFFFF"
+                                     HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,3,0,0" Visibility="Collapsed"
+                                     ToolTipService.ToolTip="Smart playlist" AutomationProperties.Name="Smart playlist" />
+            </Grid>
+        </Border>
+    </Grid>
+    </Grid>
+</UserControl>

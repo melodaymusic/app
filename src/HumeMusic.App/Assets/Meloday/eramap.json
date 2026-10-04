@@ -1,0 +1,11 @@
+{
+  "1940s": ["Crooner", "Swinging", "Classic", "Wartime"],
+  "1950s": ["Jukebox", "Rockabilly", "Retro", "Golden"],
+  "1960s": ["Mod", "Psychedelic", "Flowerchild", "Revolutionary"],
+  "1970s": ["Disco", "Funky", "Groovy", "Analog"],
+  "1980s": ["Neon", "Synthy", "Vintage", "Electric"],
+  "1990s": ["Grungy", "Alt", "Mtv", "Boom-Bap"],
+  "2000s": ["Blingy", "Myspace", "Millennial"],
+  "2010s": ["Bloggy", "Trapwave", "Digital"],
+  "2020s": ["Hyper", "Viral", "Zoomercore"]
+}

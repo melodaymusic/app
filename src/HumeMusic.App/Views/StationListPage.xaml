@@ -1,0 +1,35 @@
+<Page
+    x:Class="HumeMusic.Views.StationListPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:models="using:HumeMusic.Core.Models"
+    Background="Transparent">
+
+    <!-- Every station of one kind (all of Genre Radio, all of Mood Radio...), as squareboards. -->
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader x:Name="Header" Padding="{StaticResource HumePageHeaderPadding}" />
+
+        <GridView x:Name="Grid" Grid.Row="1" Padding="{StaticResource HumeGridPadding}"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ItemContainerStyle="{StaticResource HumeTileItemStyle}" controls:ResponsiveGrid.MinItemWidth="200"
+                  controls:ResponsiveGrid.ExtraHeight="24"
+                  AutomationProperties.AutomationId="StationGrid">
+            <GridView.ItemTemplate>
+                <DataTemplate x:DataType="models:Station">
+                    <controls:CardSlot>
+                        <controls:SquareBoard Item="{x:Bind}" />
+                    </controls:CardSlot>
+                </DataTemplate>
+            </GridView.ItemTemplate>
+        </GridView>
+
+        <controls:PageStateView x:Name="State" Grid.Row="1" SkeletonKind="Tiles" SkeletonPadding="{StaticResource HumeGridPadding}"
+                                EmptyText="There are no stations here yet." EmptyIcon="Radio" />
+    </Grid>
+</Page>

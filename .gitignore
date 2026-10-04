@@ -1,0 +1,24 @@
+# Build output
+bin/
+obj/
+artifacts/
+publish/
+*.user
+.vs/
+*.suo
+TestResults/
+# Secrets / local runtime data (never commit)
+*.token
+*.pfx
+*.pvk
+secrets*.json
+.env
+# The Meloday script's config holds a Plex token and an OpenAI key
+config.yml
+
+# Source font drop (the app ships the copy in src/HumeMusic.App/Assets/Fonts)
+/Inter/
+/Manrope/
+
+# Local clean-up quarantine: source art, scripts and secrets that are not part of the app
+/_unused/

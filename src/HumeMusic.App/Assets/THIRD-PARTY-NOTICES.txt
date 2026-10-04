@@ -1,0 +1,13 @@
+Meloday Music includes the following third-party works.
+
+Manrope (typeface)
+  Copyright 2018 The Manrope Project Authors (https://github.com/sharanda/manrope)
+  Licensed under the SIL Open Font License, Version 1.1.
+  Full licence: Assets/Fonts/MANROPE-LICENSE.txt, and https://openfontlicense.org
+  The font is bundled unmodified as Assets/Fonts/Manrope-Variable.ttf (renamed from
+  Manrope-VariableFont_wght.ttf; the Reserved Font Name is not used for any modified version).
+
+Lucide (icons)
+  Copyright (c) Lucide Icons and Contributors
+  Licensed under the ISC License.
+  Full licence: Assets/LUCIDE-LICENSE.txt, and https://lucide.dev/license

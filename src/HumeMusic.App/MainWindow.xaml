@@ -1,0 +1,38 @@
+<Window x:Class="HumeMusic.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="using:HumeMusic.Controls">
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base" />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="RootGrid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="44" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Ambient colour behind everything, title bar and sidebar included; glass panels blur it. -->
+        <controls:AmbientBackdrop Grid.RowSpan="2" />
+
+        <ContentControl x:Name="RootContent" Grid.Row="1" FontFamily="{StaticResource HumeFont}"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                        IsTabStop="False" />
+
+        <!-- Custom title bar (drag region), drawn over the main view, which runs up underneath it. System caption buttons are drawn on the right. -->
+        <Grid x:Name="TitleBar" Background="Transparent" Padding="16,0,140,0" ColumnSpacing="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Image Width="18" Height="18" VerticalAlignment="Center">
+                <Image.Source>
+                    <BitmapImage UriSource="ms-appx:///Assets/MelodayMusic-app.png" DecodePixelWidth="18" DecodePixelType="Logical" />
+                </Image.Source>
+            </Image>
+            <TextBlock x:Name="TitleText" Grid.Column="1" Text="Meloday Music" VerticalAlignment="Center" FontSize="{StaticResource HumeFontCaption}" FontFamily="{StaticResource HumeFont}" FontWeight="Medium"
+                       Foreground="{ThemeResource HumeTextSecondaryBrush}" />
+        </Grid>
+
+    </Grid>
+</Window>
