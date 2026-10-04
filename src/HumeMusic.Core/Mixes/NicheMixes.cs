@@ -130,9 +130,13 @@ public static class NicheMixes
 
     /// <summary>
     /// Returns the strongest grounded recipes, with light diversity limits so one dominant tag does
-    /// not fill the whole row. If the listener only has a narrow taste, a second pass fills the row.
+    /// not fill the whole row. Artist moods can supplement sparse track mood metadata.
     /// </summary>
-    public static IReadOnlyList<NicheMixRecipe> Generate(IEnumerable<Track> recent, DateTimeOffset now, int count = 10)
+    public static IReadOnlyList<NicheMixRecipe> Generate(
+        IEnumerable<Track> recent,
+        DateTimeOffset now,
+        int count = 10,
+        IReadOnlyDictionary<string, IReadOnlyList<string>>? artistMoods = null)
     {
         if (count <= 0) return [];
         var evidence = new Dictionary<RecipeKey, Evidence>(RecipeKeyComparer.Instance);
@@ -140,7 +144,10 @@ public static class NicheMixes
         foreach (var track in recent)
         {
             var genres = Clean(track.Genres).ToList();
-            var moods = Clean(track.Moods).Where(m => !NoiseMoods.Contains(m)).ToList();
+            IEnumerable<string> moodSource = track.Moods;
+            if (track.ArtistRatingKey is { } artistKey && artistMoods?.TryGetValue(artistKey, out var inheritedMoods) == true)
+                moodSource = moodSource.Concat(inheritedMoods);
+            var moods = Clean(moodSource).Where(m => !NoiseMoods.Contains(m)).ToList();
             var decade = track.Year is >= 1900 and < 2100 ? track.Year.Value / 10 * 10 : (int?)null;
             if (genres.Count == 0 && moods.Count == 0) continue;
 
