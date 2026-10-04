@@ -34,7 +34,7 @@ public sealed record NicheMixRecipe(string? Genre, string? Mood, int? Decade, do
             + "g=" + Uri.EscapeDataString(Genre ?? string.Empty)
             + "&m=" + Uri.EscapeDataString(Mood ?? string.Empty)
             + "&d=" + (Decade?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty),
-        Title = Title,
+        Title = this.Title,
         TagKind = Mood is not null ? MixTagKind.Mood : MixTagKind.Genre,
         // ColourBoard uses Tag as the colour seed. Playback uses the recipe encoded in RatingKey.
         Tag = ColourSeed,
@@ -92,6 +92,26 @@ public static class NicheMixes
         public int Dimensions => (Genre is null ? 0 : 1) + (Mood is null ? 0 : 1) + (Decade is null ? 0 : 1);
     }
 
+    private sealed class RecipeKeyComparer : IEqualityComparer<RecipeKey>
+    {
+        public static readonly RecipeKeyComparer Instance = new();
+
+        public bool Equals(RecipeKey? x, RecipeKey? y) =>
+            ReferenceEquals(x, y) || x is not null && y is not null
+            && x.Decade == y.Decade
+            && string.Equals(x.Genre, y.Genre, StringComparison.OrdinalIgnoreCase)
+            && string.Equals(x.Mood, y.Mood, StringComparison.OrdinalIgnoreCase);
+
+        public int GetHashCode(RecipeKey obj)
+        {
+            var hash = new HashCode();
+            hash.Add(obj.Genre, StringComparer.OrdinalIgnoreCase);
+            hash.Add(obj.Mood, StringComparer.OrdinalIgnoreCase);
+            hash.Add(obj.Decade);
+            return hash.ToHashCode();
+        }
+    }
+
     private sealed class Evidence
     {
         public double Weight { get; set; }
@@ -106,7 +126,7 @@ public static class NicheMixes
     public static IReadOnlyList<NicheMixRecipe> Generate(IEnumerable<Track> recent, DateTimeOffset now, int count = 10)
     {
         if (count <= 0) return [];
-        var evidence = new Dictionary<RecipeKey, Evidence>();
+        var evidence = new Dictionary<RecipeKey, Evidence>(RecipeKeyComparer.Instance);
 
         foreach (var track in recent)
         {
@@ -123,6 +143,8 @@ public static class NicheMixes
             {
                 foreach (var mood in moods)
                 {
+                    // A tag appearing in both fields is one idea, not a useful two-dimensional niche.
+                    if (string.Equals(genre, mood, StringComparison.OrdinalIgnoreCase)) continue;
                     Add(new RecipeKey(genre, mood, null), track.RatingKey, artist, weight);
                     if (decade is { } d) Add(new RecipeKey(genre, mood, d), track.RatingKey, artist, weight);
                 }
