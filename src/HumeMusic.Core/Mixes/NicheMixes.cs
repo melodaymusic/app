@@ -21,6 +21,8 @@ public sealed record NicheMixRecipe(string? Genre, string? Mood, int? Decade, do
         }
     }
 
+    public string ColourSeed => Mood ?? Genre ?? (Decade is { } decade ? $"{decade}s" : Title);
+
     /// <summary>The stable card/playback object for this recipe.</summary>
     public NicheMix ToMix() => new()
     {
@@ -29,11 +31,56 @@ public sealed record NicheMixRecipe(string? Genre, string? Mood, int? Decade, do
             + "&m=" + Uri.EscapeDataString(Mood ?? string.Empty)
             + "&d=" + (Decade?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty),
         Title = this.Title,
+        TagKind = Mood is not null ? MixTagKind.Mood : MixTagKind.Genre,
+        Tag = ColourSeed,
         Genre = Genre,
         Mood = Mood,
         Decade = Decade,
         Support = Support,
     };
+
+    /// <summary>
+    /// Restores the recipe from its stable key. This also works when an older pin/reference rebuilds
+    /// the item as a plain TagMix, so niche playback remains finite after an app restart.
+    /// </summary>
+    public static bool TryFrom(TagMix mix, out NicheMixRecipe recipe)
+    {
+        if (mix is NicheMix niche)
+        {
+            recipe = new NicheMixRecipe(niche.Genre, niche.Mood, niche.Decade, niche.Support);
+            return recipe.Dimensions >= 2;
+        }
+
+        recipe = new NicheMixRecipe(null, null, null);
+        if (!mix.RatingKey.StartsWith(RatingKeyPrefix, StringComparison.Ordinal)) return false;
+
+        string? genre = null;
+        string? mood = null;
+        int? decade = null;
+        foreach (var part in mix.RatingKey[RatingKeyPrefix.Length..].Split('&', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var equals = part.IndexOf('=');
+            if (equals < 0) continue;
+            var key = part[..equals];
+            var value = Uri.UnescapeDataString(part[(equals + 1)..]);
+            switch (key)
+            {
+                case "g" when value.Length > 0:
+                    genre = value;
+                    break;
+                case "m" when value.Length > 0:
+                    mood = value;
+                    break;
+                case "d" when int.TryParse(value, System.Globalization.NumberStyles.Integer,
+                    System.Globalization.CultureInfo.InvariantCulture, out var parsed):
+                    decade = parsed;
+                    break;
+            }
+        }
+
+        recipe = new NicheMixRecipe(genre, mood, decade);
+        return recipe.Dimensions >= 2;
+    }
 }
 
 /// <summary>
@@ -105,7 +152,6 @@ public static class NicheMixes
             {
                 foreach (var mood in moods)
                 {
-                    // A tag appearing in both fields is one idea, not a useful two-dimensional niche.
                     if (string.Equals(genre, mood, StringComparison.OrdinalIgnoreCase)) continue;
                     Add(new RecipeKey(genre, mood, null), track.RatingKey, artist, weight);
                     if (decade is { } d) Add(new RecipeKey(genre, mood, d), track.RatingKey, artist, weight);
@@ -148,7 +194,6 @@ public static class NicheMixes
         void Add(RecipeKey key, string trackKey, string artistKey, double weight)
         {
             if (!evidence.TryGetValue(key, out var item)) evidence[key] = item = new Evidence();
-            // Each track contributes once to a recipe even if Plex returned duplicate tag text.
             if (!item.Tracks.Add(trackKey)) return;
             item.Weight += weight;
             item.Artists.Add(artistKey);
