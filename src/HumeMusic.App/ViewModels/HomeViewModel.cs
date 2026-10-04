@@ -230,9 +230,14 @@ public sealed partial class HomeViewModel : ViewModelBase
             Add("Most Played", mostPlayedAlbums.Result.Items.Where(a => a.ViewCount > 1),
                 SeeAll(typeof(AlbumsPage), "viewCount:desc"), id: "top.albums");
 
-            // Mixes that follow recent listening: artist mixes plus genre and mood mixes.
+            // Niche mixes are a distinct feature: finite multi-trait snapshots rather than single-tag mixes.
             if (mixes.IsCompletedSuccessfully)
-                Add("Mixes for You", mixes.Result, id: "artist.mixes", style: CardStyle.ColourBoard);
+            {
+                var niche = mixes.Result.OfType<NicheMix>().Cast<object>().ToList();
+                var regular = mixes.Result.Where(m => m is not NicheMix).Cast<object>().ToList();
+                Add("Mixes for You", regular, id: "artist.mixes", style: CardStyle.ColourBoard);
+                Add("Niche Mixes", niche, id: "niche.mixes", style: CardStyle.ColourBoard);
+            }
 
             // Plex's stations (Plex Pass); the rest of Radio is on its page.
             if (stations.IsCompletedSuccessfully && stations.Result.Stations.Count > 0)
