@@ -65,6 +65,25 @@ public class NicheMixTests
     }
 
     [Fact]
+    public void Recipe_survives_tag_mix_reference_restore()
+    {
+        var live = new NicheMixRecipe("Dance Pop", "Euphoric", 2010, 2.5).ToMix();
+        var restored = new TagMix
+        {
+            RatingKey = live.RatingKey,
+            Title = live.Title,
+            TagKind = live.TagKind,
+            Tag = live.Tag,
+        };
+
+        Assert.Equal("Niche mix", restored.Subtitle);
+        Assert.True(NicheMixRecipe.TryFrom(restored, out var recipe));
+        Assert.Equal("Dance Pop", recipe.Genre);
+        Assert.Equal("Euphoric", recipe.Mood);
+        Assert.Equal(2010, recipe.Decade);
+    }
+
+    [Fact]
     public void Popularity_marker_is_never_used_as_a_mood()
     {
         var recent = new[]
