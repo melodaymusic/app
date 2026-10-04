@@ -135,15 +135,18 @@ public sealed class MixService
             var moods = ListeningProfile.Rank(details
                 .Where(d => d.Info is not null)
                 .SelectMany(d => d.Info!.Value.Artist.Moods.Where(m => !NoiseMoods.Contains(m)).Select(m => (m, d.Profile.Weight))));
+            var artistMoods = details
+                .Where(d => d.Info is not null)
+                .ToDictionary(d => d.Profile.RatingKey, d => d.Info!.Value.Artist.Moods, StringComparer.Ordinal);
 
             // A tag mix needs enough music to be worth playing; sampling it also fills in its board.
             var tagCount = _pass.IsAvailable ? 1 : 2;
             var genreMixes = await PickTagMixesAsync(genres, MixTagKind.Genre, GenreMixCount * tagCount).ConfigureAwait(false);
             var moodMixes = await PickTagMixesAsync(moods, MixTagKind.Mood, MoodMixCount * tagCount, exclude: genreMixes.Select(m => m.Title)).ConfigureAwait(false);
 
-            // Niche concepts come from real co-occurrences in recent listening. We validate them in
-            // small batches and stop as soon as the row is full, avoiding unnecessary Plex requests.
-            var nicheRecipes = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 4);
+            // Niche concepts come from real co-occurrences in recent listening. Track moods are
+            // supplemented with the same artist mood metadata already used by Meloday's Mood Mixes.
+            var nicheRecipes = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 4, artistMoods);
             var nicheMixes = await PickNicheMixesAsync(nicheRecipes, NicheMixCount).ConfigureAwait(false);
 
             // Keep the underlying result interleaved so callers that do not split the rows still get
