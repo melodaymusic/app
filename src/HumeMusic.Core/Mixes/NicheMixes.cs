@@ -2,11 +2,7 @@ using HumeMusic.Core.Models;
 
 namespace HumeMusic.Core.Mixes;
 
-/// <summary>
-/// A multi-dimensional slice of the listener's taste. Niche mixes deliberately use the existing
-/// TagMix media item for UI/playback plumbing, but are identified by a stable rating-key recipe so
-/// playback can keep them finite and apply every dimension at once.
-/// </summary>
+/// <summary>A multi-dimensional slice of the listener's taste.</summary>
 public sealed record NicheMixRecipe(string? Genre, string? Mood, int? Decade, double Support = 0)
 {
     public const string RatingKeyPrefix = "mix:niche:";
@@ -25,53 +21,19 @@ public sealed record NicheMixRecipe(string? Genre, string? Mood, int? Decade, do
         }
     }
 
-    public string ColourSeed => Mood ?? Genre ?? (Decade is { } decade ? $"{decade}s" : Title);
-
-    /// <summary>The recipe as a normal mix card. Its key carries the dimensions losslessly.</summary>
-    public TagMix ToMix() => new()
+    /// <summary>The stable card/playback object for this recipe.</summary>
+    public NicheMix ToMix() => new()
     {
         RatingKey = RatingKeyPrefix
             + "g=" + Uri.EscapeDataString(Genre ?? string.Empty)
             + "&m=" + Uri.EscapeDataString(Mood ?? string.Empty)
             + "&d=" + (Decade?.ToString(System.Globalization.CultureInfo.InvariantCulture) ?? string.Empty),
         Title = this.Title,
-        TagKind = Mood is not null ? MixTagKind.Mood : MixTagKind.Genre,
-        // ColourBoard uses Tag as the colour seed. Playback uses the recipe encoded in RatingKey.
-        Tag = ColourSeed,
+        Genre = Genre,
+        Mood = Mood,
+        Decade = Decade,
+        Support = Support,
     };
-
-    public static bool TryFrom(TagMix mix, out NicheMixRecipe recipe)
-    {
-        recipe = new NicheMixRecipe(null, null, null);
-        if (!mix.RatingKey.StartsWith(RatingKeyPrefix, StringComparison.Ordinal)) return false;
-
-        string? genre = null;
-        string? mood = null;
-        int? decade = null;
-        foreach (var part in mix.RatingKey[RatingKeyPrefix.Length..].Split('&', StringSplitOptions.RemoveEmptyEntries))
-        {
-            var equals = part.IndexOf('=');
-            if (equals < 0) continue;
-            var key = part[..equals];
-            var value = Uri.UnescapeDataString(part[(equals + 1)..]);
-            switch (key)
-            {
-                case "g" when value.Length > 0:
-                    genre = value;
-                    break;
-                case "m" when value.Length > 0:
-                    mood = value;
-                    break;
-                case "d" when int.TryParse(value, System.Globalization.NumberStyles.Integer,
-                    System.Globalization.CultureInfo.InvariantCulture, out var parsed):
-                    decade = parsed;
-                    break;
-            }
-        }
-
-        recipe = new NicheMixRecipe(genre, mood, decade);
-        return recipe.Dimensions >= 2;
-    }
 }
 
 /// <summary>
