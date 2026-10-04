@@ -38,7 +38,7 @@ public sealed class MixService
     private const int MoodMixCount = 3;
     private const int NicheMixCount = 6;
     private const int TagBatch = 40;
-    private const int NicheBatch = 140;
+    private const int NicheBatch = 100;
     private const int NicheTrackCount = 30;
     private const int NicheArtistCap = 3;
     private static readonly TimeSpan ListLifetime = TimeSpan.FromMinutes(20);
@@ -141,16 +141,13 @@ public sealed class MixService
             var genreMixes = await PickTagMixesAsync(genres, MixTagKind.Genre, GenreMixCount * tagCount).ConfigureAwait(false);
             var moodMixes = await PickTagMixesAsync(moods, MixTagKind.Mood, MoodMixCount * tagCount, exclude: genreMixes.Select(m => m.Title)).ConfigureAwait(false);
 
-            // Niche concepts come from real co-occurrences in recent listening. A concept is only
-            // shown after an exact library sample proves there is enough music and artist variety.
-            var nicheCandidates = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 8)
-                .Select(r => r.ToMix()).ToList();
-            var nicheInfos = await Task.WhenAll(nicheCandidates.Select(GetAsync)).ConfigureAwait(false);
-            var nicheMixes = nicheCandidates.Where((m, i) => nicheInfos[i] is { Artists.Count: >= 3 })
-                .Take(NicheMixCount).Cast<MediaItem>().ToList();
+            // Niche concepts come from real co-occurrences in recent listening. We validate them in
+            // small batches and stop as soon as the row is full, avoiding unnecessary Plex requests.
+            var nicheRecipes = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 4);
+            var nicheMixes = await PickNicheMixesAsync(nicheRecipes, NicheMixCount).ConfigureAwait(false);
 
-            // Niche mixes are woven into the existing personalised row, but their playback remains
-            // finite and tightly constrained instead of drifting like radio.
+            // Keep the underlying result interleaved so callers that do not split the rows still get
+            // a useful order. Home gives first-class niche mixes their own row.
             var result = new List<MediaItem>();
             var queues = new[]
             {
@@ -193,6 +190,21 @@ public sealed class MixService
         return candidates.Where((m, i) => infos[i] is { Artists.Count: >= 3 }).Take(count).ToList();
     }
 
+    private async Task<List<NicheMix>> PickNicheMixesAsync(IReadOnlyList<NicheMixRecipe> recipes, int count)
+    {
+        var picked = new List<NicheMix>(count);
+        foreach (var batch in recipes.Select(r => r.ToMix()).Chunk(2))
+        {
+            var infos = await Task.WhenAll(batch.Select(GetAsync)).ConfigureAwait(false);
+            for (var i = 0; i < batch.Length && picked.Count < count; i++)
+            {
+                if (infos[i] is { Artists.Count: >= 3 }) picked.Add(batch[i]);
+            }
+            if (picked.Count >= count) break;
+        }
+        return picked;
+    }
+
     // ------------------------------------------------------------------ what's in a mix
 
     /// <summary>A mix's title and artists (for its board), sampled once per session.</summary>
@@ -216,6 +228,8 @@ public sealed class MixService
                 }
                 case TagMix t:
                     return tracks.Count < 12 ? new MixInfo(t.Title, [], LeadIsSubject: false) : new MixInfo(t.Title, RankArtists(tracks).ToList(), LeadIsSubject: false);
+                case NicheMix n:
+                    return tracks.Count < 12 ? new MixInfo(n.Title, [], LeadIsSubject: false) : new MixInfo(n.Title, RankArtists(tracks).ToList(), LeadIsSubject: false);
                 default:
                     return null;
             }
@@ -273,6 +287,8 @@ public sealed class MixService
             }
             case TagMix t:
                 return await TagTracksAsync(client, t, disliked, default).ConfigureAwait(false);
+            case NicheMix n:
+                return await NicheTracksAsync(client, n, disliked, default).ConfigureAwait(false);
             case Station st:
                 return await StationTracksAsync(client, st, disliked, batches, default).ConfigureAwait(false);
             case BuiltMix b:
@@ -295,10 +311,10 @@ public sealed class MixService
                 return plex.Count > 0 ? plex : await RadioFor(a).NextAsync(LocalRadio.BatchSize, ct).ConfigureAwait(false);
             },
             ArtistMix a => ct => RadioFor(a).NextAsync(LocalRadio.BatchSize, ct),
-            TagMix t when NicheMixRecipe.TryFrom(t, out _) => null,
             TagMix t => async ct => await TagTracksAsync(client, t, await _dislikes.GetAsync().ConfigureAwait(false), ct).ConfigureAwait(false),
             Station st => async ct => await StationTracksAsync(client, st, await _dislikes.GetAsync().ConfigureAwait(false), 1, ct).ConfigureAwait(false),
             BuiltMix b => async ct => await BuiltTracksAsync(client, b, await _dislikes.GetAsync().ConfigureAwait(false), ct).ConfigureAwait(false),
+            // NicheMix is intentionally absent. It is a finite mix, not an endless station.
             _ => null,
         };
     }
@@ -366,9 +382,6 @@ public sealed class MixService
 
     private async Task<IReadOnlyList<Track>> TagTracksAsync(PlexServerClient client, TagMix mix, DislikedSet disliked, CancellationToken ct)
     {
-        if (NicheMixRecipe.TryFrom(mix, out var niche))
-            return await NicheTracksAsync(client, niche, disliked, ct).ConfigureAwait(false);
-
         if (_session.Section is not { } section) return [];
         var field = mix.TagKind == MixTagKind.Genre ? "genre" : "mood";
         var result = await client.GetTracksAsync(section.Key, 0, TagBatch, "random", ct, new KeyValuePair<string, string?>(field, mix.Tag)).ConfigureAwait(false);
@@ -384,7 +397,7 @@ public sealed class MixService
     /// A niche mix is an exact intersection of its dimensions. Within that boundary, it balances
     /// familiar music, older favourites and underplayed library tracks instead of drifting outward.
     /// </summary>
-    private async Task<IReadOnlyList<Track>> NicheTracksAsync(PlexServerClient client, NicheMixRecipe mix, DislikedSet disliked, CancellationToken ct)
+    private async Task<IReadOnlyList<Track>> NicheTracksAsync(PlexServerClient client, NicheMix mix, DislikedSet disliked, CancellationToken ct)
     {
         if (_session.Section is not { } section) return [];
         var filters = new List<KeyValuePair<string, string?>>(4);
