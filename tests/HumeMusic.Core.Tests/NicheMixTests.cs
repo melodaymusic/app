@@ -17,7 +17,7 @@ public class NicheMixTests
         LastViewedAt = Now.AddDays(-daysAgo),
         ViewCount = 3,
         Genres = [genre],
-        Moods = [mood],
+        Moods = string.IsNullOrWhiteSpace(mood) ? [] : [mood],
     };
 
     [Fact]
@@ -34,6 +34,25 @@ public class NicheMixTests
 
         Assert.Contains(mixes, x => x.Genre == "Dance Pop" && x.Mood == "Euphoric" && x.Decade == 2010);
         Assert.All(mixes, x => Assert.True(x.Dimensions >= 2));
+    }
+
+    [Fact]
+    public void Uses_artist_moods_when_track_moods_are_sparse()
+    {
+        var recent = new[]
+        {
+            Play("1", "A", 2016, 0, "Dance Pop", string.Empty),
+            Play("2", "B", 2018, 1, "Dance Pop", string.Empty),
+        };
+        IReadOnlyDictionary<string, IReadOnlyList<string>> artistMoods = new Dictionary<string, IReadOnlyList<string>>
+        {
+            ["artist:A"] = ["Euphoric"],
+            ["artist:B"] = ["Euphoric"],
+        };
+
+        var mixes = NicheMixes.Generate(recent, Now, 10, artistMoods);
+
+        Assert.Contains(mixes, x => x.Genre == "Dance Pop" && x.Mood == "Euphoric");
     }
 
     [Fact]
