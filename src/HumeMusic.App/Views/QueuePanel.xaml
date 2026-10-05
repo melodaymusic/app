@@ -34,7 +34,7 @@
             <Button Grid.Column="2" Style="{StaticResource HumeIconButtonStyle}" ToolTipService.ToolTip="Optimize flow"
                     AutomationProperties.Name="Optimize flow" Command="{x:Bind Player.OptimizeFlowCommand}"
                     IsEnabled="{x:Bind Player.HasUpNext, Mode=OneWay}">
-                <controls:LucideIcon Icon="WandSparkles" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+                <controls:LucideIcon Icon="ListMusic" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
             </Button>
             <Button Grid.Column="3" Style="{StaticResource HumeIconButtonStyle}" ToolTipService.ToolTip="Clear up next"
                     AutomationProperties.Name="Clear up next" Command="{x:Bind Player.ClearUpNextCommand}"
@@ -64,6 +64,8 @@
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
                             <TextBlock Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource HumeBodyStrongText}" Foreground="{ThemeResource HumeAccentTextBrush}" />
                             <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" />
+                            <TextBlock Text="{x:Bind helpers:RecommendationReason.For(Player.Track), Mode=OneWay}" Style="{StaticResource HumeSecondaryText}"
+                                       TextWrapping="WrapWholeWords" MaxLines="2" Margin="0,4,0,0" />
                         </StackPanel>
                     </Grid>
                     <TextBlock Text="Nothing is playing" Style="{StaticResource HumeSecondaryText}"
