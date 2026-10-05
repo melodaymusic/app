@@ -24,7 +24,7 @@ public sealed partial class HomeViewModel
         for (var i = ContextualRows.Count - 1; i >= 0; i--)
             if (ContextualRows[i].Identifier == "context.discovery") ContextualRows.RemoveAt(i);
 
-        if (_session.Client is not { } client || _session.Section is not { } section) return;
+        if (Session.Client is not { } client || Session.Section is not { } section) return;
         try
         {
             var disliked = await App.Services.GetRequiredService<Dislikes>().GetAsync();
@@ -107,7 +107,7 @@ public sealed partial class HomeViewModel
                 Title = "Discovery Mix",
                 Subtitle = "Underplayed and unheard corners of your library, chosen from what you tend to like",
                 Items = items,
-                CardStyle = CardStyle.Poster,
+                CardStyle = CardStyle.Tile,
             });
         }
         catch (PlexException)
