@@ -34,8 +34,7 @@ public sealed partial class MadeForYouViewModel : ViewModelBase
         _loadedVersion = libraryVersion;
         await RunAsync(async () =>
         {
-            var mixes = (await _mixes.GetNicheMixesAsync().ConfigureAwait(false))
-                .OrderByDescending(m => m.Support).ToList();
+            var mixes = (await _mixes.GetNicheMixesAsync()).OrderByDescending(m => m.Support).ToList();
             var rows = new List<MediaRow>();
             var used = new HashSet<string>(StringComparer.Ordinal);
             var now = DateTime.Now;
