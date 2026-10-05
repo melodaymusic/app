@@ -1,3 +1,4 @@
+using HumeMusic.Core.Meloday;
 using HumeMusic.Core.Mixes;
 using HumeMusic.Core.Models;
 
@@ -16,7 +17,7 @@ public class NicheMixTests
         Year = year,
         LastViewedAt = Now.AddDays(-daysAgo),
         ViewCount = 3,
-        Genres = [genre],
+        Genres = string.IsNullOrWhiteSpace(genre) ? [] : [genre],
         Moods = string.IsNullOrWhiteSpace(mood) ? [] : [mood],
     };
 
@@ -30,9 +31,11 @@ public class NicheMixTests
             Play("3", "C", 2014, 2, "Dance Pop", "Euphoric"),
         };
 
-        var mixes = NicheMixes.Generate(recent, Now, 10);
+        var mixes = NicheMixes.Generate(recent, Now, 20);
 
         Assert.Contains(mixes, x => x.Genre == "Dance Pop" && x.Mood == "Euphoric" && x.Decade == 2010);
+        Assert.Contains(mixes, x => x.Focus == NicheFocus.Lately);
+        Assert.Contains(mixes, x => x.Focus == NicheFocus.DeepCuts);
         Assert.All(mixes, x => Assert.True(x.Dimensions >= 2));
     }
 
@@ -50,9 +53,69 @@ public class NicheMixTests
             ["artist:B"] = ["Euphoric"],
         };
 
-        var mixes = NicheMixes.Generate(recent, Now, 10, artistMoods);
+        var mixes = NicheMixes.Generate(recent, Now, 20, artistMoods);
 
         Assert.Contains(mixes, x => x.Genre == "Dance Pop" && x.Mood == "Euphoric");
+    }
+
+    [Fact]
+    public void Learns_current_time_and_day_context_from_history()
+    {
+        var recent = new[]
+        {
+            Play("1", "A", 2024, 1, "R&B", "Atmospheric"),
+            Play("2", "B", 2025, 2, "R&B", "Atmospheric"),
+        };
+        var history = new[]
+        {
+            new HistoryPlay("1", null, "A", Now.AddDays(-7)),
+            new HistoryPlay("2", null, "B", Now.AddDays(-14)),
+        };
+
+        var mixes = NicheMixes.Generate(recent, Now, 30, history: history);
+
+        Assert.Contains(mixes, x => x.Context == "Night");
+        Assert.Contains(mixes, x => x.Context == "Weekend");
+    }
+
+    [Fact]
+    public void Learns_energy_only_from_supplied_audio_signal()
+    {
+        var recent = new[]
+        {
+            Play("1", "A", 2024, 1, "Dance", "Energetic"),
+            Play("2", "B", 2025, 2, "Dance", "Energetic"),
+        };
+        IReadOnlyDictionary<string, NicheEnergy> energy = new Dictionary<string, NicheEnergy>
+        {
+            ["1"] = NicheEnergy.High,
+            ["2"] = NicheEnergy.High,
+        };
+
+        var mixes = NicheMixes.Generate(recent, Now, 30, energy: energy);
+
+        Assert.Contains(mixes, x => x.Energy == NicheEnergy.High);
+    }
+
+    [Fact]
+    public void Learns_artist_circles_from_repeated_sessions()
+    {
+        var recent = new[]
+        {
+            Play("1", "A", 2024, 1, "Pop", "Bright"),
+            Play("2", "B", 2025, 2, "Pop", "Bright"),
+        };
+        var history = new[]
+        {
+            new HistoryPlay("1", null, "A", Now.AddDays(-10)),
+            new HistoryPlay("2", null, "B", Now.AddDays(-10).AddMinutes(12)),
+            new HistoryPlay("1", null, "A", Now.AddDays(-5)),
+            new HistoryPlay("2", null, "B", Now.AddDays(-5).AddMinutes(18)),
+        };
+
+        var mixes = NicheMixes.Generate(recent, Now, 40, history: history);
+
+        Assert.Contains(mixes, x => x.Artists.Count == 2 && x.Artists.Contains("A") && x.Artists.Contains("B"));
     }
 
     [Fact]
@@ -64,7 +127,7 @@ public class NicheMixTests
             Play("2", "B", 1997, 0, "Trip Hop", "Brooding"),
         };
 
-        Assert.Empty(NicheMixes.Generate(recent, Now, 10));
+        Assert.Empty(NicheMixes.Generate(recent, Now, 20));
     }
 
     [Fact]
@@ -84,9 +147,10 @@ public class NicheMixTests
     }
 
     [Fact]
-    public void Recipe_survives_tag_mix_reference_restore()
+    public void Extended_recipe_survives_tag_mix_reference_restore()
     {
-        var live = new NicheMixRecipe("Dance Pop", "Euphoric", 2010, 2.5).ToMix();
+        var live = new NicheMixRecipe("Dance Pop", "Euphoric", null, 2.5, "Night", NicheFocus.Sonic,
+            NicheEnergy.High, "42", "Seed Song", ["A", "B"]).ToMix();
         var restored = new TagMix
         {
             RatingKey = live.RatingKey,
@@ -99,7 +163,12 @@ public class NicheMixTests
         Assert.True(NicheMixRecipe.TryFrom(restored, out var recipe));
         Assert.Equal("Dance Pop", recipe.Genre);
         Assert.Equal("Euphoric", recipe.Mood);
-        Assert.Equal(2010, recipe.Decade);
+        Assert.Equal("Night", recipe.Context);
+        Assert.Equal(NicheFocus.Sonic, recipe.Focus);
+        Assert.Equal(NicheEnergy.High, recipe.Energy);
+        Assert.Equal("42", recipe.SeedTrackKey);
+        Assert.Equal("Seed Song", recipe.SeedTrackTitle);
+        Assert.Equal(["A", "B"], recipe.Artists);
     }
 
     [Fact]
@@ -111,6 +180,6 @@ public class NicheMixTests
             Play("2", "B", 2025, 0, "Pop", "ArtistPopular"),
         };
 
-        Assert.DoesNotContain(NicheMixes.Generate(recent, Now, 10), x => x.Mood == "ArtistPopular");
+        Assert.DoesNotContain(NicheMixes.Generate(recent, Now, 20), x => x.Mood == "ArtistPopular");
     }
 }
