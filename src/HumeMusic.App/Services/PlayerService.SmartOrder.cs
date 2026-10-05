@@ -30,7 +30,7 @@ public sealed partial class PlayerService
         // SmartOrder returns tracks. Map them back to the queue-entry occurrences so duplicate songs
         // remain distinct and then use the queue's normal move operation to preserve the current entry.
         var remaining = upcomingEntries.ToList();
-        var orderedEntries = new List<Core.Playback.QueueEntry>(remaining.Count);
+        var orderedEntries = new List<QueueEntry>(remaining.Count);
         foreach (var track in orderedTracks)
         {
             var match = remaining.FindIndex(e => ReferenceEquals(e.Track, track) || e.Track.RatingKey == track.RatingKey);
