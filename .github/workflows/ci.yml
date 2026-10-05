@@ -1,0 +1,33 @@
+name: Build and test
+
+on:
+  push:
+    branches: [main, feature/niche-mixes]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restore
+        run: dotnet restore HumeMusic.sln -p:Platform=x64
+
+      - name: Build
+        run: dotnet build HumeMusic.sln -c Release -p:Platform=x64 -p:WindowsAppSDKSelfContained=false -p:SelfContained=false --no-restore
+
+      - name: Test
+        run: dotnet test tests/HumeMusic.Core.Tests/HumeMusic.Core.Tests.csproj -c Release --no-restore --logger "console;verbosity=normal"
