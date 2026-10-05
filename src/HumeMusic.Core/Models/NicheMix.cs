@@ -54,3 +54,13 @@ public sealed class NicheMix : TagMix
         _ => "Niche mix",
     };
 }
+
+/// <summary>
+/// A daily finite set of unplayed, underplayed and forgotten music chosen from the listener's own
+/// Plex library. It uses TagMix as a transport so existing mix cards, menus and pins can carry it.
+/// </summary>
+public sealed class DiscoveryMix : TagMix
+{
+    public const string StableRatingKey = "mix:discovery";
+    public override string Subtitle => "Discovery mix";
+}
