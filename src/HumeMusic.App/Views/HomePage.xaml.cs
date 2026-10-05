@@ -49,7 +49,10 @@ public sealed partial class HomePage : Page
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);
-        await ViewModel.EnsureLoadedAsync(App.Services.GetRequiredService<ShellViewModel>().LibraryVersion);
+        var version = App.Services.GetRequiredService<ShellViewModel>().LibraryVersion;
+        await ViewModel.EnsureLoadedAsync(version);
+        await ViewModel.EnsureContextualRowsAsync(version);
+        ViewModel.ApplyContextualRows();
     }
 
     private void OnMadeForYouClick(object sender, RoutedEventArgs e) =>
