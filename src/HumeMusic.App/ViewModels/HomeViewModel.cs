@@ -35,7 +35,6 @@ public sealed class MediaRow
 /// </summary>
 public sealed partial class HomeViewModel : ViewModelBase
 {
-    // Plex hubs that duplicate rows Hume builds itself.
     private static readonly HashSet<string> DuplicateHubs = new(StringComparer.OrdinalIgnoreCase)
     {
         "music.recent.added", "music.recent.played", "music.playlists", "home.music.recent",
@@ -60,7 +59,6 @@ public sealed partial class HomeViewModel : ViewModelBase
     private int _loadedVersion = -1;
     private DateTime _loadedAt;
 
-    // Home quietly follows new listening and library changes once it's this old.
     private static readonly TimeSpan StaleAfter = TimeSpan.FromMinutes(10);
 
     public HomeViewModel(PlexSession session, PinStore pins, NavigationService navigation, HomeLayoutService layout, MixService mixes,
@@ -75,7 +73,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         _mixes = mixes;
         _stations = stations;
         _layout = layout;
-        // Pinned items are a section like any other, so the listener can move or hide them too.
         _pinnedRow = new MediaRow { Title = "Pinned", Items = Pinned, Identifier = PinnedId, CanReorder = true };
         _layout.Changed += (_, _) => DispatcherQueue.GetForCurrentThread()?.TryEnqueue(ApplyLayout);
         _navigation = navigation;
@@ -85,14 +82,11 @@ public sealed partial class HomeViewModel : ViewModelBase
             RefreshPinned();
             _ = ResolvePinsAsync(onlyUnresolved: true);
         });
-        // Home's playlists follow changes made in the app.
         App.Services.GetRequiredService<LibraryActions>().PlaylistsChanged += (_, _) => _dispatcher.TryEnqueue(async () =>
         {
-            // The edit already told the cache; Home's own answers are fetched fresh, the rest stays kept.
             using (Core.Caching.ResponseCache.FetchFresh())
                 await LoadCoreAsync(quiet: true);
         });
-        // The greeting follows the clock (no "Good evening" at 6am).
         _clock = _dispatcher.CreateTimer();
         _clock.Interval = TimeSpan.FromMinutes(1);
         _clock.Tick += (_, _) =>
@@ -109,24 +103,18 @@ public sealed partial class HomeViewModel : ViewModelBase
     public ObservableCollection<MediaItem> Pinned { get; } = [];
 
     [ObservableProperty] public partial string Greeting { get; private set; } = "Good evening";
-    /// <summary>What the listener played last: it is featured large; the eight before it sit beside it.</summary>
     [ObservableProperty] public partial MediaItem? Featured { get; private set; }
     [ObservableProperty] public partial string FeaturedTitle { get; private set; } = string.Empty;
-    /// <summary>An album's artist (a link), or what the item is ("Playlist", "Radio").</summary>
     [ObservableProperty] public partial string FeaturedSubtitle { get; private set; } = string.Empty;
     [ObservableProperty] public partial bool FeaturedHasArtist { get; private set; }
     [ObservableProperty] public partial string? FeaturedCover { get; private set; }
     [ObservableProperty] public partial string FeaturedMeta { get; private set; } = string.Empty;
-    /// <summary>The eight played before the featured one.</summary>
     public ObservableCollection<MediaItem> JumpBackIn { get; } = [];
-    /// <summary>"2h 15m": how long the listener has listened today, counting up as music plays.</summary>
     [ObservableProperty] public partial string TodayListening { get; private set; } = "0m";
-    /// <summary>The page's title: "Jump back in", or "Home" when that is hidden.</summary>
     [ObservableProperty] public partial string HeaderTitle { get; private set; } = "Jump back in";
 
     private void UpdateListening() => TodayListening = Core.Home.ListeningClock.Describe(_listening.Today);
     [ObservableProperty] public partial bool HasPinned { get; private set; }
-    /// <summary>"Jump back in" is shown: there is something to feature and the listener hasn't hidden it.</summary>
     [ObservableProperty] public partial bool ShowFeatured { get; private set; }
 
     public async Task EnsureLoadedAsync(int libraryVersion)
@@ -135,29 +123,19 @@ public sealed partial class HomeViewModel : ViewModelBase
         RefreshPinned();
         if (_loadedVersion == libraryVersion && Rows.Count > 0)
         {
-            // Already showing: refresh in place, without the loading skeleton, once it's gone stale.
             if (DateTime.UtcNow - _loadedAt > StaleAfter) await RefreshAsync();
             return;
         }
         if (_loadedVersion != libraryVersion) _resolvedPins.Clear();
         _loadedVersion = libraryVersion;
         await LoadAsync();
-        // Home opened from what was kept from last time: a few seconds on, it quietly catches up with
-        // anything played or added since (recently played, new albums).
         await Task.Delay(TimeSpan.FromSeconds(6));
         await RefreshAsync();
     }
 
-    /// <summary>
-    /// Brings Home up to date without a loading state (the app came back after a while, or Home went
-    /// stale): only sections whose contents changed are replaced.
-    /// </summary>
     public async Task RefreshAsync()
     {
         if (IsLoading || Rows.Count == 0) return;
-        // Mixes keep their own lifetime (they follow listening, rebuilt every 20 minutes); rebuilding
-        // them on every refresh asked the server for dozens of things each time Home was opened.
-        // Home's own answers come fresh from the server; everything else kept stays as it is.
         using (Core.Caching.ResponseCache.FetchFresh())
             await LoadCoreAsync(quiet: true);
     }
@@ -167,7 +145,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         var hour = DateTime.Now.Hour;
         var greeting = hour < 5 ? "Late night listening" : hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
         var name = Session.Account?.Name?.Trim();
-        // The first name reads warmer ("Good evening, David"); usernames are used as they are.
         if (!string.IsNullOrEmpty(name) && Session.Account?.DisplayName is { Length: > 0 }) name = name.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
         Greeting = string.IsNullOrEmpty(name) || hour < 5 ? greeting : $"{greeting}, {name}";
     }
@@ -196,13 +173,10 @@ public sealed partial class HomeViewModel : ViewModelBase
             var stations = _stations.GetCatalogAsync();
 
             await Task.WhenAll(recentlyPlayed, recentlyAdded, mostPlayedArtists, mostPlayedAlbums, playlists, collections, hubs);
-            // Mixes and stations are worked out from many answers; Home doesn't wait long for them; they
-            // join it when they're ready.
             var extras = Task.WhenAll(mixes, stations);
             if (!extras.IsCompleted && await Task.WhenAny(extras, Task.Delay(250)) != extras)
                 _ = extras.ContinueWith(_ => _dispatcher.TryEnqueue(async () => await LoadCoreAsync(quiet: true)), TaskScheduler.Default);
 
-            // Jump back in: the nine latest things the listener played, the last featured.
             var jump = await BuildJumpBackInAsync(recentlyPlayed.Result.Items, playlists.Result.Items, recentlyAdded.Result.Items);
             var featured = jump.FirstOrDefault();
             var rows = new List<MediaRow>();
@@ -213,7 +187,6 @@ public sealed partial class HomeViewModel : ViewModelBase
                 if (list.Count > 0) rows.Add(new MediaRow { Title = title, Items = list, Subtitle = subtitle, Identifier = id, SeeAllCommand = seeAll, CardStyle = style });
             }
 
-            // Billboards: new albums shown on their artist's backdrop, alternating with artist spotlights.
             var newAlbums = recentlyAdded.Result.Items.Where(a => !string.IsNullOrEmpty(a.Art)).DistinctBy(a => a.ArtistRatingKey).Take(6)
                 .Select(a => new BoardItem { Item = a, Eyebrow = "New album", Title = a.Title, Subtitle = a.ArtistTitle, Detail = a.Year?.ToString(), ArtPath = a.Art });
             var spotlights = mostPlayedArtists.Result.Items.Where(a => !string.IsNullOrEmpty(a.Art)).Take(6)
@@ -230,11 +203,17 @@ public sealed partial class HomeViewModel : ViewModelBase
             Add("Most Played", mostPlayedAlbums.Result.Items.Where(a => a.ViewCount > 1),
                 SeeAll(typeof(AlbumsPage), "viewCount:desc"), id: "top.albums");
 
-            // Mixes that follow recent listening: artist mixes plus genre and mood mixes.
             if (mixes.IsCompletedSuccessfully)
-                Add("Mixes for You", mixes.Result, id: "artist.mixes", style: CardStyle.ColourBoard);
+            {
+                var niche = mixes.Result.OfType<NicheMix>().Cast<object>().ToList();
+                var regular = mixes.Result.Where(m => m is not NicheMix).Cast<object>().ToList();
+                Add("Mixes for You", regular, id: "artist.mixes", style: CardStyle.ColourBoard);
+                Add("Niche Mixes", niche,
+                    new RelayCommand(() => _navigation.Navigate(typeof(MadeForYouPage))),
+                    "Specific corners of your taste, built from more than one signal",
+                    id: "niche.mixes", style: CardStyle.ColourBoard);
+            }
 
-            // Plex's stations (Plex Pass); the rest of Radio is on its page.
             if (stations.IsCompletedSuccessfully && stations.Result.Stations.Count > 0)
                 Add("Stations", stations.Result.Stations, SeeAll(typeof(RadioPage), null), id: "stations", style: CardStyle.StationBoard);
 
@@ -247,13 +226,11 @@ public sealed partial class HomeViewModel : ViewModelBase
             {
                 if (DuplicateHubs.Contains(hub.Identifier)) continue;
                 if (rows.Any(r => string.Equals(r.Title, hub.Title, StringComparison.OrdinalIgnoreCase))) continue;
-                // Plex's own collection hubs are already represented by the Collections row.
                 if (hub.Identifier.StartsWith("custom.collection", StringComparison.OrdinalIgnoreCase) && hub.Items.Count == 0) continue;
                 Add(hub.Title, hub.Items, id: hub.Identifier);
             }
 
             ShowJump(jump);
-            // Sections need stable, unique ids for the listener's arrangement.
             var seen = new HashSet<string> { PinnedId };
             var previous = _defaultRows.ToDictionary(r => r.Identifier!);
             _defaultRows = rows.Select(r => r.Identifier is { Length: > 0 } ? r : new MediaRow
@@ -261,7 +238,6 @@ public sealed partial class HomeViewModel : ViewModelBase
                 Title = r.Title, Subtitle = r.Subtitle, Items = r.Items, CardStyle = r.CardStyle, SeeAllCommand = r.SeeAllCommand,
                 Identifier = "hub:" + r.Title,
             }).Where(r => seen.Add(r.Identifier!))
-                // A section whose contents haven't changed keeps its row, so a refresh doesn't redraw it.
                 .Select(r => previous.TryGetValue(r.Identifier!, out var old) && SameContents(old, r) ? old : r)
                 .ToList();
             _layout.UpdateCatalog([(PinnedId, _pinnedRow.Title), .. _defaultRows.Select(r => (r.Identifier!, r.Title))]);
@@ -273,13 +249,8 @@ public sealed partial class HomeViewModel : ViewModelBase
     private ICommand SeeAll(Type page, string? sort) => new RelayCommand(() => _navigation.Navigate(page, sort));
 
     partial void OnFeaturedChanged(MediaItem? value) => ShowFeatured = value is not null && _layout.ShowJumpBackIn;
-
     partial void OnShowFeaturedChanged(bool value) => HeaderTitle = value ? "Jump back in" : "Home";
 
-    /// <summary>
-    /// Lays Home out in the listener's order, leaving out hidden sections (and Pinned while nothing is
-    /// pinned). Only the arrangement changes; nothing is fetched again.
-    /// </summary>
     private void ApplyLayout()
     {
         var all = new List<MediaRow> { _pinnedRow };
@@ -293,7 +264,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         {
             if (visible.Select(r => r.Identifier).SequenceEqual(Rows.Select(r => r.Identifier)))
             {
-                // Same sections, some with new contents: swap just those rows.
                 for (var i = 0; i < visible.Count; i++)
                     if (!ReferenceEquals(Rows[i], visible[i])) Rows[i] = visible[i];
             }
@@ -307,9 +277,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         IsEmpty = Rows.Count == 0 && !ShowFeatured;
     }
 
-    // ------------------------------------------------------------------ pinned
-
-    /// <summary>Rebuilds the pinned collection from the local store, using resolved Plex data where available.</summary>
     private void RefreshPinned()
     {
         var server = Session.Server?.MachineIdentifier;
@@ -327,17 +294,11 @@ public sealed partial class HomeViewModel : ViewModelBase
         if (HasPinned != hadPinned) ApplyLayout();
     }
 
-    /// <summary>
-    /// Refreshes pinned items from Plex (titles and artwork may have changed) and drops pins whose
-    /// items were deleted. Pins are never removed because of a network failure.
-    /// </summary>
     private async Task ResolvePinsAsync(bool onlyUnresolved)
     {
         if (Session.Client is not { } client || Session.Server?.MachineIdentifier is not { } server) return;
         var pins = _pins.GetPins(server);
-        // Only Plex's own items are asked of Plex; what Meloday makes (stations, mixes, tags) isn't on the server.
         var keys = pins.Where(p => !ItemRefs.IsSynthetic(p.Kind)).Select(p => p.RatingKey).Where(k => !onlyUnresolved || !_resolvedPins.ContainsKey(k)).ToList();
-        // Stations, mixes and tags get their still covers drawn (and Meloday's follows the mix).
         _ = App.Services.GetRequiredService<LibraryActions>().EnsurePinCoversAsync();
         if (keys.Count == 0) return;
         try
@@ -358,7 +319,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         ItemRefs.ToItem(pin.Kind, pin.RatingKey, pin.Title, pin.Thumb, pin.Data)
         ?? new Album { RatingKey = pin.RatingKey, Title = pin.Title, Thumb = pin.Thumb };
 
-    /// <summary>A pin as the list shows it: Plex's item (as resolved, or as kept), or a still cover for what Meloday makes.</summary>
     private MediaItem PinnedItemFor(PinnedItem pin)
     {
         if (!ItemRefs.IsSynthetic(pin.Kind)) return _resolvedPins.TryGetValue(pin.RatingKey, out var resolved) ? resolved : Placeholder(pin);
@@ -370,15 +330,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         return card;
     }
 
-    // ------------------------------------------------------------------ jump back in
-
     private const int JumpCount = 9;
 
-    /// <summary>
-    /// The latest things the listener played, newest first: what they played here (albums, playlists,
-    /// stations, mixes...) and what Plex says was played lately (other apps too). Made things come with
-    /// their still covers. Falls back to new albums for a listener with no history.
-    /// </summary>
     private async Task<List<MediaItem>> BuildJumpBackInAsync(IReadOnlyList<Album> albums, IReadOnlyList<Playlist> playlists, IReadOnlyList<Album> added)
     {
         var server = Session.Server?.MachineIdentifier ?? string.Empty;
@@ -401,7 +354,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
         if (chosen.Count == 0) chosen.AddRange(added.Take(JumpCount));
 
-        // What the listener played here that Plex's lists don't hold is asked of Plex (placeholders hold only a title and picture).
         if (Session.Client is { } client)
         {
             var ask = chosen.Where(i => !ItemRefs.IsSynthetic(ItemRefs.KindOf(i)!.Value) && !plex.ContainsKey($"{ItemRefs.KindOf(i)}:{i.RatingKey}")).ToList();
@@ -416,7 +368,6 @@ public sealed partial class HomeViewModel : ViewModelBase
                         if (found.TryGetValue(chosen[i].RatingKey, out var real)) chosen[i] = real;
                         else
                         {
-                            // Gone from the library: forgotten here too.
                             if (ItemRefs.KindOf(chosen[i]) is { } gone) _recents.Forget(server, gone, chosen[i].RatingKey);
                             chosen[i] = null!;
                         }
@@ -431,14 +382,12 @@ public sealed partial class HomeViewModel : ViewModelBase
         }
 
         var shown = chosen.Take(JumpCount).ToList();
-        // A made thing (a station, a mix) is shown as its still cover.
         var covers = await Task.WhenAll(shown.Select(i => StaticCovers.Applies(i) ? _covers.GetAsync(i) : Task.FromResult<string?>(null)));
         for (var i = 0; i < shown.Count; i++)
             if (covers[i] is { } cover) shown[i] = new PinnedCover { RatingKey = shown[i].RatingKey, Title = shown[i].Title, Thumb = cover, Target = shown[i] };
         return shown;
     }
 
-    /// <summary>The first is featured; the rest are the tabs beside it. Only what changed is replaced.</summary>
     private void ShowJump(IReadOnlyList<MediaItem> jump)
     {
         var featured = jump.FirstOrDefault();
@@ -467,7 +416,6 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     private async Task<T?> SafeAsync<T>(Task<T> task) where T : class
     {
-        // Hubs and collections are optional enrichment: a failure here must not blank the whole page.
         try { return await task; }
         catch (PlexException ex)
         {

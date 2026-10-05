@@ -133,7 +133,7 @@ public sealed partial class ColourBoard : UserControl
 
     /// <summary>
     /// A mix: its name, "Featuring ..." the artists in it and its three leading artists as circles.
-    /// An artist mix takes the colour of the artist's photo; a genre or mood mix the tag's own colour.
+    /// An artist mix takes the colour of the artist's photo; tag and niche mixes use a stable tag seed.
     /// </summary>
     private async void UpdateMix(MediaItem mix)
     {
@@ -151,7 +151,14 @@ public sealed partial class ColourBoard : UserControl
         var infoTask = App.Services.GetRequiredService<MixService>().GetAsync(mix);
         uint? colour = artistMix is null ? null : await App.Services.GetRequiredService<ArtworkService>().GetDominantColorAsync(artistMix.Artist.Thumb);
         if (!ReferenceEquals(mix, Item)) return;
-        ApplyColour(colour, mix is TagMix tag ? tag.Tag : artistMix!.Artist.Title);
+        var colourSeed = mix switch
+        {
+            NicheMix niche => niche.ColourSeed,
+            TagMix tag => tag.Tag,
+            ArtistMix artist => artist.Artist.Title,
+            _ => mix.Title,
+        };
+        ApplyColour(colour, colourSeed);
         // The circles sit on the darker shade of the panel's palette colour.
         if (_colour is { } panel)
         {

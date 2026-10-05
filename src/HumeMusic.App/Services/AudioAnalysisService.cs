@@ -41,8 +41,34 @@ public sealed class AudioAnalysisService
     /// <summary>How a song closes (its last minute).</summary>
     public Task<AudioAnalysis?> TailAsync(Track track) => Get(track, head: false);
 
-    private Task<AudioAnalysis?> Get(Track track, bool head) =>
-        _results.GetOrAdd($"{track.RatingKey}|{(head ? "head" : "tail")}", key => LoadAsync(track, head, key));
+    /// <summary>
+    /// Returns an opening analysis only when AutoMix has already made or is making it. Recommendation
+    /// generation must never trigger a wave of audio downloads or analysis by itself.
+    /// </summary>
+    public async Task<AudioAnalysis?> CachedHeadAsync(Track track)
+    {
+        var key = Key(track, head: true);
+        if (_results.TryGetValue(key, out var active)) return await active.ConfigureAwait(false);
+        try
+        {
+            var path = PathFor(key);
+            if (File.Exists(path) && JsonSerializer.Deserialize<Kept>(await File.ReadAllTextAsync(path).ConfigureAwait(false), Json)
+                is { Version: AnalysisVersion, Analysis: { } kept }) return kept;
+        }
+        catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException)
+        {
+        }
+        return null;
+    }
+
+    private Task<AudioAnalysis?> Get(Track track, bool head)
+    {
+        var key = Key(track, head);
+        return _results.GetOrAdd(key, _ => LoadAsync(track, head, key));
+    }
+
+    private static string Key(Track track, bool head) => $"{track.RatingKey}|{(head ? "head" : "tail")}";
+    private string PathFor(string key) => Path.Combine(_folder, key.Replace('|', '-') + ".json");
 
     private sealed class Kept
     {
@@ -55,7 +81,7 @@ public sealed class AudioAnalysisService
 
     private async Task<AudioAnalysis?> LoadAsync(Track track, bool head, string key)
     {
-        var path = Path.Combine(_folder, key.Replace('|', '-') + ".json");
+        var path = PathFor(key);
         try
         {
             if (File.Exists(path) && JsonSerializer.Deserialize<Kept>(await File.ReadAllTextAsync(path), Json) is { Version: AnalysisVersion, Analysis: { } kept })
