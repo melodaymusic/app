@@ -50,6 +50,44 @@ public sealed partial class HomeViewModel
                 return (await client.GetItemsAsync(keys)).OfType<Album>().Take(take).ToList();
             }
 
+            IReadOnlyList<(Playlist Playlist, IReadOnlyList<Track> Tracks)> playlistSamples = [];
+            try
+            {
+                var playlists = (await client.GetPlaylistsAsync(0, 16, sort: "updatedAt:desc")).Items;
+                playlistSamples = await Task.WhenAll(playlists.Select(async playlist =>
+                {
+                    var tracks = (await client.GetPlaylistItemsAsync(playlist.RatingKey, 0, 80)).Items;
+                    return (playlist, (IReadOnlyList<Track>)tracks);
+                }));
+            }
+            catch (PlexException)
+            {
+                // Contextual rails still work with albums and mixes when playlists are unavailable.
+            }
+
+            IReadOnlyList<Playlist> PlaylistsFor(IEnumerable<HistoryPlay> source)
+            {
+                var artists = source.Select(p => p.Artist).Where(a => !string.IsNullOrWhiteSpace(a))
+                    .Select(a => a!.Trim()).GroupBy(a => a, StringComparer.OrdinalIgnoreCase)
+                    .OrderByDescending(g => g.Count()).Take(16).Select(g => g.Key)
+                    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+                if (artists.Count < 3) return [];
+
+                return playlistSamples.Select(sample =>
+                    {
+                        var represented = sample.Tracks.Select(t => t.DisplayArtist)
+                            .Where(artists.Contains).Distinct(StringComparer.OrdinalIgnoreCase).Count();
+                        var matching = sample.Tracks.Count(t => artists.Contains(t.DisplayArtist));
+                        var ratio = sample.Tracks.Count == 0 ? 0 : matching / (double)sample.Tracks.Count;
+                        return (sample.Playlist, Score: ratio + Math.Min(0.5, represented * 0.08), represented);
+                    })
+                    .Where(x => x.represented >= 3 && x.Score >= 0.34)
+                    .OrderByDescending(x => x.Score)
+                    .Take(2)
+                    .Select(x => x.Playlist)
+                    .ToList();
+            }
+
             void Add(double confidence, string id, string title, string subtitle, IEnumerable<MediaItem> items)
             {
                 var distinct = items.DistinctBy(i => i.RatingKey).Take(12).Cast<object>().ToList();
@@ -68,32 +106,35 @@ public sealed partial class HomeViewModel
             var periodPlays = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(90)
                 && period.Hours.Contains(p.ViewedAt.LocalDateTime.Hour)).ToList();
             var periodAlbums = await AlbumsFor(periodPlays);
+            var periodPlaylists = PlaylistsFor(periodPlays);
             var periodMixes = niches.Where(n => string.Equals(n.Context, period.Name, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(n => n.Support).Take(3).Cast<MediaItem>();
             var periodArtists = periodPlays.Select(p => p.Artist).Where(a => !string.IsNullOrWhiteSpace(a))
                 .Distinct(StringComparer.OrdinalIgnoreCase).Count();
             var periodConfidence = Math.Min(1, periodPlays.Count / 24.0) * Math.Min(1, periodArtists / 4.0);
             Add(periodConfidence, "context.time", PeriodTitle(period.Name),
-                $"Music that repeatedly fits your {period.Name.ToLowerInvariant()} listening",
-                periodAlbums.Cast<MediaItem>().Concat(periodMixes));
+                $"Albums, playlists and mixes that repeatedly fit your {period.Name.ToLowerInvariant()} listening",
+                periodPlaylists.Cast<MediaItem>().Concat(periodAlbums).Concat(periodMixes));
 
             var dayPlays = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(120)
                 && p.ViewedAt.LocalDateTime.DayOfWeek == now.DayOfWeek
                 && period.Hours.Contains(p.ViewedAt.LocalDateTime.Hour)).ToList();
             var dayAlbums = await AlbumsFor(dayPlays);
+            var dayPlaylists = PlaylistsFor(dayPlays);
             var dayConfidence = Math.Min(1, dayPlays.Count / 18.0)
                 * Math.Min(1, dayPlays.Select(p => p.Artist).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.OrdinalIgnoreCase).Count() / 4.0);
             Add(dayConfidence, "context.day", $"{now:dddd} {ShortPeriod(period.Name)}",
-                $"What tends to fit this part of your {now:dddd}s", dayAlbums);
+                $"What tends to fit this part of your {now:dddd}s", dayPlaylists.Cast<MediaItem>().Concat(dayAlbums));
 
             var season = Season(now.Month);
             var seasonMonths = SeasonMonths(now.Month);
             var seasonPlays = history.Where(p => seasonMonths.Contains(p.ViewedAt.LocalDateTime.Month)).ToList();
             var seasonAlbums = await AlbumsFor(seasonPlays);
+            var seasonPlaylists = PlaylistsFor(seasonPlays);
             var seasonYears = seasonPlays.Select(p => p.ViewedAt.Year).Distinct().Count();
             var seasonConfidence = Math.Min(1, seasonPlays.Count / 32.0) * (seasonYears >= 2 ? 1 : 0.72);
             Add(seasonConfidence, "context.season", $"Your {season} Rotation",
-                $"Music that has kept showing up for you in {season.ToLowerInvariant()}", seasonAlbums);
+                $"Music that has kept showing up for you in {season.ToLowerInvariant()}", seasonPlaylists.Cast<MediaItem>().Concat(seasonAlbums));
 
             var lastYear = now.AddYears(-1);
             var recentAlbums = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(60) && p.AlbumKey is not null)
