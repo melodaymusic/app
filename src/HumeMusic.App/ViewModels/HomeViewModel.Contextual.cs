@@ -32,8 +32,8 @@ public sealed partial class HomeViewModel
         {
             var now = DateTimeOffset.Now;
             var account = _session.Server?.Owned == true ? "1" : null;
-            var history = await client.GetHistoryAsync(section.Key, now.AddDays(-400), account, max: 6000).ConfigureAwait(false);
-            var niches = await _mixes.GetNicheMixesAsync().ConfigureAwait(false);
+            var history = await client.GetHistoryAsync(section.Key, now.AddDays(-400), account, max: 6000);
+            var niches = await _mixes.GetNicheMixesAsync();
             var candidates = new List<(double Confidence, MediaRow Row)>();
 
             async Task<IReadOnlyList<Album>> AlbumsFor(IEnumerable<HistoryPlay> source, int take = 10,
@@ -47,7 +47,7 @@ public sealed partial class HomeViewModel
                     .Select(g => g.Key)
                     .ToList();
                 if (keys.Count == 0) return [];
-                return (await client.GetItemsAsync(keys).ConfigureAwait(false)).OfType<Album>().Take(take).ToList();
+                return (await client.GetItemsAsync(keys)).OfType<Album>().Take(take).ToList();
             }
 
             void Add(double confidence, string id, string title, string subtitle, IEnumerable<MediaItem> items)
@@ -67,7 +67,7 @@ public sealed partial class HomeViewModel
             var period = MelodayPeriods.At(now.LocalDateTime);
             var periodPlays = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(90)
                 && period.Hours.Contains(p.ViewedAt.LocalDateTime.Hour)).ToList();
-            var periodAlbums = await AlbumsFor(periodPlays).ConfigureAwait(false);
+            var periodAlbums = await AlbumsFor(periodPlays);
             var periodMixes = niches.Where(n => string.Equals(n.Context, period.Name, StringComparison.OrdinalIgnoreCase))
                 .OrderByDescending(n => n.Support).Take(3).Cast<MediaItem>();
             var periodArtists = periodPlays.Select(p => p.Artist).Where(a => !string.IsNullOrWhiteSpace(a))
@@ -77,34 +77,30 @@ public sealed partial class HomeViewModel
                 $"Music that repeatedly fits your {period.Name.ToLowerInvariant()} listening",
                 periodAlbums.Cast<MediaItem>().Concat(periodMixes));
 
-            // A day-specific shelf only appears when this weekday really has enough repeated behaviour.
             var dayPlays = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(120)
                 && p.ViewedAt.LocalDateTime.DayOfWeek == now.DayOfWeek
                 && period.Hours.Contains(p.ViewedAt.LocalDateTime.Hour)).ToList();
-            var dayAlbums = await AlbumsFor(dayPlays).ConfigureAwait(false);
+            var dayAlbums = await AlbumsFor(dayPlays);
             var dayConfidence = Math.Min(1, dayPlays.Count / 18.0)
                 * Math.Min(1, dayPlays.Select(p => p.Artist).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct(StringComparer.OrdinalIgnoreCase).Count() / 4.0);
             Add(dayConfidence, "context.day", $"{now:dddd} {ShortPeriod(period.Name)}",
                 $"What tends to fit this part of your {now:dddd}s", dayAlbums);
 
-            // Seasonal shelves are based on the listener's actual history in these months, including
-            // previous years, rather than assuming what 'autumn music' should sound like.
             var season = Season(now.Month);
             var seasonMonths = SeasonMonths(now.Month);
             var seasonPlays = history.Where(p => seasonMonths.Contains(p.ViewedAt.LocalDateTime.Month)).ToList();
-            var seasonAlbums = await AlbumsFor(seasonPlays).ConfigureAwait(false);
+            var seasonAlbums = await AlbumsFor(seasonPlays);
             var seasonYears = seasonPlays.Select(p => p.ViewedAt.Year).Distinct().Count();
             var seasonConfidence = Math.Min(1, seasonPlays.Count / 32.0) * (seasonYears >= 2 ? 1 : 0.72);
             Add(seasonConfidence, "context.season", $"Your {season} Rotation",
                 $"Music that has kept showing up for you in {season.ToLowerInvariant()}", seasonAlbums);
 
-            // Personal nostalgia, but do not fill it with albums the listener is already playing now.
             var lastYear = now.AddYears(-1);
             var recentAlbums = history.Where(p => now - p.ViewedAt <= TimeSpan.FromDays(60) && p.AlbumKey is not null)
                 .Select(p => p.AlbumKey!).ToHashSet(StringComparer.Ordinal);
             var lastYearPlays = history.Where(p => p.ViewedAt.Year == lastYear.Year
                 && Math.Abs(p.ViewedAt.DayOfYear - lastYear.DayOfYear) <= 21).ToList();
-            var lastYearAlbums = await AlbumsFor(lastYearPlays, exclude: recentAlbums).ConfigureAwait(false);
+            var lastYearAlbums = await AlbumsFor(lastYearPlays, exclude: recentAlbums);
             var lastYearConfidence = Math.Min(1, lastYearPlays.Count / 18.0);
             Add(lastYearConfidence, "context.lastyear", "This Time Last Year",
                 "Music you were playing around now that has slipped out of rotation", lastYearAlbums);
@@ -116,15 +112,12 @@ public sealed partial class HomeViewModel
                 .Select(c => c.Row)
                 .ToList();
 
-            await _dispatcher.EnqueueAsync(() =>
-            {
-                ContextualRows.Clear();
-                foreach (var row in chosen) ContextualRows.Add(row);
-            });
+            ContextualRows.Clear();
+            foreach (var row in chosen) ContextualRows.Add(row);
         }
         catch (PlexException)
         {
-            await _dispatcher.EnqueueAsync(ContextualRows.Clear);
+            ContextualRows.Clear();
         }
     }
 
