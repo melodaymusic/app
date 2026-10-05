@@ -38,7 +38,6 @@ public sealed partial class HomePage : Page
             Grid.SetColumn(JumpTiles, _narrow ? 0 : 2);
             Grid.SetColumnSpan(JumpTiles, _narrow ? 3 : 1);
             JumpTiles.MaxWidth = _narrow ? double.PositiveInfinity : 560;
-            // The listening time sits under its label, to the left when the header stacks.
             ListeningLabel.HorizontalAlignment = ListeningTime.HorizontalAlignment = _narrow ? HorizontalAlignment.Left : HorizontalAlignment.Right;
         });
     }
@@ -52,6 +51,9 @@ public sealed partial class HomePage : Page
         base.OnNavigatedTo(e);
         await ViewModel.EnsureLoadedAsync(App.Services.GetRequiredService<ShellViewModel>().LibraryVersion);
     }
+
+    private void OnMadeForYouClick(object sender, RoutedEventArgs e) =>
+        App.Services.GetRequiredService<NavigationService>().Navigate(typeof(MadeForYouPage));
 
     private void OnFeaturedClick(object sender, RoutedEventArgs e)
     {
