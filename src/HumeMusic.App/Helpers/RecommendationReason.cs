@@ -14,33 +14,36 @@ public static class RecommendationReason
 
         var tag = track.Moods.FirstOrDefault(m => !string.Equals(m, "ArtistPopular", StringComparison.OrdinalIgnoreCase))
                   ?? track.Genres.FirstOrDefault();
-        var tagText = tag is { Length: > 0 } ? $" {tag.ToLowerInvariant()}" : string.Empty;
+        var tagged = tag is { Length: > 0 } ? $" Plex tags it as {tag}." : string.Empty;
 
         if (track.ViewCount == 0)
-            return $"Why this song? An unplayed{tagText} track from your library.";
+            return "Why this song? You haven't played it yet." + tagged;
 
         if (track.LastViewedAt is { } last)
         {
             var age = DateTimeOffset.Now - last;
             if (age >= TimeSpan.FromDays(365))
-                return $"Why this song? A{tagText} favourite you haven't heard in {Math.Max(1, (int)Math.Round(age.TotalDays / 365.25))} year{Plural(Math.Max(1, (int)Math.Round(age.TotalDays / 365.25)))}.";
+            {
+                var years = Math.Max(1, (int)Math.Round(age.TotalDays / 365.25));
+                return $"Why this song? You haven't played it in about {years} year{Plural(years)}." + tagged;
+            }
             if (age >= TimeSpan.FromDays(60))
             {
                 var months = Math.Max(2, (int)Math.Round(age.TotalDays / 30.4));
-                return $"Why this song? A{tagText} track you haven't played in about {months} months.";
+                return $"Why this song? You haven't played it in about {months} months." + tagged;
             }
         }
 
         if (track.ViewCount <= 2)
-            return $"Why this song? A deeper{tagText} cut you've only played {track.ViewCount} time{Plural(track.ViewCount)}.";
+            return $"Why this song? You've only played it {track.ViewCount} time{Plural(track.ViewCount)}." + tagged;
 
         if (track.UserRating is >= 8)
-            return $"Why this song? You rated this{tagText} track highly.";
+            return "Why this song? You rated it highly." + tagged;
 
         if (tag is { Length: > 0 })
-            return $"Why this song? It matches the {tag} side of your library.";
+            return $"Why this song? Plex tags it as {tag}, a useful signal for matching it with similar music.";
 
-        return "Why this song? It comes from music already in your library and listening history.";
+        return "Why this song? It is part of your Plex library and listening history.";
     }
 
     private static string Plural(int count) => count == 1 ? string.Empty : "s";
