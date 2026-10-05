@@ -1,0 +1,36 @@
+<Page
+    x:Class="HumeMusic.Views.MadeForYouPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:HumeMusic.Controls"
+    xmlns:vm="using:HumeMusic.ViewModels"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                  AutomationProperties.AutomationId="PageScroller">
+        <StackPanel Padding="{StaticResource HumePagePadding}" Spacing="{StaticResource HumeSectionSpacing}">
+            <controls:PageHeader Title="Made for You" Subtitle="{x:Bind ViewModel.Description, Mode=OneWay}" />
+
+            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                    ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                    IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                                    EmptyText="Listen a little more and Meloday will start building personal mixes around your habits."
+                                    EmptyIcon="Music" RetryRequested="OnRetry" />
+
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Rows}" IsTabStop="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="{StaticResource HumeSectionSpacing}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MediaRow">
+                        <controls:MediaRowControl Header="{x:Bind Title}" Subheader="{x:Bind Subtitle}" ItemsSource="{x:Bind Items}"
+                                                  CardStyle="{x:Bind CardStyle}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>
