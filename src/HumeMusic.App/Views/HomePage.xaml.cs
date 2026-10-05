@@ -52,6 +52,7 @@ public sealed partial class HomePage : Page
         var version = App.Services.GetRequiredService<ShellViewModel>().LibraryVersion;
         await ViewModel.EnsureLoadedAsync(version);
         await ViewModel.EnsureContextualRowsAsync(version);
+        await ViewModel.EnsureDiscoveryRowAsync(version);
         ViewModel.ApplyContextualRows();
     }
 
