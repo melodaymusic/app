@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using HumeMusic.Core.Meloday;
 using HumeMusic.Core.Mixes;
 using HumeMusic.Core.Models;
 using HumeMusic.Core.Plex;
@@ -26,52 +27,52 @@ public sealed record MixInfo(string Title, IReadOnlyList<MixArtist> Artists, boo
 }
 
 /// <summary>
-/// Meloday's mixes: artist mixes (Plex's artist radio stations), genre and mood mixes, and finite
-/// niche mixes built from combinations that actually occur in the listener's recent taste. Disliked
-/// music (one star or less) never plays in a mix, and disliked artists never get one. Mix contents
-/// are sampled for the boards on Home, a couple at a time.
+/// Meloday's personalised mixes. Artist, genre and mood mixes remain simple and continuous; niche
+/// mixes are finite intersections learned from tags, recent behaviour, listening context, cached
+/// audio analysis, artist sessions and Plex sonic relationships.
 /// </summary>
 public sealed class MixService
 {
     private const int ArtistMixCount = 8;
     private const int GenreMixCount = 3;
     private const int MoodMixCount = 3;
-    private const int NicheMixCount = 6;
+    private const int NicheMixCount = 14;
     private const int TagBatch = 40;
-    private const int NicheBatch = 100;
+    private const int NicheBatch = 180;
     private const int NicheTrackCount = 30;
     private const int NicheArtistCap = 3;
     private static readonly TimeSpan ListLifetime = TimeSpan.FromMinutes(20);
 
-    // Plex tags that describe popularity rather than a mood.
     private static readonly HashSet<string> NoiseMoods = new(StringComparer.OrdinalIgnoreCase) { "ArtistPopular" };
 
     private readonly PlexSession _session;
     private readonly Dislikes _dislikes;
+    private readonly PlexPass _pass;
+    private readonly LocalRadio _local;
+    private readonly AudioAnalysisService _audio;
     private readonly ILogger<MixService> _log;
     private readonly ConcurrentDictionary<string, Task<MixInfo?>> _mixes = new();
     private readonly ConcurrentDictionary<string, string> _stations = new();
+    private readonly ConcurrentDictionary<string, RadioSession> _radios = new();
     private readonly SemaphoreSlim _gate = new(2, 2);
     private Task<IReadOnlyList<MediaItem>>? _list;
     private DateTime _listAt;
+    private IReadOnlyList<HistoryPlay> _history = [];
+    private DateTime _historyAt;
 
-    private readonly PlexPass _pass;
-    private readonly LocalRadio _local;
-    // Meloday's own radios as they play (see LocalRadio), so a mix keeps going without repeating itself.
-    private readonly ConcurrentDictionary<string, RadioSession> _radios = new();
-
-    public MixService(PlexSession session, Dislikes dislikes, PlexPass pass, LocalRadio local, ILogger<MixService> log)
+    public MixService(PlexSession session, Dislikes dislikes, PlexPass pass, LocalRadio local, AudioAnalysisService audio, ILogger<MixService> log)
     {
         _session = session;
         _dislikes = dislikes;
         _pass = pass;
         _local = local;
+        _audio = audio;
         _log = log;
     }
 
     // ------------------------------------------------------------------ choosing mixes
 
-    /// <summary>The mixes for Home, built from recent listening (kept for a while, then rebuilt).</summary>
+    /// <summary>The mixes for Home and Made for You, kept briefly so opening pages does not re-query Plex.</summary>
     public Task<IReadOnlyList<MediaItem>> GetMixesAsync()
     {
         if (_list is null || _list.IsFaulted || DateTime.UtcNow - _listAt > ListLifetime)
@@ -81,6 +82,9 @@ public sealed class MixService
         }
         return _list;
     }
+
+    public async Task<IReadOnlyList<NicheMix>> GetNicheMixesAsync() =>
+        (await GetMixesAsync().ConfigureAwait(false)).OfType<NicheMix>().ToList();
 
     private async Task<IReadOnlyList<MediaItem>> BuildMixesAsync()
     {
@@ -92,9 +96,11 @@ public sealed class MixService
                 new KeyValuePair<string, string?>("viewCount>>", "0")).ConfigureAwait(false)).Items;
             var now = DateTimeOffset.Now;
             var recentAllowed = recent.Where(disliked.Allows).ToList();
+            var historyTask = RecentHistoryAsync(client, section.Key, default);
+            var energyTask = CachedEnergyAsync(recentAllowed.Take(120));
 
-            // Artist mixes: recent artists that Plex has a station for. The same request brings the
-            // artist's moods, which (weighted by how much the artist was played) choose the mood mixes.
+            // Artist mixes: recent artists that Plex has a station for. The same request also provides
+            // artist moods, used to supplement Plex libraries whose individual tracks have sparse moods.
             var candidates = ListeningProfile.Artists(recentAllowed, now, disliked.Artists.Contains)
                 .Take(ArtistMixCount + 4).ToList();
             var details = await Task.WhenAll(candidates.Select(async a =>
@@ -110,7 +116,6 @@ public sealed class MixService
             })).ConfigureAwait(false);
 
             var artistMixes = new List<MediaItem>();
-            // Artist mixes are Plex's artist radio (Plex Pass); without it Meloday's own radio plays them.
             foreach (var (profile, info) in details)
             {
                 if (info is not { } found || DislikedSet.IsDisliked(found.Artist.UserRating)) continue;
@@ -135,22 +140,28 @@ public sealed class MixService
             var moods = ListeningProfile.Rank(details
                 .Where(d => d.Info is not null)
                 .SelectMany(d => d.Info!.Value.Artist.Moods.Where(m => !NoiseMoods.Contains(m)).Select(m => (m, d.Profile.Weight))));
-            var artistMoods = details
-                .Where(d => d.Info is not null)
+            var artistMoods = details.Where(d => d.Info is not null)
                 .ToDictionary(d => d.Profile.RatingKey, d => d.Info!.Value.Artist.Moods, StringComparer.Ordinal);
 
-            // A tag mix needs enough music to be worth playing; sampling it also fills in its board.
             var tagCount = _pass.IsAvailable ? 1 : 2;
             var genreMixes = await PickTagMixesAsync(genres, MixTagKind.Genre, GenreMixCount * tagCount).ConfigureAwait(false);
             var moodMixes = await PickTagMixesAsync(moods, MixTagKind.Mood, MoodMixCount * tagCount, exclude: genreMixes.Select(m => m.Title)).ConfigureAwait(false);
 
-            // Niche concepts come from real co-occurrences in recent listening. Track moods are
-            // supplemented with the same artist mood metadata already used by Meloday's Mood Mixes.
-            var nicheRecipes = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 4, artistMoods);
-            var nicheMixes = await PickNicheMixesAsync(nicheRecipes, NicheMixCount).ConfigureAwait(false);
+            var history = await historyTask.ConfigureAwait(false);
+            var energy = await energyTask.ConfigureAwait(false);
+            var nicheRecipes = NicheMixes.Generate(recentAllowed, now, NicheMixCount + 12, artistMoods, history, energy).ToList();
 
-            // Keep the underlying result interleaved so callers that do not split the rows still get
-            // a useful order. Home gives first-class niche mixes their own row.
+            // Plex sonic analysis adds a genuinely different neighbourhood instead of another tag intersection.
+            // At most two are attempted so Made for You never turns into a row of sonic seeds.
+            if (_pass.IsAvailable)
+            {
+                foreach (var seed in recentAllowed.Where(t => t.HasSonicAnalysis).Take(2))
+                    if (await SonicRecipeAsync(client, seed, disliked).ConfigureAwait(false) is { } sonic)
+                        nicheRecipes.Insert(0, sonic);
+            }
+
+            var nicheMixes = await PickNicheMixesAsync(nicheRecipes.DistinctBy(r => r.StableKey).ToList(), NicheMixCount).ConfigureAwait(false);
+
             var result = new List<MediaItem>();
             var queues = new[]
             {
@@ -208,6 +219,30 @@ public sealed class MixService
         return picked;
     }
 
+    private async Task<NicheMixRecipe?> SonicRecipeAsync(PlexServerClient client, Track seed, DislikedSet disliked)
+    {
+        try
+        {
+            var similar = (await client.GetSonicallySimilarAsync<Track>(seed.RatingKey, 45, 0.8).ConfigureAwait(false))
+                .Where(disliked.Allows).ToList();
+            if (similar.Count < 12) return null;
+            var genre = TopTag(similar.SelectMany(t => t.Genres));
+            var mood = TopTag(similar.SelectMany(t => t.Moods).Where(m => !NoiseMoods.Contains(m)));
+            var decade = similar.Where(t => t.Year is >= 1900 and < 2100).GroupBy(t => t.Year!.Value / 10 * 10)
+                .OrderByDescending(g => g.Count()).Select(g => (int?)g.Key).FirstOrDefault();
+            if (genre is null && mood is null && decade is null) return null;
+            return new NicheMixRecipe(genre, mood, decade, 3.0, Focus: NicheFocus.Sonic,
+                SeedTrackKey: seed.RatingKey, SeedTrackTitle: seed.Title);
+        }
+        catch (PlexException)
+        {
+            return null;
+        }
+    }
+
+    private static string? TopTag(IEnumerable<string> tags) => tags.Where(t => !string.IsNullOrWhiteSpace(t))
+        .GroupBy(t => t.Trim(), StringComparer.OrdinalIgnoreCase).OrderByDescending(g => g.Count()).Select(g => g.Key).FirstOrDefault();
+
     // ------------------------------------------------------------------ what's in a mix
 
     /// <summary>A mix's title and artists (for its board), sampled once per session.</summary>
@@ -224,7 +259,6 @@ public sealed class MixService
             {
                 case ArtistMix a:
                 {
-                    // The mix's own artist leads; the others follow by how often they come up.
                     var others = RankArtists(tracks.Where(t => t.ArtistRatingKey != a.Artist.RatingKey
                                                                && !string.Equals(t.ArtistTitle, a.Artist.Title, StringComparison.OrdinalIgnoreCase)));
                     return new MixInfo(a.Title, [new MixArtist(a.Artist.Title, a.Artist.Thumb), .. others]);
@@ -257,19 +291,12 @@ public sealed class MixService
 
     private async Task<IReadOnlyList<Track>?> SampleAsync(MediaItem mix)
     {
-        // Only for the board: one station batch is enough to name the artists, and random mix samples
-        // are reused from last time while fresh ones are fetched.
         using (PlexServerClient.ForShowing())
             return await FirstTracksAsync(mix, batches: 1, sample: true).ConfigureAwait(false);
     }
 
     // ------------------------------------------------------------------ playing a mix
 
-    /// <summary>
-    /// The opening tracks of a mix (null when there is no mix to play): station batches for an artist
-    /// mix, a random selection for a genre or mood mix, or a finite scored set for a niche mix.
-    /// Disliked music is left out.
-    /// </summary>
     public async Task<IReadOnlyList<Track>?> FirstTracksAsync(MediaItem mix, int batches = 3, bool sample = false)
     {
         if (_session.Client is not { } client) return null;
@@ -284,7 +311,6 @@ public sealed class MixService
                     var plex = loads.SelectMany(b => b).DistinctBy(t => t.RatingKey).Where(disliked.Allows).ToList();
                     if (plex.Count > 0) return plex;
                 }
-                // A board's sample is its own radio, so showing the board doesn't use up the music to play.
                 var radio = sample ? _local.ForArtist(a.Artist) : RadioFor(a);
                 return await radio.NextAsync(LocalRadio.BatchSize).ConfigureAwait(false);
             }
@@ -301,7 +327,7 @@ public sealed class MixService
         }
     }
 
-    /// <summary>The next tracks for a playing mix, for topping up the queue.</summary>
+    /// <summary>The next tracks for a playing mix, for topping up the queue. Niche mixes are intentionally finite.</summary>
     public Func<CancellationToken, Task<IReadOnlyList<Track>>>? MoreTracks(MediaItem mix)
     {
         if (_session.Client is not { } client) return null;
@@ -324,7 +350,6 @@ public sealed class MixService
 
     // ------------------------------------------------------------------ stations and built mixes
 
-    /// <summary>Tracks from one of Plex's stations (a Plex Pass feature; without it there are none).</summary>
     private async Task<IReadOnlyList<Track>> StationTracksAsync(PlexServerClient client, Station station, DislikedSet disliked, int batches, CancellationToken ct)
     {
         if (!station.IsLocal && station.Key is { } key && _pass.IsAvailable)
@@ -333,11 +358,9 @@ public sealed class MixService
             var plex = loads.SelectMany(b => b).DistinctBy(t => t.RatingKey).Where(disliked.Allows).ToList();
             if (plex.Count > 0) return plex;
         }
-        // No Plex station (no Plex Pass, or Plex has nothing for it): Meloday's own radio plays it.
         return await RadioFor(station).NextAsync(LocalRadio.BatchSize, ct).ConfigureAwait(false);
     }
 
-    /// <summary>Meloday's own radio for an artist mix or a station, kept while it plays so it never repeats itself.</summary>
     private RadioSession RadioFor(MediaItem mix) => _radios.GetOrAdd(mix.RatingKey, _ => mix switch
     {
         ArtistMix a => _local.ForArtist(a.Artist),
@@ -345,7 +368,6 @@ public sealed class MixService
         _ => throw new ArgumentException("No radio for this mix.", nameof(mix)),
     });
 
-    /// <summary>A built mix: the chosen artists' or albums' music, shuffled, a batch at a time.</summary>
     private async Task<IReadOnlyList<Track>> BuiltTracksAsync(PlexServerClient client, BuiltMix mix, DislikedSet disliked, CancellationToken ct)
     {
         if (_session.Section is not { } section) return [];
@@ -356,7 +378,6 @@ public sealed class MixService
         return result.Items.Where(disliked.Allows).Take(20).ToList();
     }
 
-    /// <summary>A larger shuffled helping of a built mix (for keeping it as a playlist).</summary>
     public async Task<IReadOnlyList<Track>> SampleAsync(BuiltMix mix, int count)
     {
         if (_session.Client is not { } client || _session.Section is not { } section) return [];
@@ -388,36 +409,46 @@ public sealed class MixService
         if (_session.Section is not { } section) return [];
         var field = mix.TagKind == MixTagKind.Genre ? "genre" : "mood";
         var result = await client.GetTracksAsync(section.Key, 0, TagBatch, "random", ct, new KeyValuePair<string, string?>(field, mix.Tag)).ConfigureAwait(false);
-        // No more than two tracks from one artist in a batch keeps a genre mix from turning into one artist.
         return result.Items.Where(disliked.Allows)
             .GroupBy(t => t.ArtistRatingKey ?? t.RatingKey).SelectMany(g => g.Take(2))
-            .OrderBy(_ => Random.Shared.Next())
-            .Take(20)
-            .ToList();
+            .OrderBy(_ => Random.Shared.Next()).Take(20).ToList();
     }
 
-    /// <summary>
-    /// A niche mix is an exact intersection of its dimensions. Within that boundary, it balances
-    /// familiar music, older favourites and underplayed library tracks instead of drifting outward.
-    /// </summary>
+    // ------------------------------------------------------------------ niche playback
+
     private async Task<IReadOnlyList<Track>> NicheTracksAsync(PlexServerClient client, NicheMixRecipe mix, DislikedSet disliked, CancellationToken ct)
     {
         if (_session.Section is not { } section) return [];
-        var filters = new List<KeyValuePair<string, string?>>(4);
-        if (mix.Genre is { Length: > 0 } genre) filters.Add(new("genre", genre));
-        if (mix.Mood is { Length: > 0 } mood) filters.Add(new("mood", mood));
-        if (mix.Decade is { } decade)
+        var filters = NicheFilters(mix);
+        var genericTask = client.GetTracksAsync(section.Key, 0, NicheBatch, "random", ct, filters.ToArray());
+
+        IReadOnlyList<Track> sonic = [];
+        if (mix.Focus == NicheFocus.Sonic && mix.SeedTrackKey is { Length: > 0 } seed && _pass.IsAvailable)
         {
-            // Plex's numeric comparisons are strict, so these bounds mean decade through decade+9.
-            filters.Add(new("album.year>>", (decade - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
-            filters.Add(new("album.year<<", (decade + 10).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            try
+            {
+                sonic = (await client.GetSonicallySimilarAsync<Track>(seed, NicheBatch, 0.9, ct).ConfigureAwait(false))
+                    .Where(disliked.Allows).Where(t => MatchesRecipe(t, mix)).ToList();
+            }
+            catch (PlexException)
+            {
+            }
         }
 
-        var result = await client.GetTracksAsync(section.Key, 0, NicheBatch, "random", ct, filters.ToArray()).ConfigureAwait(false);
-        var pool = result.Items.Where(disliked.Allows).DistinctBy(t => t.RatingKey).ToList();
+        var generic = (await genericTask.ConfigureAwait(false)).Items.Where(disliked.Allows);
+        var pool = sonic.Concat(generic).DistinctBy(t => t.RatingKey).ToList();
         if (pool.Count == 0) return [];
 
+        var historyTask = mix.Context is null ? Task.FromResult<IReadOnlyList<HistoryPlay>>([]) : RecentHistoryAsync(client, section.Key, ct);
+        var energyTask = mix.Energy == NicheEnergy.Any ? Task.FromResult<IReadOnlyDictionary<string, NicheEnergy>>(new Dictionary<string, NicheEnergy>()) : CachedEnergyAsync(pool);
+        var history = await historyTask.ConfigureAwait(false);
+        var energy = await energyTask.ConfigureAwait(false);
+        var contextWeights = ContextWeights(history, mix.Context);
+        var sonicKeys = sonic.Select(t => t.RatingKey).ToHashSet(StringComparer.Ordinal);
+        var circle = mix.Artists.ToHashSet(StringComparer.OrdinalIgnoreCase);
         var now = DateTimeOffset.Now;
+        var random = new Random(StableSeed(mix.StableKey, now.Date));
+
         bool Familiar(Track t) => t.ViewCount > 0 && t.LastViewedAt is { } at && now - at <= TimeSpan.FromDays(45);
         bool Rediscovery(Track t) => t.ViewCount > 0 && !Familiar(t);
         double Score(Track t)
@@ -425,9 +456,24 @@ public sealed class MixService
             var score = Math.Log2(Math.Max(0, t.ViewCount) + 1) * 0.32
                 + (t.UserRating ?? 0) * 0.08
                 - Math.Min(6, Math.Max(0, t.SkipCount)) * 0.28;
-            if (t.LastViewedAt is { } at) score += ListeningProfile.Weight(at, now) * 1.4;
-            if (t.ViewCount == 0) score += 0.25;
-            return score + Random.Shared.NextDouble() * 0.05;
+            if (t.LastViewedAt is { } at) score += ListeningProfile.Weight(at, now) * 1.35;
+            if (t.ViewCount == 0) score += 0.22;
+
+            score += mix.Focus switch
+            {
+                NicheFocus.Lately when Familiar(t) => 1.1,
+                NicheFocus.Rediscovery when Rediscovery(t) => 1.25,
+                NicheFocus.DeepCuts when t.ViewCount == 0 => 1.45,
+                NicheFocus.DeepCuts when t.ViewCount <= 2 => 0.9,
+                NicheFocus.DeepCuts => -Math.Min(1.0, t.ViewCount * 0.06),
+                NicheFocus.Sonic when sonicKeys.Contains(t.RatingKey) => 1.5,
+                _ => 0,
+            };
+            if (contextWeights.TryGetValue(t.RatingKey, out var context)) score += Math.Min(1.5, context * 0.45);
+            if (circle.Count >= 2 && circle.Contains(t.ArtistTitle ?? string.Empty)) score += 1.1;
+            if (mix.Energy != NicheEnergy.Any && energy.TryGetValue(t.RatingKey, out var band))
+                score += band == mix.Energy ? 0.9 : -0.45;
+            return score + random.NextDouble() * 0.04;
         }
 
         var selected = new List<Track>(NicheTrackCount);
@@ -454,18 +500,98 @@ public sealed class MixService
             }
         }
 
-        // Approximately 60% familiar, 27% rediscovery and 13% exploration when the pool supports it.
-        TakeFrom(pool.Where(Familiar), 18);
-        TakeFrom(pool.Where(Rediscovery), 8);
-        TakeFrom(pool.Where(t => t.ViewCount == 0), 4);
+        var quotas = mix.Focus switch
+        {
+            NicheFocus.Lately => (Familiar: 24, Rediscovery: 4, New: 2),
+            NicheFocus.Rediscovery => (Familiar: 6, Rediscovery: 20, New: 4),
+            NicheFocus.DeepCuts => (Familiar: 4, Rediscovery: 8, New: 18),
+            NicheFocus.Sonic => (Familiar: 15, Rediscovery: 8, New: 7),
+            _ => (Familiar: 18, Rediscovery: 8, New: 4),
+        };
+        TakeFrom(pool.Where(Familiar), quotas.Familiar);
+        TakeFrom(pool.Where(Rediscovery), quotas.Rediscovery);
+        TakeFrom(pool.Where(t => t.ViewCount == 0), quotas.New);
         if (selected.Count < NicheTrackCount) TakeFrom(pool, NicheTrackCount - selected.Count);
 
-        return SpreadNicheArtists(selected);
+        return SpreadNicheArtists(selected, random);
     }
 
-    private static IReadOnlyList<Track> SpreadNicheArtists(IReadOnlyList<Track> tracks)
+    private static List<KeyValuePair<string, string?>> NicheFilters(NicheMixRecipe mix)
     {
-        var remaining = tracks.OrderBy(_ => Random.Shared.Next()).ToList();
+        var filters = new List<KeyValuePair<string, string?>>(4);
+        if (mix.Genre is { Length: > 0 } genre) filters.Add(new("genre", genre));
+        if (mix.Mood is { Length: > 0 } mood) filters.Add(new("mood", mood));
+        if (mix.Decade is { } decade)
+        {
+            filters.Add(new("album.year>>", (decade - 1).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            filters.Add(new("album.year<<", (decade + 10).ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        }
+        return filters;
+    }
+
+    private static bool MatchesRecipe(Track track, NicheMixRecipe mix)
+    {
+        if (mix.Decade is { } decade && track.Year is { } year && year / 10 * 10 != decade) return false;
+        if (mix.Genre is { Length: > 0 } genre && track.Genres.Count > 0 && !track.Genres.Contains(genre, StringComparer.OrdinalIgnoreCase)) return false;
+        // Mood metadata is often absent at track level, so absence is unknown rather than a mismatch.
+        if (mix.Mood is { Length: > 0 } mood && track.Moods.Count > 0 && !track.Moods.Contains(mood, StringComparer.OrdinalIgnoreCase)) return false;
+        return true;
+    }
+
+    private static Dictionary<string, int> ContextWeights(IReadOnlyList<HistoryPlay> history, string? context)
+    {
+        if (context is null) return [];
+        var period = MelodayPeriods.Named(context);
+        bool Match(HistoryPlay p) => period is not null
+            ? period.Hours.Contains(p.ViewedAt.LocalDateTime.Hour)
+            : context == "Weekend"
+                ? p.ViewedAt.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday
+                : context == "Weekday" && p.ViewedAt.DayOfWeek is not (DayOfWeek.Saturday or DayOfWeek.Sunday);
+        return history.Where(Match).GroupBy(p => p.RatingKey).ToDictionary(g => g.Key, g => g.Count(), StringComparer.Ordinal);
+    }
+
+    private async Task<IReadOnlyList<HistoryPlay>> RecentHistoryAsync(PlexServerClient client, string section, CancellationToken ct)
+    {
+        if (_history.Count > 0 && DateTime.UtcNow - _historyAt < ListLifetime) return _history;
+        try
+        {
+            var now = DateTimeOffset.Now;
+            var account = _session.Server?.Owned == true ? "1" : null;
+            _history = await client.GetHistoryAsync(section, now.AddDays(-MelodayProfile.LookbackDays), account, ct: ct).ConfigureAwait(false);
+            _historyAt = DateTime.UtcNow;
+            return _history;
+        }
+        catch (PlexException ex)
+        {
+            _log.LogInformation("Listening context unavailable: {Message}", ex.Message);
+            return [];
+        }
+    }
+
+    private async Task<IReadOnlyDictionary<string, NicheEnergy>> CachedEnergyAsync(IEnumerable<Track> tracks)
+    {
+        var results = await Task.WhenAll(tracks.Take(180).Select(async track =>
+        {
+            var analysis = await _audio.CachedHeadAsync(track).ConfigureAwait(false);
+            return (track.RatingKey, Energy: EnergyOf(analysis));
+        })).ConfigureAwait(false);
+        return results.Where(x => x.Energy != NicheEnergy.Any).ToDictionary(x => x.RatingKey, x => x.Energy, StringComparer.Ordinal);
+    }
+
+    private static NicheEnergy EnergyOf(HumeMusic.Core.Audio.AudioAnalysis? analysis)
+    {
+        if (analysis is not { HasBeat: true }) return NicheEnergy.Any;
+        return analysis.Bpm switch
+        {
+            < 96 => NicheEnergy.Low,
+            < 124 => NicheEnergy.Medium,
+            _ => NicheEnergy.High,
+        };
+    }
+
+    private static IReadOnlyList<Track> SpreadNicheArtists(IReadOnlyList<Track> tracks, Random random)
+    {
+        var remaining = tracks.OrderBy(_ => random.Next()).ToList();
         var result = new List<Track>(remaining.Count);
         string? previous = null;
         while (remaining.Count > 0)
@@ -480,14 +606,28 @@ public sealed class MixService
         return result;
     }
 
+    private static int StableSeed(string text, DateTime date)
+    {
+        unchecked
+        {
+            var hash = 17;
+            foreach (var c in text) hash = hash * 31 + c;
+            hash = hash * 31 + date.Year;
+            hash = hash * 31 + date.DayOfYear;
+            return hash;
+        }
+    }
+
     private static string NicheArtistKey(Track track) => track.ArtistRatingKey ?? track.ArtistTitle ?? track.RatingKey;
 
-    /// <summary>Forgets every mix (the library changed, or it's time to follow newer listening).</summary>
+    /// <summary>Forgets every mix when the library changes or it is time to follow newer listening.</summary>
     public void Clear()
     {
         _mixes.Clear();
         _radios.Clear();
         _local.Clear();
         _list = null;
+        _history = [];
+        _historyAt = default;
     }
 }
