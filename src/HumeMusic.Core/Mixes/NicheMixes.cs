@@ -116,7 +116,7 @@ public sealed record NicheMixRecipe(
         var focus = NicheFocus.Blend;
         var energy = NicheEnergy.Any;
         IReadOnlyList<string> artists = [];
-        foreach (var part in mix.RatingKey[RatingKeyPrefix.Length..].Split('&', StringSplitOptions.RemoveEmptyEntries))
+        foreach (var part in mix.RatingKey[NicheMixRecipe.RatingKeyPrefix.Length..].Split('&', StringSplitOptions.RemoveEmptyEntries))
         {
             var equals = part.IndexOf('=');
             if (equals < 0) continue;
@@ -215,7 +215,7 @@ public static class NicheMixes
         var historyByTrack = (history ?? []).GroupBy(p => p.RatingKey).ToDictionary(g => g.Key, g => g.ToList(), StringComparer.Ordinal);
         var circles = ArtistCircles(history ?? []);
         var currentPeriod = MelodayPeriods.At(now.LocalDateTime);
-        var dayContext = now.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Weekend" : "Weekday";
+        var dayContext = now.LocalDateTime.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Weekend" : "Weekday";
 
         foreach (var track in tracks)
         {
@@ -231,7 +231,6 @@ public static class NicheMixes
                 * (1 + Math.Min(0.8, Math.Log2(Math.Max(1, track.ViewCount) + 1) * 0.12));
             var artist = track.ArtistRatingKey ?? track.ArtistTitle ?? track.RatingKey;
 
-            // The ordinary tag intersections remain the backbone of a niche.
             foreach (var genre in genres)
             {
                 foreach (var mood in moods)
@@ -245,11 +244,9 @@ public static class NicheMixes
             if (decade is { } d3)
                 foreach (var mood in moods) Add(new RecipeKey(null, mood, d3), track, artist, weight);
 
-            // Behavioural recipes use one strong musical anchor plus the learned reason for it.
             var anchor = Anchor(genres, moods, decade);
             if (anchor is null) continue;
 
-            // Deep cuts come from a proven corner of taste, but playback deliberately favours its least-played music.
             Add(anchor with { Focus = NicheFocus.DeepCuts }, track, artist, weight * 0.72);
 
             if (track.LastViewedAt is { } last)
@@ -332,7 +329,6 @@ public static class NicheMixes
         return new NicheMixRecipe(key.Genre, key.Mood, key.Decade, support, key.Context, key.Focus, key.Energy, ArtistNames: artists);
     }
 
-    /// <summary>Artist pairs repeatedly heard inside the same 45-minute listening sessions.</summary>
     private static IReadOnlyList<IReadOnlyList<string>> ArtistCircles(IReadOnlyList<HistoryPlay> history)
     {
         if (history.Count < 2) return [];
@@ -369,7 +365,7 @@ public static class NicheMixes
     }
 
     private static string DayContext(DateTimeOffset at) =>
-        at.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Weekend" : "Weekday";
+        at.LocalDateTime.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday ? "Weekend" : "Weekday";
 
     private static bool TooMuchOfSame(NicheMixRecipe candidate, IReadOnlyList<NicheMixRecipe> selected)
     {
