@@ -22,7 +22,7 @@ public sealed partial class HomeViewModel
         _contextualVersion = libraryVersion;
         _contextualLoadedAt = DateTime.Now;
 
-        if (_session.Client is not { } client || _session.Section is not { } section)
+        if (Session.Client is not { } client || Session.Section is not { } section)
         {
             ContextualRows.Clear();
             return;
@@ -31,7 +31,7 @@ public sealed partial class HomeViewModel
         try
         {
             var now = DateTimeOffset.Now;
-            var account = _session.Server?.Owned == true ? "1" : null;
+            var account = Session.Server?.Owned == true ? "1" : null;
             var history = await client.GetHistoryAsync(section.Key, now.AddDays(-400), account, max: 6000);
             var niches = await _mixes.GetNicheMixesAsync();
             var candidates = new List<(double Confidence, MediaRow Row)>();
@@ -98,7 +98,7 @@ public sealed partial class HomeViewModel
                     Title = title,
                     Subtitle = subtitle,
                     Items = distinct,
-                    CardStyle = CardStyle.Poster,
+                    CardStyle = CardStyle.Tile,
                 }));
             }
 
