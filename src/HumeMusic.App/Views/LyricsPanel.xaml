@@ -11,7 +11,14 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <TextBlock Text="Lyrics" Style="{StaticResource HumeSectionText}" VerticalAlignment="Center" Margin="12,0,0,0" />
+        <Grid>
+            <TextBlock Text="Lyrics" Style="{StaticResource HumeSectionText}" VerticalAlignment="Center" Margin="12,0,0,0" />
+            <!-- Shift the lyrics' timing, or time them by hand in the Lyric Studio. -->
+            <Button x:Name="TimingButton" Style="{StaticResource HumeIconButtonStyle}" HorizontalAlignment="Right" Click="OnTimingClick"
+                    ToolTipService.ToolTip="Lyrics timing" AutomationProperties.Name="Lyrics timing" AutomationProperties.AutomationId="LyricsTimingButton">
+                <controls:LucideIcon Icon="Timer" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+            </Button>
+        </Grid>
 
         <!-- Synced lyrics float, as Apple Music's do: each line glides to its place on a spring, those
              nearest the line being sung first, and lines away from it recede. Plain

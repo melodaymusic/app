@@ -6,7 +6,7 @@ namespace HumeMusic.Core.Tests;
 
 public class NicheMixTests
 {
-    private static readonly DateTimeOffset Now = new(2026, 10, 4, 20, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Now = new(new DateTime(2026, 10, 4, 20, 0, 0, DateTimeKind.Local)); // time-of-day context is read in local time
 
     private static Track Play(string key, string artist, int year, double daysAgo, string genre, string mood) => new()
     {

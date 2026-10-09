@@ -10,6 +10,9 @@ public static class Format
     public static string StationCoverName(Core.Models.Station station) =>
         station.Title.EndsWith(" Radio", StringComparison.Ordinal) ? station.Title[..^6] : station.Title;
 
+    /// <summary>The label a station's cover sets in its bottom left: "Meloday Live" for a live station, "Radio" for any other.</summary>
+    public static string StationCoverLabel(Core.Models.Station station) => station.IsLive ? "Meloday Live" : "Radio";
+
     public static string Duration(TimeSpan t)
     {
         if (t < TimeSpan.Zero) t = TimeSpan.Zero;
@@ -81,7 +84,8 @@ public static class Format
         Playlist => "ListMusic",
         MusicCollection => "Layers",
         Track => "Music",
-        Station or ArtistMix or TagMix or BuiltMix => "Radio",
+        Station => "Radio",
+        ArtistMix or TagMix or BuiltMix => "Sparkles",
         TagItem => "Tags",
         _ => "Disc3",
     };

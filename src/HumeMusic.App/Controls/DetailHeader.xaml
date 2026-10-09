@@ -28,6 +28,9 @@
         <StackPanel x:Name="TextPanel" Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
             <TextBlock x:Name="TitleText" Style="{StaticResource HumeHeroText}" TextWrapping="WrapWholeWords" MaxLines="2"
                        TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" />
+            <!-- The logo the Plex server keeps for the item, in place of its name, when there is one. -->
+            <controls:ArtistLogo x:Name="LogoImage" HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="Collapsed"
+                                 AutomationProperties.AutomationId="ItemLogo" />
             <HyperlinkButton x:Name="SubtitleLink" Style="{StaticResource HumeHeroSubtitleLinkStyle}" Click="OnSubtitleClick" Visibility="Collapsed">
                 <TextBlock x:Name="SubtitleText" TextTrimming="CharacterEllipsis" />
             </HyperlinkButton>

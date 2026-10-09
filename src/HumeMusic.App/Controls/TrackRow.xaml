@@ -60,10 +60,18 @@
                    Fill="{ThemeResource HumeDividerBrush}" IsHitTestVisible="False" />
 
         <!-- Remove (queue, playlists): only while the row is hovered or selected. -->
-        <Button x:Name="RemoveButton" Grid.Column="7" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
-                Opacity="0" IsHitTestVisible="False" helpers:Anim.Fade="True" Click="OnRemoveClick" ToolTipService.ToolTip="Remove" AutomationProperties.Name="Remove">
-            <controls:LucideIcon Icon="X" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
-        </Button>
+        <StackPanel x:Name="RowActions" Grid.Column="7" Orientation="Horizontal">
+            <!-- Meloday: "this is a dupe" (the same song as another), beside remove. -->
+            <Button x:Name="DupeButton" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
+                    Visibility="Collapsed" Opacity="0" IsHitTestVisible="False" helpers:Anim.Fade="True" Click="OnDupeClick"
+                    ToolTipService.ToolTip="This is a dupe of another song" AutomationProperties.Name="Mark as a dupe">
+                <controls:LucideIcon Icon="Merge" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+            </Button>
+            <Button x:Name="RemoveButton" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
+                    Opacity="0" IsHitTestVisible="False" helpers:Anim.Fade="True" Click="OnRemoveClick" ToolTipService.ToolTip="Remove" AutomationProperties.Name="Remove">
+                <controls:LucideIcon Icon="X" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
+            </Button>
+        </StackPanel>
         <Button x:Name="MoreButton" Grid.Column="8" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonS}" Height="{StaticResource HumeButtonS}"
                 Opacity="0" helpers:Anim.Fade="True" Click="OnMoreClick" ToolTipService.ToolTip="More options" AutomationProperties.Name="More options">
             <controls:LucideIcon Icon="Ellipsis" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />

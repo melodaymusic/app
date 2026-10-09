@@ -156,29 +156,38 @@ public partial class App : Application
         services.AddSingleton<NotificationService>();
         services.AddSingleton<AmbientService>();
         services.AddSingleton<DetailCache>();
+        services.AddSingleton(_ => new Core.Mutes.MuteStore(AppPaths.Mutes));
         services.AddSingleton<Dislikes>();
         services.AddSingleton<PlexPass>();
+        services.AddSingleton(_ => new Core.Meloday.DupeStore(AppPaths.MelodayDupes));
         services.AddSingleton(sp => new MelodayService(
             sp.GetRequiredService<Core.Services.PlexSession>(), sp.GetRequiredService<PlexPass>(), sp.GetRequiredService<Dislikes>(),
-            sp.GetRequiredService<Core.Settings.SettingsStore>(),
+            sp.GetRequiredService<Core.Settings.SettingsStore>(), sp.GetRequiredService<Core.Meloday.DupeStore>(), sp.GetRequiredService<Core.Mutes.MuteStore>(),
             new Core.Security.ProtectedSecret(AppPaths.OpenAiKey, "OpenAI", sp.GetRequiredService<ILogger<Core.Security.ProtectedSecret>>()),
             sp.GetRequiredService<ILogger<MelodayService>>()));
         services.AddSingleton<StationService>();
         services.AddSingleton<ArtistRanks>();
         services.AddSingleton<PlaylistCatalog>();
         services.AddSingleton<PlaylistArtistIndex>();
+        services.AddSingleton<PlexLogoService>();
         services.AddSingleton(sp => new ArtistLogoService(
             new Core.Security.ProtectedSecret(AppPaths.FanartKey, "Fanart", sp.GetRequiredService<ILogger<Core.Security.ProtectedSecret>>()),
-            sp.GetRequiredService<Core.Settings.SettingsStore>(), sp.GetRequiredService<ILogger<ArtistLogoService>>()));
+            sp.GetRequiredService<Core.Settings.SettingsStore>(), sp.GetRequiredService<PlexLogoService>(), sp.GetRequiredService<ILogger<ArtistLogoService>>()));
         services.AddSingleton<LogoImport>();
         services.AddSingleton<TagCovers>();
         services.AddSingleton<StaticCovers>();
+        services.AddSingleton<VisualizerService>();
+        services.AddSingleton<StageService>();
         // How long the listener has listened today (Home shows it), on this computer.
         services.AddSingleton(_ => new Core.Home.ListeningClock(System.IO.Path.Combine(AppPaths.Root, "listening.json")));
         // What was played lately (Home's Jump back in), on this computer.
         services.AddSingleton(sp => new Core.Home.RecentStore(System.IO.Path.Combine(AppPaths.Root, "recent.json"), sp.GetRequiredService<ILogger<Core.Home.RecentStore>>()));
         // What the listener skips, kept here only, so Meloday's own radio can learn (see LocalRadio).
         services.AddSingleton(_ => new Core.Radio.SkipStore(Path.Combine(AppPaths.Root, "radio", "skips.json")));
+        services.AddSingleton(_ => new Core.Radio.LiveScheduleStore(AppPaths.LiveStations));
+        services.AddSingleton(_ => new Core.Radio.StationFeedbackStore(AppPaths.StationFeedback));
+        services.AddSingleton(_ => new Core.Radio.HeadlinerHistory(AppPaths.HeadlinerHistory));
+        services.AddSingleton<LiveRadio>();
         services.AddSingleton<LocalRadio>();
         services.AddSingleton<MixService>();
         services.AddSingleton<HomeLayoutService>();
@@ -195,9 +204,11 @@ public partial class App : Application
         services.AddSingleton<QueueStore>();
         services.AddSingleton<TransitionPlanner>();
         services.AddSingleton<LyricsService>();
+        services.AddSingleton<FeaturedArtistService>();
         services.AddSingleton<PanelService>();
         services.AddSingleton<MiniPlayerService>();
         services.AddSingleton<SleepTimerService>();
+        services.AddSingleton<MuteService>();
         services.AddSingleton<CompanionService>();
         services.AddSingleton<DownloadService>();
         services.AddSingleton<TrackNotifier>();
@@ -205,7 +216,8 @@ public partial class App : Application
         services.AddSingleton<TaskbarButtons>();
         services.AddSingleton(sp => new LastFmService(
             new Core.Security.ProtectedSecret(Path.Combine(AppPaths.Root, "lastfm.bin"), "LastFm", sp.GetRequiredService<ILogger<Core.Security.ProtectedSecret>>()),
-            sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<PlayerService>(), sp.GetRequiredService<ILogger<LastFmService>>()));
+            sp.GetRequiredService<Core.Settings.SettingsStore>(), sp.GetRequiredService<HttpClient>(), sp.GetRequiredService<PlayerService>(), sp.GetRequiredService<ILogger<LastFmService>>()));
+        services.AddSingleton<TrendingService>();
         services.AddSingleton<PlayerService>();
         services.AddSingleton<LibraryActions>();
 
@@ -227,6 +239,7 @@ public partial class App : Application
         services.AddTransient<ArtistViewModel>();
         services.AddTransient<AlbumViewModel>();
         services.AddTransient<PlaylistViewModel>();
+        services.AddTransient<FoldersViewModel>();
         services.AddTransient<TagViewModel>();
         services.AddTransient<CollectionViewModel>();
 

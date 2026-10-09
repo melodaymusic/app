@@ -2,6 +2,17 @@ using HumeMusic.Core.Audio;
 
 namespace HumeMusic.Core.Playback;
 
+/// <summary>How the two songs are joined, beyond their volumes: a plain blend (with the bass changing hands), a filter sweep, or an echo out.</summary>
+public enum MixStyle
+{
+    /// <summary>The next song comes in under the outgoing one, the bass changing hands halfway.</summary>
+    Blend,
+    /// <summary>A DJ's filter sweep: the outgoing song loses its lows and then its mids as it goes, the incoming one opens up from dull.</summary>
+    Filter,
+    /// <summary>An echo out: the outgoing song repeats itself, fading, to the beat as it leaves (for songs whose tempos can't be matched).</summary>
+    Echo,
+}
+
 /// <summary>
 /// A beat-matched mix from one song into the next, as a DJ (or Apple's AutoMix) does it: the next song
 /// comes in on a bar line, playing at the outgoing song's tempo so their beats fall together; their
@@ -26,6 +37,10 @@ public sealed record BeatMixPlan
     public TimeSpan SwapLength { get; init; }
     public int Bars { get; init; }
     public bool BeatMatched { get; init; }
+    /// <summary>How the songs are joined beyond their volumes (see <see cref="MixStyle"/>).</summary>
+    public MixStyle Style { get; init; }
+    /// <summary>The echo's delay when the style is an echo out (a dotted eighth at the outgoing tempo).</summary>
+    public TimeSpan EchoDelay { get; init; } = TimeSpan.FromSeconds(0.375);
     /// <summary>For the log: what was decided and why.</summary>
     public string Summary { get; init; } = string.Empty;
 }
@@ -34,11 +49,20 @@ public static class BeatMix
 {
     /// <summary>The most a song's tempo is changed to match another (beyond it, the change is heard).</summary>
     public const double MaxStretch = 0.08;
-    /// <summary>The longest blend, in bars.</summary>
-    public const int MaxBars = 8;
+    /// <summary>The longest blend, in bars: for a pair that fits as well as two songs can (see <see cref="Fit"/>).</summary>
+    public const int MaxBars = 16;
+    /// <summary>The longest blend for a pair that merely suits each other.</summary>
+    public const int SuitedBars = 8;
 
     /// <summary>The bass cut while the other song's bass plays (Hz).</summary>
     public const double BassCut = 300;
+    /// <summary>A filter sweep: how high the outgoing song's high-pass climbs (Hz), where the incoming song's low-pass starts and where it ends (Hz).</summary>
+    public const double FilterTop = 2600, FilterOpening = 700, FilterOpen = 16000;
+    /// <summary>How much echo an echo out reaches (0-1).</summary>
+    public const double EchoAmount = 0.6;
+
+    /// <summary>A dotted eighth at the tempo, kept within what an echo can use (seconds).</summary>
+    public static TimeSpan EchoDelayFor(double beatPeriod) => TimeSpan.FromSeconds(Math.Clamp(beatPeriod * 0.75, 0.2, 0.8));
 
     /// <summary>
     /// The tempo the next song plays at so its beats meet the outgoing song's: the same tempo, or its
@@ -54,6 +78,24 @@ public static class BeatMix
             .First();
         return Math.Abs(best - 1) <= MaxStretch ? best : null;
     }
+
+    /// <summary>How well the two ends match in energy, 0 to 1 (the last bars going out against the first bars coming in); null when either hasn't been measured.</summary>
+    public static double? EnergyFit(AudioAnalysis outgoing, AudioAnalysis incoming)
+    {
+        if (outgoing.BeatEnergy.Count < 8 || incoming.BeatEnergy.Count < 8) return null;
+        var outEnd = outgoing.BeatEnergy.TakeLast(16).Average();
+        var inStart = incoming.BeatEnergy.Take(16).Average();
+        return Math.Exp(-Math.Abs(outEnd - inStart) / 5.0);
+    }
+
+    /// <summary>
+    /// Whether a pair fits as well as two songs can, so that a sixteen-bar blend is worth it: keys that sit
+    /// together (the same, or a fifth apart), tempos within a few per cent (so the stretch is never heard),
+    /// and the same sort of energy either side of the join (within about 2.5 dB). Unmeasured energy is no
+    /// evidence, so it doesn't count.
+    /// </summary>
+    public static bool Fit(double harmony, double? ratio, double? energyFit) =>
+        harmony >= 0.9 && ratio is { } r && Math.Abs(r - 1) <= 0.03 && energyFit is >= 0.6;
 
     /// <summary>
     /// Whether the next song's opening suits the outgoing ending well enough for a long blend: keys
@@ -104,8 +146,11 @@ public static class BeatMix
                 IncomingStart = TimeSpan.FromSeconds(inStart),
                 Shape = new CrossfadeShape(TimeSpan.FromSeconds(length), shape0.InFade * Math.Min(1, scale), shape0.OutFadeStart * scale, TimeSpan.FromSeconds(length) - shape0.OutFadeStart * scale),
                 Bars = Math.Max(1, (int)Math.Round(length / bar)),
+                // The tempos can't be matched, so the join is hidden in an echo of the outgoing song, to its beat.
+                Style = MixStyle.Echo,
+                EchoDelay = EchoDelayFor(outgoing.BeatPeriod),
                 Summary = $"{outgoing.Bpm:0.#} → {incoming.Bpm:0.#} bpm (too far to match), {AudioAnalysis.KeyName(outgoing.Key)} → {AudioAnalysis.KeyName(incoming.Key)}: " +
-                          $"the loudness blend ({length:0.0} s) on a bar line",
+                          $"the loudness blend ({length:0.0} s) on a bar line, with an echo out",
             };
         }
 
@@ -115,7 +160,8 @@ public static class BeatMix
         // an instrumental ending into an opening that suits it (keys that sit together, the same sort
         // of energy at the join) shares as much as both songs' instrumental stretches allow, as Spotify
         // does; the voices still never meet. Otherwise the blend follows the loudness plan's lead.
-        var bars = harmony >= 0.55 ? MaxBars : 4;
+        var fit = Fit(harmony, ratio, EnergyFit(outgoing, incoming));
+        var bars = fit ? MaxBars : harmony >= 0.55 ? SuitedBars : 4;
         var cap = Math.Max(loudnessOverlap * 2.5, 2 * bar);
         if (outVocals is not null && inVocals is not null)
         {
@@ -126,6 +172,9 @@ public static class BeatMix
             cap = Suits(outgoing, incoming, harmony) ? Math.Max(bar, instrumental) : Math.Min(cap, Math.Max(bar, instrumental));
         }
         while (bars > 1 && bars * bar > cap + 1e-6) bars /= 2;
+        // The next song must have been analysed that far in (its first minute or so), and the blend must not
+        // begin before the outgoing song's middle, so a long blend never eats a short song.
+        while (bars > 1 && (inStart + bars * bar * (ratio ?? 1) > incoming.To - 1 || soundEnd - bars * bar < soundEnd / 2)) bars /= 2;
         var overlap = bars * bar;
 
         // The outgoing bar line from which the overlap ends as its sound does (or just before).
@@ -139,10 +188,15 @@ public static class BeatMix
         var swapAt = bars >= 2 ? TimeSpan.FromSeconds(bars / 2 * bar) : (TimeSpan?)null;
         var beat = TimeSpan.FromSeconds(outgoing.BeatPeriod);
         // Volumes: the next song rises through the first half (its bass held back); the outgoing one
-        // holds until the swap and leaves over the rest. A one-bar mix is a quick, beat-aligned cut.
-        var shape = swapAt is { } swap
-            ? new CrossfadeShape(overlapSpan, swap, swap, overlapSpan - swap)
-            : new CrossfadeShape(overlapSpan, TimeSpan.FromSeconds(Math.Min(overlap / 2, 1)), TimeSpan.Zero, overlapSpan);
+        // holds until the swap and leaves over the rest. A one-bar mix is a quick, beat-aligned cut. A
+        // sixteen-bar blend takes its time at both ends: the next song is up by bar six, both play in full
+        // from there to bar ten (the bass changing hands in the middle of it), and the outgoing one is gone
+        // by bar sixteen.
+        var shape = bars >= MaxBars && swapAt is { } longSwap
+            ? new CrossfadeShape(overlapSpan, overlapSpan * (6.0 / 16), overlapSpan * (10.0 / 16), overlapSpan * (6.0 / 16))
+            : swapAt is { } swap
+                ? new CrossfadeShape(overlapSpan, swap, swap, overlapSpan - swap)
+                : new CrossfadeShape(overlapSpan, TimeSpan.FromSeconds(Math.Min(overlap / 2, 1)), TimeSpan.Zero, overlapSpan);
 
         return new BeatMixPlan
         {
@@ -155,9 +209,12 @@ public static class BeatMix
             SwapLength = beat,
             Bars = bars,
             BeatMatched = matched,
+            // A pair that fits perfectly is blended long, the bass changing hands. Any other pair (a blend of two bars or more) gets a
+            // filter sweep, which hides what doesn't quite fit (the outgoing song thins out as the next opens up).
+            Style = !fit && swapAt is not null ? MixStyle.Filter : MixStyle.Blend,
             Summary = $"{outgoing.Bpm:0.#} → {incoming.Bpm:0.#} bpm" + (matched ? $" (×{ratio:0.000})" : " (too far to match)") +
-                      $", {AudioAnalysis.KeyName(outgoing.Key)} → {AudioAnalysis.KeyName(incoming.Key)} (harmony {harmony:0.0}), {bars} bar{(bars == 1 ? string.Empty : "s")}" +
-                      (swapAt is not null ? ", bass swap halfway" : string.Empty),
+                      $", {AudioAnalysis.KeyName(outgoing.Key)} → {AudioAnalysis.KeyName(incoming.Key)} (harmony {harmony:0.0}), {bars} bar{(bars == 1 ? string.Empty : "s")}{(fit ? ", a perfect fit" : string.Empty)}" +
+                      (swapAt is not null ? (!fit ? ", filter sweep from halfway" : ", bass swap halfway") : string.Empty),
         };
     }
 }

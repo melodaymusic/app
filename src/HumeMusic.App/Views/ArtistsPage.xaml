@@ -15,7 +15,10 @@
         </Grid.RowDefinitions>
 
         <controls:PageHeader Padding="{StaticResource HumePageHeaderPadding}" Title="Artists" Subtitle="{x:Bind ViewModel.CountText, Mode=OneWay}">
-            <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Spacing="8">
+                <controls:LayoutToggle x:Name="Layout" PageKey="artists" />
+                <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+            </StackPanel>
         </controls:PageHeader>
 
         <GridView controls:QueueDrag.IsSource="True" x:Name="Grid" Grid.Row="1" Padding="{StaticResource HumeGridPadding}"
@@ -32,6 +35,20 @@
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
+
+        <!-- The same items as rows: a list view of the page (the toggle in the header chooses). -->
+        <ListView x:Name="ItemList" Grid.Row="1" Visibility="Collapsed" Padding="{StaticResource HumeListPadding}"
+                  ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}" controls:QueueDrag.IsSource="True"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ItemContainerStyle="{StaticResource HumeTrackItemStyle}"
+                  IncrementalLoadingThreshold="3" DataFetchSize="2"
+                  AutomationProperties.Name="Artists list" AutomationProperties.AutomationId="ArtistsList">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:Artist">
+                    <controls:MediaListRow Item="{x:Bind}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
         <controls:PageStateView SkeletonKind="Tiles" SkeletonRound="True" SkeletonPadding="{StaticResource HumeGridPadding}" Grid.Row="1" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
                                 ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"

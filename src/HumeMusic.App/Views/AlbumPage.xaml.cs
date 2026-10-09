@@ -20,7 +20,15 @@ public sealed partial class AlbumPage : Page
         ViewModel = App.Services.GetRequiredService<AlbumViewModel>();
         InitializeComponent();
         ViewModel.PropertyChanged += OnViewModelChanged;
+        Loaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged += OnItemChanged;
+        Unloaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged -= OnItemChanged;
     }
+
+    // Its cover, backdrop, logo or details were changed (from the menu): show them.
+    private void OnItemChanged(object? sender, MediaItem item) => DispatcherQueue.TryEnqueue(async () =>
+    {
+        if (item.RatingKey == ViewModel.Album?.RatingKey) await ViewModel.RefreshAlbumAsync();
+    });
 
     public AlbumViewModel ViewModel { get; private set; }
 

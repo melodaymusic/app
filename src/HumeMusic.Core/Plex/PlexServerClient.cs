@@ -14,6 +14,7 @@ public static class PlexTypes
     public const int Album = 9;
     public const int Track = 10;
     public const int Playlist = 15;
+    public const int Collection = 18;
 }
 
 /// <summary>Playback states understood by the /:/timeline endpoint.</summary>
@@ -159,7 +160,8 @@ public sealed class PlexServerClient
         var q = new List<KeyValuePair<string, string?>> { new("type", "8"), new("sort", sort) };
         q.AddRange(filters);
         q.AddRange(Page(start, size));
-        var c = await GetAsync($"/library/sections/{sectionKey}/all", q, ct, ShortTtl).ConfigureAwait(false);
+        // A random order is asked for to get other artists each time (a station starting afresh), so it isn't served from the cache.
+        var c = await GetAsync($"/library/sections/{sectionKey}/all", q, ct, sort == "random" && !Sampling.Value ? null : ShortTtl).ConfigureAwait(false);
         return ToPage(c, start, PlexMapper.ToArtist);
     }
 
@@ -168,7 +170,7 @@ public sealed class PlexServerClient
         var q = new List<KeyValuePair<string, string?>> { new("type", "9"), new("sort", sort) };
         q.AddRange(filters);
         q.AddRange(Page(start, size));
-        var c = await GetAsync($"/library/sections/{sectionKey}/all", q, ct, ShortTtl).ConfigureAwait(false);
+        var c = await GetAsync($"/library/sections/{sectionKey}/all", q, ct, sort == "random" && !Sampling.Value ? null : ShortTtl).ConfigureAwait(false);
         return ToPage(c, start, PlexMapper.ToAlbum);
     }
 
@@ -321,7 +323,8 @@ public sealed class PlexServerClient
                     .Select(l => new LyricLine(
                         l.StartOffset is { } start ? TimeSpan.FromMilliseconds(start) : null,
                         l.EndOffset is { } end ? TimeSpan.FromMilliseconds(end) : null,
-                        string.Concat((l.Span ?? []).Select(sp => sp.Text)).Trim()))
+                        string.Concat((l.Span ?? []).Select(sp => sp.Text)).Trim())
+                    { Words = HumeMusic.Core.Lyrics.LyricWords.From(l.Span?.Select(sp => (sp.Text, sp.StartOffset)).ToList()) })
                     .ToList();
                 // Trailing and leading blank lines carry nothing.
                 while (lines.Count > 0 && lines[^1].Text.Length == 0) lines.RemoveAt(lines.Count - 1);
@@ -427,6 +430,24 @@ public sealed class PlexServerClient
         var c = await GetAsync($"/library/sections/{sectionKey}/{field}",
             [new("type", libraryType.ToString(CultureInfo.InvariantCulture))], ct, MediumTtl).ConfigureAwait(false);
         return (c.Directory ?? []).Select(d => PlexMapper.ToTag(d, kind)).Where(t => t is not null).Select(t => t!).ToList();
+    }
+
+    /// <summary>
+    /// A folder of the library as it is on disk (/library/sections/{key}/folder): the folders in it and the songs directly in
+    /// it. <paramref name="folderKey"/> is the key Plex gave the folder, or null for the top of the library.
+    /// </summary>
+    public async Task<FolderListing> GetFolderAsync(string sectionKey, string? folderKey, CancellationToken ct = default)
+    {
+        var path = folderKey ?? $"/library/sections/{sectionKey}/folder";
+        var c = await GetAsync(path, Page(0, 5000), ct, ShortTtl).ConfigureAwait(false);
+        // Plex lists a folder's folders as items with no type of their own (each with a key to open it by), and its songs as tracks.
+        var folders = (c.Metadata ?? []).Where(m => m.Type != "track").Select(m => (Key: m.Key, Title: m.Title))
+            .Concat((c.Directory ?? []).Select(d => (Key: d.Key, Title: d.Title)))
+            .Where(f => f.Key is { Length: > 0 } && f.Title is { Length: > 0 })
+            .Select(f => new FolderEntry(f.Title!, f.Key!))
+            .ToList();
+        var tracks = (c.Metadata ?? []).Where(m => m.Type == "track").Select(PlexMapper.ToTrack).ToList();
+        return new FolderListing(folders, tracks);
     }
 
     public static string TagField(TagKind kind) => kind switch
@@ -738,7 +759,12 @@ public sealed class PlexServerClient
 
     // ---------------------------------------------------------------- artwork
 
-    private static string ArtworkPath(ArtworkKind kind) => kind == ArtworkKind.Poster ? "posters" : "arts";
+    private static string ArtworkPath(ArtworkKind kind) => kind switch
+    {
+        ArtworkKind.Poster => "posters",
+        ArtworkKind.Logo => "clearLogos",
+        _ => "arts",
+    };
 
     /// <summary>The images Plex offers for an item's photo or backdrop (from its agents, or uploaded).</summary>
     public async Task<IReadOnlyList<ArtworkOption>> GetArtworkOptionsAsync(string ratingKey, ArtworkKind kind, CancellationToken ct = default)
@@ -750,10 +776,17 @@ public sealed class PlexServerClient
             .ToList();
     }
 
+    /// <summary>The bytes of an image the server holds (a logo, kept as made, not resized by the server's photo transcoder).</summary>
+    public async Task<byte[]> GetImageBytesAsync(string path, CancellationToken ct = default)
+    {
+        using var response = await _http.SendAsync(HttpMethod.Get, Build(path), Token, ct, TimeSpan.FromSeconds(30)).ConfigureAwait(false);
+        return await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
+    }
+
     /// <summary>Uses one of the offered images as the item's photo or backdrop.</summary>
     public async Task SelectArtworkAsync(string ratingKey, ArtworkKind kind, ArtworkOption option, CancellationToken ct = default)
     {
-        var endpoint = kind == ArtworkKind.Poster ? "poster" : "art";
+        var endpoint = kind switch { ArtworkKind.Poster => "poster", ArtworkKind.Logo => "clearLogo", _ => "art" };
         await _http.SendAndForgetBodyAsync(HttpMethod.Put, Build($"/library/metadata/{ratingKey}/{endpoint}", [new("url", option.Key)]), Token, ct).ConfigureAwait(false);
         InvalidateCache();
     }
@@ -808,6 +841,27 @@ public sealed class PlexServerClient
     public async Task EditPlaylistAsync(string playlistKey, string title, string? summary, CancellationToken ct = default)
     {
         await _http.SendAndForgetBodyAsync(HttpMethod.Put, Build($"/playlists/{playlistKey}", [new("title", title), new("summary", summary ?? string.Empty)]), Token, ct).ConfigureAwait(false);
+        InvalidateCache();
+    }
+
+    /// <summary>
+    /// The query that changes an album's, artist's or collection's name and description on the server (and locks them, so a
+    /// later scan doesn't put the old ones back).
+    /// </summary>
+    public static IReadOnlyList<KeyValuePair<string, string?>> DetailsQuery(int type, string ratingKey, string title, string? summary) =>
+    [
+        new("type", type.ToString(CultureInfo.InvariantCulture)),
+        new("id", ratingKey),
+        new("title.value", title),
+        new("title.locked", "1"),
+        new("summary.value", summary ?? string.Empty),
+        new("summary.locked", "1"),
+    ];
+
+    /// <summary>Changes an album's, artist's or collection's name and description on the Plex server (<paramref name="type"/> is one of <see cref="PlexTypes"/>).</summary>
+    public async Task EditDetailsAsync(string sectionKey, int type, string ratingKey, string title, string? summary, CancellationToken ct = default)
+    {
+        await _http.SendAndForgetBodyAsync(HttpMethod.Put, Build($"/library/sections/{sectionKey}/all", DetailsQuery(type, ratingKey, title, summary)), Token, ct).ConfigureAwait(false);
         InvalidateCache();
     }
 

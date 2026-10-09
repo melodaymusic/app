@@ -10,10 +10,8 @@ public enum CardStyle
     Billboard,
     /// <summary>Square cover over a panel in the cover's most common colour (playlists, collections).</summary>
     ColourBoard,
-    /// <summary>A billboard at 1:1: art filling a square card, with its name laid over it (tag stations).</summary>
+    /// <summary>A billboard at 1:1: art filling a square card, with its name laid over it (stations).</summary>
     SquareBoard,
-    /// <summary>A large squareboard, as wide as a colour board (Meloday and Plex's stations).</summary>
-    StationBoard,
     /// <summary>
     /// A billboard told as a story (Apple Music's editorial cards): its heading above and outside the
     /// backdrop, a short line on it, and the album's cover in the corner.

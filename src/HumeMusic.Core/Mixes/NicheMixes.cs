@@ -34,7 +34,7 @@ public sealed record NicheMixRecipe(
         get
         {
             if (Focus == NicheFocus.Sonic && SeedTrackTitle is { Length: > 0 } seed)
-                return seed + " Neighbourhood Mix";
+                return seed + " Mix";
             if (Artists.Count >= 2)
                 return string.Join(" + ", Artists.Take(2)) + " Mix";
 

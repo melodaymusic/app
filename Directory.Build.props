@@ -10,6 +10,6 @@
     (src/HumeMusic.App/app.manifest carries the same number for Windows; keep it in step.)
   -->
   <PropertyGroup>
-    <Version>0.33.0</Version>
+    <Version>0.57.0</Version>
   </PropertyGroup>
 </Project>

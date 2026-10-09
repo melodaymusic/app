@@ -34,8 +34,16 @@ public sealed partial class DetailHeader : UserControl
             Helpers.Elevation.Apply(Cover, ShadowReceiver, 32);
             ApplySizes(animate: false);
             AttachScroller();
+            Accent.SourceChanged += OnAccentChanged;
+            App.Services.GetRequiredService<ArtistLogoService>().Changed += OnLogoSettingChanged;
+            ApplyLogoLook(animate: false);
         };
-        Unloaded += (_, _) => DetachScroller();
+        Unloaded += (_, _) =>
+        {
+            DetachScroller();
+            Accent.SourceChanged -= OnAccentChanged;
+            App.Services.GetRequiredService<ArtistLogoService>().Changed -= OnLogoSettingChanged;
+        };
     }
 
     /// <summary>Raised by the Play and Shuffle buttons; the page decides what plays (e.g. an album's loaded tracks).</summary>
@@ -172,9 +180,55 @@ public sealed partial class DetailHeader : UserControl
     private void UpdateSmart() =>
         SmartIcon.Visibility = Item is Playlist { IsSmart: true } && MetaLine.Visibility == Visibility.Visible ? Visibility.Visible : Visibility.Collapsed;
 
+    private int _logoVersion;
+
+    /// <summary>The server's logo for the item stands in for its name, when it has one (the name shows otherwise).</summary>
+    private async Task ShowLogoAsync(MediaItem? item)
+    {
+        var version = ++_logoVersion;
+        PreparedLogo? logo = null;
+        if (item is not null)
+        {
+            try
+            {
+                logo = await App.Services.GetRequiredService<PlexLogoService>().GetAsync(item);
+            }
+            catch (Exception ex) when (ex is IOException or System.Runtime.InteropServices.COMException)
+            {
+                logo = null;
+            }
+        }
+        if (version != _logoVersion) return;
+        ApplyLogoLook(animate: false);
+        LogoImage.Logo = logo;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(LogoImage, item?.Title ?? string.Empty);
+        LogoImage.Visibility = logo is null ? Visibility.Collapsed : Visibility.Visible;
+        TitleText.Visibility = logo is null ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    /// <summary>
+    /// The logo is shown as the artist page shows an artist's: the same size (smaller once the header condenses), and in the
+    /// page's colour when Colour Drop is chosen in Settings, in its own colours otherwise.
+    /// </summary>
+    private void ApplyLogoLook(bool animate)
+    {
+        LogoImage.MaxLogoHeight = _compact ? UiScale.Size(48, 36) : UiScale.Size(168, 110);
+        LogoImage.MaxLogoWidth = _compact ? UiScale.Size(240, 160) : UiScale.Size(600, 360);
+        var drop = App.Services.GetRequiredService<ArtistLogoService>().UsesColourDrop;
+        LogoImage.Tinted = drop;
+        if (!drop) return;
+        var rgb = Accent.Source is { } source ? Core.Artwork.MelodayPalette.Accent(source, dark: true) : 0xF4F2EE;
+        LogoImage.SetColour(Windows.UI.Color.FromArgb(255, (byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb), animate);
+    }
+
+    private void OnAccentChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() => ApplyLogoLook(animate: true));
+
+    private void OnLogoSettingChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() => ApplyLogoLook(animate: false));
+
     private void UpdateItem()
     {
         TitleText.Text = Item?.Title ?? string.Empty;
+        _ = ShowLogoAsync(Item);
         UpdateSmart();
         Pin.Item = Item;
         HeaderRating.Item = Item;
@@ -255,6 +309,7 @@ public sealed partial class DetailHeader : UserControl
         var lineHeight = _compact ? UiScale.Text(34) : UiScale.Text(56);
         var detail = _compact ? Visibility.Collapsed : Visibility.Visible;
         Actions.Margin = new Thickness(0, _compact ? UiScale.Size(8) : UiScale.Size(16), 0, 0);
+        ApplyLogoLook(animate: false);
         Root.Padding = _compact
             ? new Thickness(UiScale.Gutter, UiScale.TopInset + UiScale.Size(4), UiScale.Gutter, UiScale.Size(12))
             : new Thickness(UiScale.Gutter, UiScale.TopInset + UiScale.Size(8), UiScale.Gutter, UiScale.Size(24));

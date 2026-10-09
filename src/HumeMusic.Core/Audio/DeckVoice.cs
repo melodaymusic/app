@@ -19,6 +19,13 @@ public sealed class DeckVoice
     private readonly Func<float[], int, int> _pull;
     private readonly TimeStretcher _stretcher;
     private readonly HighPass _filter;
+    private readonly LowPass _low;
+    private double _lowNow = -1;
+    private float[] _lowBuf = [];
+    private float _lowWetNow;
+    private float[] _echo = [];
+    private int _echoPos;
+    private float _echoWetNow;
     private float[] _feed = [];
     private bool _stretching;
     private float _gainNow = -1;
@@ -34,6 +41,7 @@ public sealed class DeckVoice
         _pull = pull;
         _stretcher = new TimeStretcher(rate, channels);
         _filter = new HighPass(rate, channels) { Cutoff = FilterFloor };
+        _low = new LowPass(rate, channels);
     }
 
     /// <summary>The volume wanted (0-1); reached smoothly over the next block.</summary>
@@ -45,6 +53,15 @@ public sealed class DeckVoice
     /// <summary>The bass filter's cutoff wanted (Hz; at or below the floor, off).</summary>
     public double Cutoff { get; set; }
 
+    /// <summary>The low-pass cutoff wanted (Hz; 0, off): the song dull at first and opening up as it comes into a mix.</summary>
+    public double LowCutoff { get; set; }
+    /// <summary>How much echo is mixed in (0-1): the song repeating itself, fading, as it goes out of a mix.</summary>
+    public float EchoWet { get; set; }
+    /// <summary>The echo's delay in seconds (a dotted eighth at the song's tempo suits it).</summary>
+    public double EchoDelay { get; set; } = 0.375;
+    /// <summary>The echo's feedback: how much of each repeat comes back round.</summary>
+    public const float EchoFeedback = 0.5f;
+
     /// <summary>How much of the song (seconds) has been played.</summary>
     public double Played { get; private set; }
 
@@ -55,6 +72,11 @@ public sealed class DeckVoice
         _stretcher.Clear();
         _stretching = false;
         _filter.Reset();
+        _low.Reset();
+        _lowNow = -1;
+        _lowWetNow = 0;
+        _echo = [];
+        _echoWetNow = 0;
     }
 
     /// <summary>Renders up to <paramref name="frames"/> frames; returns how many the source could give.</summary>
@@ -110,6 +132,66 @@ public sealed class DeckVoice
             }
         _wetNow = wetTo;
 
+        // The low-pass: on from the first block it is asked for (and, as the cutoff is moved, gliding on a log scale as heard);
+        // blended in and out over a block, and kept following the sound while off so it never jolts.
+        var lowOn = LowCutoff > 0;
+        if (lowOn || _lowWetNow > 0)
+        {
+            var target2 = lowOn ? Math.Clamp(LowCutoff, 40, _rate * 0.45) : Math.Max(40, _lowNow);
+            _lowNow = _lowNow < 0 ? target2 : Math.Exp(Math.Log(_lowNow) + (Math.Log(target2) - Math.Log(_lowNow)) * 0.25);
+            _low.Cutoff = _lowNow;
+            if (_lowBuf.Length < frames * _channels) _lowBuf = new float[frames * _channels];
+            Array.Copy(output, _lowBuf, frames * _channels);
+            _low.Process(_lowBuf, 0, frames);
+            var lowTo = lowOn ? 1f : 0f;
+            var lowFrom = _lowWetNow;
+            for (var i = 0; i < frames; i++)
+            {
+                var w = lowFrom + (lowTo - lowFrom) * (i + 1) / frames;
+                for (var c = 0; c < _channels; c++)
+                {
+                    var k = i * _channels + c;
+                    output[k] = output[k] * (1 - w) + _lowBuf[k] * w;
+                }
+            }
+            _lowWetNow = lowTo;
+            if (!lowOn && lowTo == 0) _lowNow = -1;
+        }
+        else
+        {
+            _low.Cutoff = 0;
+            _low.Process(output, 0, frames);
+        }
+
+        // The echo: the song repeating itself, each repeat half as loud, mixed in as far as asked; gone entirely when not asked.
+        if (EchoWet > 0 || _echoWetNow > 0)
+        {
+            var delay = Math.Clamp((int)(EchoDelay * _rate), _rate / 10, _rate);
+            if (_echo.Length != delay * _channels)
+            {
+                _echo = new float[delay * _channels];
+                _echoPos = 0;
+            }
+            var echoFrom = _echoWetNow;
+            var echoTo = EchoWet;
+            for (var i = 0; i < frames; i++)
+            {
+                var w = echoFrom + (echoTo - echoFrom) * (i + 1) / frames;
+                for (var c = 0; c < _channels; c++)
+                {
+                    var k = i * _channels + c;
+                    var at = _echoPos * _channels + c;
+                    var heard = _echo[at];
+                    var x = output[k];
+                    _echo[at] = x + EchoFeedback * heard;
+                    output[k] = x + w * heard;
+                }
+                _echoPos = (_echoPos + 1) % delay;
+            }
+            _echoWetNow = echoTo;
+            if (echoTo == 0 && echoFrom == 0) _echo = [];
+        }
+
         // Volume glides across the block.
         var to = Gain * Level;
         var from = _gainNow < 0 ? to : _gainNow;
@@ -124,7 +206,8 @@ public sealed class DeckVoice
 }
 
 /// <summary>What a mix plan asks of each song at a moment into the mix.</summary>
-public readonly record struct MixMoment(double OutGain, double InGain, double OutCutoff, double InCutoff, double InRate, bool OutgoingDone, bool Finished);
+public readonly record struct MixMoment(double OutGain, double InGain, double OutCutoff, double InCutoff, double InRate, bool OutgoingDone, bool Finished,
+    double InLowPass = 0, float OutEcho = 0);
 
 public static class MixTimeline
 {
@@ -145,7 +228,23 @@ public static class MixTimeline
             : plan.TempoRatio + (1 - plan.TempoRatio) * Math.Min(1, after / plan.RampBack);
         var done = elapsed >= plan.Shape.Overlap;
         var finished = done && elapsed >= plan.Shape.Overlap + plan.RampBack && elapsed >= plan.Shape.InFade;
-        return new MixMoment(outGain, inGain, outCut, inCut, rate, done, finished);
+
+        // The style of the mix: a filter sweep (the outgoing song loses its lows then its mids as it goes, while the incoming one,
+        // dull at first, opens up), or an echo out (the outgoing song repeating itself, fading, as it leaves).
+        double inLow = 0;
+        float echo = 0;
+        switch (plan.Style)
+        {
+            case MixStyle.Filter when plan.BassSwap is { } swapAt && plan.Shape.Overlap > swapAt:
+                outCut = Sweep(elapsed, swapAt, plan.Shape.Overlap - swapAt, 0, BeatMix.FilterTop);
+                inLow = elapsed >= plan.Shape.InFade ? 0 : Sweep(elapsed, TimeSpan.Zero, plan.Shape.InFade, BeatMix.FilterOpening, BeatMix.FilterOpen);
+                break;
+            case MixStyle.Echo when plan.Shape.Overlap > plan.Shape.OutFadeStart:
+                var through = Math.Clamp((elapsed - plan.Shape.OutFadeStart) / (plan.Shape.Overlap - plan.Shape.OutFadeStart), 0, 1);
+                echo = (float)(BeatMix.EchoAmount * Math.Sin(through * Math.PI / 2));
+                break;
+        }
+        return new MixMoment(outGain, inGain, outCut, inCut, rate, done, finished, inLow, echo);
     }
 
     /// <summary>A cutoff moving from <paramref name="from"/> to <paramref name="to"/> over the swap (on a log scale, as heard).</summary>

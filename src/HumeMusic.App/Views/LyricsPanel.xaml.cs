@@ -60,11 +60,51 @@ public sealed partial class LyricsPanel : UserControl
         Loaded += (_, _) =>
         {
             _player.PropertyChanged += OnPlayerChanged;
+            _service.Changed += OnLyricsChanged;
             Refresh();
         };
-        Unloaded += (_, _) => _player.PropertyChanged -= OnPlayerChanged;
+        Unloaded += (_, _) =>
+        {
+            _player.PropertyChanged -= OnPlayerChanged;
+            _service.Changed -= OnLyricsChanged;
+        };
         // Lyrics are only fetched while the panel is shown.
         RegisterPropertyChangedCallback(VisibilityProperty, (_, _) => Refresh());
+    }
+
+    // The listener shifted or timed this song's lyrics: show them as they are now.
+    private void OnLyricsChanged(object? sender, string ratingKey) => DispatcherQueue.TryEnqueue(() =>
+    {
+        if (ratingKey != _shownKey) return;
+        _shownKey = null;
+        Refresh();
+    });
+
+    /// <summary>Shift the lyrics earlier or later (for a version of the song their timing wasn't made for), or time them by hand.</summary>
+    private void OnTimingClick(object sender, RoutedEventArgs e)
+    {
+        if (_player.CurrentTrack is not { } track) return;
+        var edit = _service.EditOf(track);
+        var offset = edit?.OffsetMs ?? 0;
+        var menu = new MenuFlyout();
+        menu.Items.Add(new MenuFlyoutItem
+        {
+            IsEnabled = false,
+            Text = offset == 0 ? "Timing as the source has it" : $"Shifted {(offset > 0 ? "later" : "earlier")} by {Math.Abs(offset) / 1000.0:0.0} s",
+        });
+        void Add(string text, Action action)
+        {
+            var item = new MenuFlyoutItem { Text = text };
+            item.Click += (_, _) => action();
+            menu.Items.Add(item);
+        }
+        Add("Lyrics earlier (0.1 s)", () => _service.Nudge(track, -100));
+        Add("Lyrics later (0.1 s)", () => _service.Nudge(track, 100));
+        if (offset != 0) Add("Undo the shift", () => _service.Nudge(track, -offset));
+        if (edit?.Lines is { Count: > 0 }) Add("Use the original lyrics", () => _service.ClearEdits(track));
+        menu.Items.Add(new MenuFlyoutSeparator());
+        Add("Time the lyrics yourself…", () => App.Services.GetRequiredService<LibraryActions>().OpenLyricStudio(track));
+        menu.ShowAt(TimingButton);
     }
 
     private bool IsShown => Visibility == Visibility.Visible;
@@ -118,7 +158,12 @@ public sealed partial class LyricsPanel : UserControl
             return;
         }
         _lyrics = lyrics;
-        Credit.Text = lyrics.Source == LyricsSource.LrcLib ? "Lyrics from LRCLIB" : "Lyrics from LyricFind, through Plex";
+        Credit.Text = lyrics.Source switch
+        {
+            LyricsSource.LrcLib => "Lyrics from LRCLIB",
+            LyricsSource.Custom => "Lyrics timed by you",
+            _ => "Lyrics from LyricFind, through Plex",
+        };
         Credit.Visibility = Visibility.Visible;
         State.IsEmpty = false;
         Build(lyrics);

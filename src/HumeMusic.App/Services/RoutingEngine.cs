@@ -19,8 +19,9 @@ public sealed class RoutingEngine : IPlaybackEngine
     {
         _local = local;
         _mixer = mixer;
-        // AutoMix plays through Meloday Music's own mixer; everything else through Windows' player.
-        _wantMixer = () => settings.Current.AutoMix;
+        // AutoMix plays through Meloday Music's own mixer, and so does anything with a visualizer (the mixer is
+        // where the sound can be seen); everything else through Windows' player.
+        _wantMixer = () => settings.Current.AutoMix || settings.Current.Visualizer != Core.Playback.VisualizerStyle.Off;
         _here = _local;
         Hook(_local);
         Hook(_mixer);
@@ -34,7 +35,7 @@ public sealed class RoutingEngine : IPlaybackEngine
 
     private IPlaybackEngine Active => (IPlaybackEngine?)_cast ?? _here;
 
-    /// <summary>The mixer, while it's the engine playing (AutoMix on, on this PC).</summary>
+    /// <summary>The mixer, while it's the engine playing (AutoMix or a visualizer on, on this PC).</summary>
     public MixEngine? Mixer => _cast is null && ReferenceEquals(_here, _mixer) ? _mixer : null;
 
     /// <summary>Changes this PC's engine to match the AutoMix setting, between songs.</summary>

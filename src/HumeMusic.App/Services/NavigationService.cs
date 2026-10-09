@@ -58,22 +58,76 @@ public sealed class NavigationService
     {
         if (_frame is null) return;
         if (_frame.CurrentSourcePageType == page && parameter is null && !clearHistory) return;
-        if (TryNavigate(page, parameter, Instant) && clearHistory)
-            _frame.BackStack.Clear();
+        Transition(() =>
+        {
+            if (TryNavigate(page, parameter, Instant) && clearHistory) _frame.BackStack.Clear();
+        });
     }
 
     public void NavigateRoot(Type page)
     {
         if (_frame is null) return;
-        if (_frame.CurrentSourcePageType != page)
-            TryNavigate(page, null, Instant);
-        _frame.BackStack.Clear();
-        Navigated?.Invoke(this, null!);
+        void Go()
+        {
+            if (_frame.CurrentSourcePageType != page) TryNavigate(page, null, Instant);
+            _frame.BackStack.Clear();
+            Navigated?.Invoke(this, null!);
+        }
+        if (_frame.CurrentSourcePageType == page) Go();
+        else Transition(Go);
     }
 
     public void GoBack()
     {
-        if (_frame?.CanGoBack == true) _frame.GoBack(Instant);
+        if (_frame?.CanGoBack == true) Transition(() => _frame.GoBack(Instant));
+    }
+
+    // ------------------------------------------------------------------ changing page
+
+    private int _transition;
+
+    /// <summary>
+    /// A page change that never shows two pages at once: the page on show fades away, quickly, and only then is the next put in
+    /// its place (it fades in, see <see cref="FadeIn"/>). The fade runs on the compositor, so it is smooth even when building
+    /// the next page keeps the interface busy. Choosing another page meanwhile just changes where it ends up; a page that
+    /// won't be left (it asked to stay) is shown again.
+    /// </summary>
+    private void Transition(Action navigate)
+    {
+        if (_frame?.Content is not Microsoft.UI.Xaml.UIElement old || !Helpers.Motion.IsEnabled)
+        {
+            navigate();
+            return;
+        }
+        var version = ++_transition;
+        var frame = _frame;
+        var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(old);
+        var compositor = visual.Compositor;
+        var fade = compositor.CreateScalarKeyFrameAnimation();
+        fade.InsertKeyFrame(1, 0, compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.4f, 0f), new System.Numerics.Vector2(1f, 1f)));
+        fade.Duration = TimeSpan.FromMilliseconds(Helpers.Motion.Quick);
+        frame.IsHitTestVisible = false;
+        var batch = compositor.CreateScopedBatch(Microsoft.UI.Composition.CompositionBatchTypes.Animation);
+        visual.StartAnimation("Opacity", fade);
+        batch.End();
+        batch.Completed += (_, _) => frame.DispatcherQueue.TryEnqueue(() =>
+        {
+            if (version != _transition) return;
+            try
+            {
+                navigate();
+            }
+            finally
+            {
+                frame.IsHitTestVisible = true;
+                // The page stayed (it asked not to be left, or the next couldn't be built): it is shown again.
+                if (ReferenceEquals(frame.Content, old))
+                {
+                    visual.StopAnimation("Opacity");
+                    visual.Opacity = 1;
+                }
+            }
+        });
     }
 
     /// <summary>Pages simply appear, as on the Mac: no slide or entrance animation, whatever the Motion setting.</summary>
@@ -100,13 +154,19 @@ public sealed class NavigationService
     /// </summary>
     private static void FadeIn(Microsoft.UI.Xaml.UIElement? page)
     {
-        if (page is null || !Helpers.Motion.IsEnabled) return;
+        if (page is null) return;
         var visual = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(page);
+        // A page kept from before (the cached ones) was left faded away: without motion it is simply shown.
+        if (!Helpers.Motion.IsEnabled)
+        {
+            visual.Opacity = 1;
+            return;
+        }
         var compositor = visual.Compositor;
         var fade = compositor.CreateScalarKeyFrameAnimation();
         fade.InsertKeyFrame(0, 0);
         fade.InsertKeyFrame(1, 1, compositor.CreateCubicBezierEasingFunction(new System.Numerics.Vector2(0.2f, 0f), new System.Numerics.Vector2(0f, 1f)));
-        fade.Duration = TimeSpan.FromMilliseconds(Helpers.Motion.Emphasized);
+        fade.Duration = TimeSpan.FromMilliseconds(Helpers.Motion.Standard);
         visual.StartAnimation("Opacity", fade);
     }
 

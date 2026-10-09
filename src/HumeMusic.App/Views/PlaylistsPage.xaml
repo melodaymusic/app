@@ -22,6 +22,7 @@
                 <Button Style="{StaticResource HumeSecondaryButtonStyle}" Click="OnNewSmartPlaylist" AutomationProperties.AutomationId="NewSmartPlaylistButton">
                     <controls:IconLabel Icon="Sparkles" Text="New Smart Playlist" />
                 </Button>
+                <controls:LayoutToggle x:Name="Layout" PageKey="playlists" />
                 <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
             </StackPanel>
         </controls:PageHeader>
@@ -41,6 +42,20 @@
                 </DataTemplate>
             </GridView.ItemTemplate>
         </GridView>
+
+        <!-- The same items as rows: a list view of the page (the toggle in the header chooses). -->
+        <ListView x:Name="ItemList" Grid.Row="1" Visibility="Collapsed" Padding="{StaticResource HumeListPadding}"
+                  ItemsSource="{x:Bind ViewModel.Items, Mode=OneWay}" controls:QueueDrag.IsSource="True"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ItemContainerStyle="{StaticResource HumeTrackItemStyle}"
+                  IncrementalLoadingThreshold="3" DataFetchSize="2"
+                  AutomationProperties.Name="Playlists list" AutomationProperties.AutomationId="PlaylistsList">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="models:Playlist">
+                    <controls:MediaListRow Item="{x:Bind}" />
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
 
         <controls:PageStateView SkeletonKind="Tiles" SkeletonPadding="{StaticResource HumeGridPadding}" Grid.Row="1" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
                                 ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"

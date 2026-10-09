@@ -33,7 +33,7 @@ public sealed class NicheMix : TagMix
     public string? Context { get; init; }
     public NicheFocus Focus { get; init; }
     public NicheEnergy Energy { get; init; }
-    /// <summary>The sonic seed when this is a neighbourhood around one recently played track.</summary>
+    /// <summary>The sonic seed when this mix sounds like one recently played track.</summary>
     public string? SeedTrackKey { get; init; }
     public string? SeedTrackTitle { get; init; }
     /// <summary>Artists repeatedly heard in the same listening sessions.</summary>
@@ -47,7 +47,7 @@ public sealed class NicheMix : TagMix
         NicheFocus.Lately => "Your sound lately",
         NicheFocus.Rediscovery => "Rediscovery mix",
         NicheFocus.DeepCuts => "Deep cuts",
-        NicheFocus.Sonic => "Sonic neighbourhood",
+        NicheFocus.Sonic => "Sounds like a song you play",
         _ when Context is not null => "Listening context",
         _ when Energy != NicheEnergy.Any => "Energy mix",
         _ when ArtistNames.Count >= 2 => "Artist circle",

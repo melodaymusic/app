@@ -31,7 +31,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <controls:PageHeader Title="Browse" Padding="{StaticResource HumePageHeaderPadding}" />
+        <controls:PageHeader Title="Browse" Padding="{StaticResource HumePageHeaderPadding}">
+            <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+        </controls:PageHeader>
 
         <!-- The chosen category's pill slides to it from the last one, behind the chips. -->
         <controls:ChipTabs x:Name="Categories" Grid.Row="1" Margin="40,0,40,16" AutomationLabel="Browse categories"

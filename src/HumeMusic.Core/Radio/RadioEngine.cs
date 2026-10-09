@@ -1,3 +1,4 @@
+using HumeMusic.Core.Mixes;
 using HumeMusic.Core.Models;
 
 namespace HumeMusic.Core.Radio;
@@ -16,6 +17,10 @@ public sealed class RadioContext
     public Func<Track, double>? Skip { get; init; }
     /// <summary>Songs already queued or just played, never picked again.</summary>
     public IReadOnlySet<string> Exclude { get; init; } = new HashSet<string>();
+    /// <summary>Lean to the songs most widely known (a station of hits).</summary>
+    public bool LeanToHits { get; init; }
+    /// <summary>Artists this station has featured lately (kept between runs of the app): their songs wait.</summary>
+    public IReadOnlySet<string> Rested { get; init; } = new HashSet<string>();
 }
 
 /// <summary>
@@ -36,18 +41,17 @@ public static class RadioEngine
         // Something new now and then keeps a radio from becoming a loop of favourites.
         if (t.ViewCount == 0) score += 0.1;
 
-        // Not again too soon.
-        if (t.LastViewedAt is { } last)
-        {
-            var days = (c.Now - last).TotalDays;
-            if (days < 2) score -= 0.5;
-            else if (days < 7) score -= 0.2;
-        }
+        // Not again too soon (see Freshness), nor the artists this station has just featured.
+        score -= Freshness.Penalty(t.LastViewedAt, c.Now);
+        if (t.ArtistRatingKey is { } featured && c.Rested.Contains(featured)) score -= 0.7;
 
         // Skipped: here, and in Plex's own count.
         score -= 1.2 * (c.Skip?.Invoke(t) ?? 0);
         var events = t.SkipCount + t.ViewCount;
         if (t.SkipCount >= 2 && events > 0) score -= 0.5 * t.SkipCount / events;
+
+        // Known far and wide: a station of hits plays the songs everyone knows.
+        if (c.LeanToHits && t.RatingCount is { } known and > 0) score += Math.Min(0.9, Math.Log10(1 + known) / 7);
 
         // Near the seed.
         if (t.ArtistRatingKey is { } artist)
@@ -83,7 +87,7 @@ public static class RadioEngine
             .DistinctBy(t => t.RatingKey)
             // The same song twice (an album and its deluxe edition) is one song.
             .DistinctBy(t => (t.Title.Trim().ToLowerInvariant(), t.ArtistRatingKey))
-            .Select(t => (Track: t, Score: Score(t, context, random.NextDouble() * 0.5)))
+            .Select(t => (Track: t, Score: Score(t, context, random.NextDouble() * 0.8)))
             .OrderByDescending(x => x.Score)
             .Select(x => x.Track)
             .ToList();

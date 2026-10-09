@@ -23,11 +23,19 @@ public static class TagColors
 
     private static readonly Dictionary<int, SolidColorBrush> Brushes = [];
 
-    public static SolidColorBrush For(string? name)
+    private static int IndexOf(string? name)
     {
         var hash = 17;
         foreach (var ch in name ?? string.Empty) hash = unchecked(hash * 31 + char.ToLowerInvariant(ch));
-        var index = (int)((uint)hash % Palette.Length);
+        return (int)((uint)hash % Palette.Length);
+    }
+
+    /// <summary>The colour of a name's tag, which (unlike its brush) can be read from any thread.</summary>
+    public static Windows.UI.Color ColorFor(string? name) => Palette[IndexOf(name)];
+
+    public static SolidColorBrush For(string? name)
+    {
+        var index = IndexOf(name);
         if (!Brushes.TryGetValue(index, out var brush))
         {
             brush = new SolidColorBrush(Palette[index]);

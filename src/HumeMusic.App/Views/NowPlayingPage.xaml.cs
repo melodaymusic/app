@@ -44,6 +44,11 @@ public sealed partial class NowPlayingPage : Page
         UpdateVisibility();
         Ambient.ForceDark = true;
         _ = UpdateBackdropAsync();
+        _visualizer.PropertyChanged += OnVisualizerChanged;
+        _stage.PropertyChanged += OnVisualizerChanged;
+        Visualizer.DoubleActivated += OnVisualizerDoubleActivated;
+        Visualizer.Picture = _visualizer.Style;
+        UpdateVisibility();
     }
 
     protected override void OnNavigatedFrom(NavigationEventArgs e)
@@ -51,9 +56,25 @@ public sealed partial class NowPlayingPage : Page
         base.OnNavigatedFrom(e);
         Player.PropertyChanged -= OnPlayerChanged;
         Panels.PropertyChanged -= OnPanelsChanged;
+        _visualizer.PropertyChanged -= OnVisualizerChanged;
+        _stage.PropertyChanged -= OnVisualizerChanged;
+        Visualizer.DoubleActivated -= OnVisualizerDoubleActivated;
+        // Off the page, the picture stops drawing altogether.
+        Visualizer.Picture = Core.Playback.VisualizerStyle.Off;
         _backdropVersion++;
         Ambient.Clear();
     }
+
+    private readonly VisualizerService _visualizer = App.Services.GetRequiredService<VisualizerService>();
+    private readonly StageService _stage = App.Services.GetRequiredService<StageService>();
+
+    private void OnVisualizerChanged(object? sender, PropertyChangedEventArgs e) => DispatcherQueue.TryEnqueue(() =>
+    {
+        Visualizer.Picture = _stage.IsOn ? Core.Playback.VisualizerStyle.Off : _visualizer.Style;
+        UpdateVisibility();
+    });
+
+    private void OnVisualizerDoubleActivated(object? sender, EventArgs e) => _stage.Enter();
 
     private static AmbientService Ambient => App.Services.GetRequiredService<AmbientService>();
     private int _backdropVersion;
@@ -81,6 +102,10 @@ public sealed partial class NowPlayingPage : Page
         var visible = Player.HasTrack ? Visibility.Visible : Visibility.Collapsed;
         Cover.Visibility = visible;
         Info.Visibility = visible;
+        // The picture stands where the artwork does (transparent, on the page's own backdrop); on the full-screen stage the stage draws it instead.
+        var picture = Player.HasTrack && _visualizer.Style != Core.Playback.VisualizerStyle.Off && !_stage.IsOn;
+        Visualizer.Visibility = picture ? Visibility.Visible : Visibility.Collapsed;
+        if (picture) Cover.Visibility = Visibility.Collapsed;
     }
 
     /// <summary>
@@ -128,6 +153,9 @@ public sealed partial class NowPlayingPage : Page
 
         Cover.Width = art;
         Cover.Height = art;
+        Visualizer.Width = art;
+        Visualizer.Height = art;
+        Visualizer.HorizontalAlignment = Cover.HorizontalAlignment;
         Layout.Margin = new Thickness(SidePadding, 0, SidePadding, 0);
     }
 

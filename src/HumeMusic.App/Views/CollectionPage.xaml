@@ -13,6 +13,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- The collection's backdrop from the Plex server, when it has one. -->
+        <controls:BackdropLayer Grid.RowSpan="2" ScrollSource="{x:Bind ItemsGrid}" SourcePath="{x:Bind ViewModel.Collection.Art, Mode=OneWay}" />
+
         <controls:DetailHeader x:Name="Header" Item="{x:Bind ViewModel.Collection, Mode=OneWay}" Artwork="{x:Bind ViewModel.Collection.Thumb, Mode=OneWay}"
                                Meta="{x:Bind CollectionMeta(ViewModel.Collection), Mode=OneWay}" Description="{x:Bind ViewModel.Collection.Summary, Mode=OneWay}"
                                PlaceholderIcon="Layers" ScrollSource="{x:Bind ItemsGrid}" PlayRequested="OnPlay" ShuffleRequested="OnShuffle" />

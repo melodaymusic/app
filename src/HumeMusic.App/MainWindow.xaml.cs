@@ -31,6 +31,9 @@ public sealed partial class MainWindow : Window
 
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(TitleBar);
+        // On the full-screen stage nothing of the window shows but the picture.
+        var stage = App.Services.GetRequiredService<Services.StageService>();
+        stage.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(() => TitleBar.Visibility = stage.IsOn ? Visibility.Collapsed : Visibility.Visible);
         AppWindow.TitleBar.PreferredHeightOption = TitleBarHeightOption.Tall;
         AppWindow.SetIcon(Path.Combine(AppContext.BaseDirectory, "Assets", "MelodayMusic.ico"));
 

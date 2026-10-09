@@ -54,7 +54,15 @@ public sealed partial class ArtistPage : Page
         LogoImage.MaxLogoWidth = UiScale.Size(600, 360);
         Helpers.Motion.Transitions(HeroText, Helpers.Motion.Emphasized, translation: true);
         Helpers.Motion.Transitions(HeroSkeleton, Helpers.Motion.Standard);
+        Loaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged += OnItemChanged;
+        Unloaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged -= OnItemChanged;
     }
+
+    // Their photo, backdrop, logo or details were changed (from a menu): show them.
+    private void OnItemChanged(object? sender, Core.Models.MediaItem item) => DispatcherQueue.TryEnqueue(async () =>
+    {
+        if (item.RatingKey == ViewModel.Artist?.RatingKey) await ViewModel.RefreshArtistAsync();
+    });
 
     // ------------------------------------------------------------------ artist logo
 
@@ -487,45 +495,17 @@ public sealed partial class ArtistPage : Page
         if (ViewModel.Artist is { } a) _ = Actions.PlaySonicRadioAsync(a);
     }
 
-    /// <summary>The artist's images: photo and backdrop (on Plex, for every app), and logo (Meloday's own).</summary>
-    private void AddImageItems(MenuFlyout menu, Artist a)
-    {
-        var photo = new MenuFlyoutItem { Text = "Change Photo…" };
-        photo.Click += async (_, _) =>
-        {
-            if (await ArtworkPickerDialog.ShowAsync(a, Core.Models.ArtworkKind.Poster, XamlRoot)) await ViewModel.RefreshArtistAsync();
-        };
-        menu.Items.Add(photo);
-        var backdrop = new MenuFlyoutItem { Text = "Change Backdrop…" };
-        backdrop.Click += async (_, _) =>
-        {
-            if (await ArtworkPickerDialog.ShowAsync(a, Core.Models.ArtworkKind.Backdrop, XamlRoot)) await ViewModel.RefreshArtistAsync();
-        };
-        menu.Items.Add(backdrop);
-        // Logos are shown only with artist logos on (Settings); say so rather than hide the choice.
-        var logo = new MenuFlyoutItem { Text = _logos.IsEnabled ? "Change Logo…" : "Change Logo (Turn On Artist Logos in Settings)", IsEnabled = _logos.IsEnabled };
-        logo.Click += (_, _) => _ = LogoPickerDialog.ShowAsync(a, XamlRoot);
-        menu.Items.Add(logo);
-    }
-
-    private void OnEditImages(object sender, RoutedEventArgs e)
+    /// <summary>The artist's title, summary, photo, backdrop and logo: edited together, and kept on the Plex server.</summary>
+    private async void OnEditImages(object sender, RoutedEventArgs e)
     {
         if (ViewModel.Artist is not { } a) return;
-        var menu = new MenuFlyout();
-        AddImageItems(menu, a);
-        menu.ShowAt(EditImagesButton, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
-        {
-            Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedLeft,
-        });
+        if (await ItemDetailsDialog.ShowAsync(a, root: XamlRoot)) await ViewModel.RefreshArtistAsync();
     }
 
     private void OnMore(object sender, RoutedEventArgs e)
     {
         if (ViewModel.Artist is not { } a) return;
-        var menu = MediaMenu.Create(a);
-        menu.Items.Add(new MenuFlyoutSeparator());
-        AddImageItems(menu, a);
-        menu.ShowAt(MoreButton, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
+        MediaMenu.Create(a).ShowAt(MoreButton, new Microsoft.UI.Xaml.Controls.Primitives.FlyoutShowOptions
         {
             Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.BottomEdgeAlignedRight,
         });

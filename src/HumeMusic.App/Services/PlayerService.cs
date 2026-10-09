@@ -40,6 +40,16 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         }
     }
 
+    /// <summary>Whether the music plays through this computer's own mixer, which is what the visualizers listen to (not while casting, or before the next song once one is chosen).</summary>
+    public bool CanVisualize => Mixer is not null;
+
+    /// <summary>The last stretch of what the speakers are playing now, for the visualizers; false when nothing is, or the mixer isn't playing it.</summary>
+    public bool TryReadHeard(float[] destination, out int sampleRate)
+    {
+        sampleRate = 48000;
+        return routing_?.Mixer is { } mixer && mixer.TryReadHeard(destination, out sampleRate);
+    }
+
     /// <summary>Whether Windows can't play this codec itself, so Plex transcodes it.</summary>
     public static bool IsTranscodeOnly(string codec) => TranscodeOnlyCodecs.Contains(codec);
 
@@ -118,6 +128,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         Volume = settings.Current.Volume * 100;
         IsMuted = settings.Current.IsMuted;
         Repeat = settings.Current.Repeat;
+        Curator = settings.Current.Curator;
         IsShuffled = false;
 
         _engine.StateChanged += (_, s) => _dispatcher.TryEnqueue(() => OnEngineState(s));
@@ -153,10 +164,98 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     /// </summary>
     public bool StopAfterCurrent { get; set; }
 
+    /// <summary>
+    /// When set, the song never moves on or starts over by itself: at its end playback stops, still on that song (the Lyric Studio
+    /// sets this while a song is being timed, so the listener is asked about their timing rather than carried to the next song).
+    /// </summary>
+    public bool StayOnSong { get; set; }
+
+    /// <summary>Raised when playback stopped at the end of a song because of <see cref="StayOnSong"/>.</summary>
+    public event EventHandler? StoppedOnSong;
+
     /// <summary>Raised when playback stopped at the end of a song because of <see cref="StopAfterCurrent"/>.</summary>
     public event EventHandler? StoppedAfterCurrent;
 
     private double _fadeLevel = 1;
+    private DateTime _liveToldAt = DateTime.MinValue;
+
+    /// <summary>
+    /// The live station playing (its name), or null when what plays isn't one. Live radio is live: its songs
+    /// can't be skipped, sought, restarted or rearranged, and can't be paused: stopping it leaves the station on the air
+    /// without the listener, and playing again tunes in to where it is by now.
+    /// </summary>
+    [ObservableProperty] public partial string? LiveStation { get; private set; }
+
+    public bool IsLive => LiveStation is not null;
+
+    private Func<string, Core.Radio.LiveBlockSlot?>? _blockOf;
+    private LiveFeedback? _liveFeedback;
+
+    /// <summary>
+    /// Where the song on is in its artist's block (Headliners plays an artist at a time): which song of how
+    /// many. Null when it isn't in one, or when what plays isn't live radio.
+    /// </summary>
+    public Core.Radio.LiveBlockSlot? LiveBlock => IsLive && CurrentTrack is { } track ? _blockOf?.Invoke(track.RatingKey) : null;
+
+    partial void OnCurrentTrackChanged(Track? value)
+    {
+        OnPropertyChanged(nameof(LiveBlock));
+        OnPropertyChanged(nameof(CurrentTrackIsOff));
+    }
+
+    /// <summary>Live radio is on, so the song on can be taken off the station ("not for this station").</summary>
+    public bool CanGiveFeedback => IsLive && _liveFeedback is not null;
+
+    /// <summary>The song on has been taken off the live station that is playing it.</summary>
+    public bool CurrentTrackIsOff => CurrentTrack is { } track && _liveFeedback?.IsOff(track) == true;
+
+    /// <summary>
+    /// "Not for this station": the song on never plays on this station again (it stays welcome on the others). It
+    /// finishes, as live radio can't be skipped; pressed again, it lets the song back on.
+    /// </summary>
+    public void ToggleStationFeedback()
+    {
+        if (CurrentTrack is not { } track || _liveFeedback is not { } feedback || LiveStation is not { } station) return;
+        var off = !feedback.IsOff(track);
+        feedback.SetOff(track, off);
+        OnPropertyChanged(nameof(CurrentTrackIsOff));
+        _notifications.ShowInfo(off ? "Taken off this station" : "Back on this station",
+            off ? $"\u201C{track.Title}\u201D won't play on {station} again." : $"\u201C{track.Title}\u201D may play on {station} again.");
+    }
+
+    /// <summary>Raised when a live station is played again after being stopped: tune in again, rather than carry on from the past.</summary>
+    public event EventHandler? LiveRejoinRequested;
+
+    partial void OnLiveStationChanged(string? value)
+    {
+        if (value is null)
+        {
+            _blockOf = null;
+            _liveFeedback = null;
+        }
+        OnPropertyChanged(nameof(CanGiveFeedback));
+        OnPropertyChanged(nameof(CurrentTrackIsOff));
+        OnPropertyChanged(nameof(IsLive));
+        OnPropertyChanged(nameof(LiveBlock));
+        OnPropertyChanged(nameof(CanSeek));
+        UpdateNavigationState();
+    }
+
+    /// <summary>Whether the position can be moved (never on live radio).</summary>
+    public bool CanSeek => CurrentTrack is not null && !IsLive;
+
+    /// <summary>Tells the listener why nothing happened (at most every few seconds); true when this is live radio.</summary>
+    private bool LiveRefuses()
+    {
+        if (!IsLive) return false;
+        if (DateTime.UtcNow - _liveToldAt > TimeSpan.FromSeconds(4))
+        {
+            _liveToldAt = DateTime.UtcNow;
+            _notifications.ShowInfo("It's live", $"{LiveStation} is live radio: it can't be skipped, rewound or restarted.");
+        }
+        return true;
+    }
+
 
     /// <summary>
     /// Turns playback down (0-1) without touching the listener's volume, for fading out before a
@@ -174,9 +273,12 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     {
         if (tracks.Count == 0) return Task.CompletedTask;
         _topUp = null; // playing something else ends any mix
+        LiveStation = null;
         Queue.SetQueue(tracks, shuffle && startIndex == 0 ? -1 : startIndex, shuffle);
         IsShuffled = Queue.IsShuffled;
         _consecutiveFailures = 0;
+        // The guest curator arranges what follows the song that starts (the song itself is the listener's choice).
+        if (Curator != Curator.None) _ = ApplyCuratorToUpNextAsync(announce: false);
         return StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
     }
 
@@ -194,13 +296,14 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         }
         Queue.ClearUpNext();
         _topUp = more;
+        LiveStation = null;
         if (next.Count > 0) Queue.Enqueue(next);
         else _ = TopUpAsync();
     }
 
     public void PlayNext(IReadOnlyList<Track> tracks)
     {
-        if (tracks.Count == 0) return;
+        if (tracks.Count == 0 || LiveRefuses()) return;
         var wasEmpty = Queue.Current is null;
         Queue.PlayNext(tracks);
         if (wasEmpty) _ = StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
@@ -209,7 +312,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public void AddToQueue(IReadOnlyList<Track> tracks)
     {
-        if (tracks.Count == 0) return;
+        if (tracks.Count == 0 || LiveRefuses()) return;
         var wasEmpty = Queue.Current is null;
         Queue.Enqueue(tracks);
         if (wasEmpty) _ = StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
@@ -218,6 +321,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public Task JumpToAsync(Guid entryId)
     {
+        if (LiveRefuses()) return Task.CompletedTask;
         if (Queue.JumpTo(entryId) is null) return Task.CompletedTask;
         _consecutiveFailures = 0;
         return StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
@@ -225,19 +329,27 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public void RemoveFromQueue(Guid entryId)
     {
+        if (LiveRefuses()) return;
         var wasCurrent = Queue.Remove(entryId);
         if (!wasCurrent) return;
         if (Queue.Current is null) StopInternal(clearTrack: true);
         else _ = StartCurrentAsync(autoPlay: IsPlaying, TimeSpan.Zero);
     }
 
-    public void MoveInQueue(int from, int to) => Queue.Move(from, to);
+    public void MoveInQueue(int from, int to)
+    {
+        if (!LiveRefuses()) Queue.Move(from, to);
+    }
 
-    public void ClearUpNext() => Queue.ClearUpNext();
+    public void ClearUpNext()
+    {
+        if (!LiveRefuses()) Queue.ClearUpNext();
+    }
 
     public void ClearQueue([System.Runtime.CompilerServices.CallerMemberName] string caller = "")
     {
         _topUp = null;
+        LiveStation = null;
         _log.LogInformation("Queue cleared ({Caller})", caller);
         StopInternal(clearTrack: true);
         Queue.Clear(keepCurrent: false);
@@ -254,6 +366,12 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     public void Play()
     {
         if (Queue.Current is null) return;
+        // Live radio carried on while it was stopped: it's rejoined where it is, never resumed from the past.
+        if (IsLive)
+        {
+            LiveRejoinRequested?.Invoke(this, EventArgs.Empty);
+            return;
+        }
         if (!_sourceLoaded)
         {
             _ = StartCurrentAsync(autoPlay: true, _pendingStartPosition);
@@ -269,6 +387,12 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public void Pause()
     {
+        // Live radio has no pause: what would pause it stops it, and the station carries on without the listener.
+        if (IsLive)
+        {
+            Stop();
+            return;
+        }
         _engine.Pause();
         _ = SaveQueueAsync();
     }
@@ -277,6 +401,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public async Task NextAsync()
     {
+        if (LiveRefuses()) return;
         _consecutiveFailures = 0;
         // Skipped early: Meloday's own radio learns to play it less.
         if (CurrentTrack is { } leaving && IsPlaying && CurrentPosition < TimeSpan.FromSeconds(30) && CurrentPosition < Duration / 2)
@@ -287,6 +412,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public async Task PreviousAsync()
     {
+        if (LiveRefuses()) return;
         if (CurrentPosition > TimeSpan.FromSeconds(3) || !Queue.HasPrevious)
         {
             Seek(TimeSpan.Zero);
@@ -299,7 +425,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public void Seek(TimeSpan position)
     {
-        if (CurrentTrack is null) return;
+        if (CurrentTrack is null || LiveRefuses()) return;
         if (Mixer is not null && _mixFor is not null)
         {
             _mixFor = null;
@@ -349,6 +475,13 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     partial void OnIsShuffledChanged(bool value)
     {
+        // A live station's order is its own.
+        if (value && IsLive)
+        {
+            IsShuffled = false;
+            LiveRefuses();
+            return;
+        }
         if (Queue.IsShuffled != value) Queue.SetShuffle(value);
     }
 
@@ -371,6 +504,9 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     }
 
     private TimeSpan CurrentPosition => _sourceLoaded ? _transcodeOffset + _engine.Position : _pendingStartPosition;
+
+    /// <summary>Where the song is right now, to the millisecond (<see cref="Position"/> is only refreshed a few times a second): for timing lyrics by hand.</summary>
+    public TimeSpan PrecisePosition => CurrentPosition;
 
     // ------------------------------------------------------------------ loading
 
@@ -399,6 +535,9 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         }
 
         var track = entry.Track;
+        // The song's own level (Sound Check) is looked up while it loads, so it opens at that level, not loud and then levelled.
+        var levelTask = StartLevelAsync(track, ct);
+        _openedLevelFor = track.RatingKey;
         var sameTrack = previousTrack?.RatingKey == track.RatingKey && startPosition > TimeSpan.Zero;
         if (!sameTrack) _sessionId = Guid.NewGuid().ToString("N");
         _playReported = false;
@@ -414,7 +553,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (_downloads.LocalUri(track) is { } local)
         {
             if (_session.Client is { } c) UpdateSystemInfo(track, c);
-            var openedLocal = await OpenAsync(local, startPosition, autoPlay, transcoded: false, ct, crossfade: crossfade);
+            var openedLocal = await OpenAsync(local, startPosition, autoPlay, transcoded: false, ct, crossfade: crossfade, level: await levelTask);
             if (ct.IsCancellationRequested) return;
             if (openedLocal)
             {
@@ -470,7 +609,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             var direct = client.BuildDirectPlayUri(track);
             if (direct is not null)
             {
-                opened = await OpenAsync(direct, startPosition, autoPlay, transcoded: false, ct, crossfade: crossfade);
+                opened = await OpenAsync(direct, startPosition, autoPlay, transcoded: false, ct, crossfade: crossfade, level: await levelTask);
                 if (ct.IsCancellationRequested) return;
                 if (!opened) _log.LogInformation("Direct play failed for {Track} ({Codec}); falling back to transcoding", track.Title, track.Media?.Codec);
             }
@@ -479,7 +618,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (!opened)
         {
             var transcode = client.BuildTranscodeUri(track, _settings.Current.TranscodeBitrateKbps, _sessionId, (long)startPosition.TotalMilliseconds);
-            opened = await OpenAsync(transcode, TimeSpan.Zero, autoPlay, transcoded: true, ct, offset: startPosition, crossfade: crossfade);
+            opened = await OpenAsync(transcode, TimeSpan.Zero, autoPlay, transcoded: true, ct, offset: startPosition, crossfade: crossfade, level: await levelTask);
             if (ct.IsCancellationRequested) return;
         }
 
@@ -491,7 +630,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             StreamDescription = _isTranscoded
                 ? $"Transcoded · MP3 {_settings.Current.TranscodeBitrateKbps} kbps"
                 : track.Media?.Describe();
-            _log.LogInformation("Playing {Track} by {Artist} ({Mode})", track.Title, track.DisplayArtist, _isTranscoded ? "transcode" : "direct");
+            _log.LogInformation("Playing {Track} by {Artist} ({Mode}, level {Level:0.00})", track.Title, track.DisplayArtist, _isTranscoded ? "transcode" : "direct", _openedLevel);
             _ = PrepareTransitionAsync(track);
             return;
         }
@@ -510,13 +649,14 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     }
 
     private async Task<bool> OpenAsync(Uri uri, TimeSpan start, bool autoPlay, bool transcoded, CancellationToken ct,
-        TimeSpan offset = default, CrossfadeShape? crossfade = null)
+        TimeSpan offset = default, CrossfadeShape? crossfade = null, double level = 1)
     {
         _isTranscoded = transcoded;
         _transcodeOffset = transcoded ? offset : TimeSpan.Zero;
+        _openedLevel = level;
         try
         {
-            return await _engine.OpenAsync(uri, start, autoPlay, ct, crossfade);
+            return await _engine.OpenAsync(uri, start, autoPlay, ct, crossfade, level);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -576,6 +716,19 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             _reporter.Report(track, TimelineState.Stopped, duration, duration, _sessionId);
             _playReported = false;
             _skips.Record(track.RatingKey, track.ArtistRatingKey, skipped: false);
+        }
+
+        if (StayOnSong)
+        {
+            // Over, and staying: stopped on this song, back at its start, with nothing next loaded.
+            _engine.Stop();
+            _sourceLoaded = false;
+            _pendingStartPosition = TimeSpan.Zero;
+            IsPlaying = false;
+            Position = TimeSpan.Zero;
+            UpdateNavigationState();
+            StoppedOnSong?.Invoke(this, EventArgs.Empty);
+            return;
         }
 
         if (StopAfterCurrent)
@@ -656,7 +809,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (IsPlaying && (DateTime.UtcNow - _lastReport).TotalSeconds >= ReportIntervalSeconds)
             ReportTimeline(TimelineState.Playing);
 
-        if (!IsPlaying || _crossfadeStarted || StopAfterCurrent || Queue.Repeat == RepeatMode.One || !Queue.HasNext) return;
+        if (!IsPlaying || _crossfadeStarted || StopAfterCurrent || StayOnSong || Queue.Repeat == RepeatMode.One || !Queue.HasNext) return;
         // AutoMix leaves an album played in order as it is: its tracks run into one another.
         if (_settings.Current.AutoMix && ContinuesAlbum(CurrentTrack, NextTrack)) return;
         // The mixer has the next song ready and starts the mix itself, on the beat: the handover is its
@@ -737,8 +890,11 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         {
             if (_settings.Current.SoundCheck)
             {
+                // Normally the song opened at its level already; only where Plex was slow does it ease to it now.
                 var level = await _transitions.LevelAsync(track);
-                if (CurrentTrack?.RatingKey == track.RatingKey) _engine.SetLevel(level);
+                if (CurrentTrack?.RatingKey == track.RatingKey) await EaseLevelAsync(track, level);
+                // The next song's level is fetched ahead, so it opens at its level too.
+                if (NextTrack is { } following) _ = _transitions.LoudnessAsync(following);
             }
             await PlanNextAsync(track);
         }
@@ -747,6 +903,51 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             // Analysis only refines playback: without it, tracks play as they are and fade normally.
             _log.LogDebug("No transition plan for {Track}: {Message}", track.Title, ex.Message);
         }
+    }
+
+    /// <summary>How long a song waits to open for its level to be known (Plex's analysis is fetched, and is usually kept already).</summary>
+    private static readonly TimeSpan LevelWait = TimeSpan.FromMilliseconds(1500);
+
+    /// <summary>Where a song opens when its level isn't known in time: turned down, because a rise is gentler than a drop.</summary>
+    private const double UnknownLevel = 0.6;
+
+    private double _openedLevel = 1;
+    private string? _openedLevelFor;
+
+    /// <summary>The level a song should open at: its Sound Check level when known within a moment, else a cautious one (see <see cref="UnknownLevel"/>); 1 when Sound Check is off.</summary>
+    private async Task<double> StartLevelAsync(Track track, CancellationToken ct)
+    {
+        if (!_settings.Current.SoundCheck) return 1;
+        try
+        {
+            var load = _transitions.LevelAsync(track);
+            var done = await Task.WhenAny(load, Task.Delay(LevelWait, ct)).ConfigureAwait(true);
+            return done == load ? await load : UnknownLevel;
+        }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            return 1;
+        }
+    }
+
+    /// <summary>Moves the playing song's level to <paramref name="to"/> over a moment, never in one jump.</summary>
+    private async Task EaseLevelAsync(Track track, double to)
+    {
+        var from = _openedLevel;
+        // A song the mixer brought in has its level from the start: nothing to ease.
+        if (_openedLevelFor != track.RatingKey || Math.Abs(from - to) < 0.02)
+        {
+            _engine.SetLevel(to);
+            return;
+        }
+        const int steps = 12;
+        for (var i = 1; i <= steps; i++)
+        {
+            if (CurrentTrack?.RatingKey != track.RatingKey) return;
+            _engine.SetLevel(from + (to - from) * i / steps);
+            await Task.Delay(60);
+        }
+        _openedLevel = to;
     }
 
     private async Task PlanNextAsync(Track track)
@@ -878,6 +1079,26 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         _topUp = more;
     }
 
+    /// <summary>
+    /// Tunes in to a live station: its songs from the one that is on, which starts <paramref name="offset"/>
+    /// into the song (it has been playing all along), and more as they run low.
+    /// </summary>
+    public Task PlayLiveAsync(string station, LiveTuning tuning)
+    {
+        var (tracks, offset, more) = (tuning.Queue, tuning.Offset, tuning.More);
+        if (tracks.Count == 0) return Task.CompletedTask;
+        _topUp = null;
+        _blockOf = tuning.BlockOf;
+        _liveFeedback = tuning.Feedback;
+        LiveStation = station;
+        Queue.SetQueue(tracks, 0, false);
+        IsShuffled = Queue.IsShuffled;
+        _consecutiveFailures = 0;
+        var started = StartCurrentAsync(autoPlay: true, offset);
+        _topUp = more;
+        return started;
+    }
+
     private async Task TopUpAsync()
     {
         if (_topUp is not { } more || _toppingUp || Queue.Items.Count - Queue.CurrentIndex - 1 >= 3) return;
@@ -886,7 +1107,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         {
             var recent = Queue.Items.Skip(Math.Max(0, Queue.Items.Count - 40)).Select(e => e.Track.RatingKey).ToHashSet();
             var batch = (await more(CancellationToken.None)).Where(t => recent.Add(t.RatingKey)).ToList();
-            if (batch.Count > 0 && ReferenceEquals(more, _topUp)) Queue.Enqueue(batch);
+            if (batch.Count > 0 && ReferenceEquals(more, _topUp)) Queue.Enqueue(await CuratedBatchAsync(batch));
         }
         catch (PlexException ex)
         {
@@ -901,7 +1122,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     /// <summary>Inserts tracks into the queue at an absolute position (drag and drop into the queue).</summary>
     public void InsertIntoQueue(IReadOnlyList<Track> tracks, int index)
     {
-        if (tracks.Count == 0) return;
+        if (tracks.Count == 0 || LiveRefuses()) return;
         var wasEmpty = Queue.Current is null;
         Queue.InsertAt(index, tracks);
         if (wasEmpty) _ = StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
@@ -924,9 +1145,10 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     private void UpdateNavigationState()
     {
-        HasNext = Queue.HasNext;
-        HasPrevious = Queue.Current is not null;
-        _engine.SetSystemControls(Queue.Current is not null, Queue.HasNext);
+        // Live radio has nothing to skip to or go back to.
+        HasNext = Queue.HasNext && !IsLive;
+        HasPrevious = Queue.Current is not null && !IsLive;
+        _engine.SetSystemControls(Queue.Current is not null, HasNext);
         OnPropertyChanged(nameof(HasTrack));
     }
 

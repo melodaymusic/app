@@ -16,8 +16,7 @@ namespace HumeMusic.Controls;
 /// A squareboard: a billboard at 1:1, its name over the art in the bottom left. Genre, style, mood and
 /// decade stations show an artist from the station (a different one each time, never "Various
 /// Artists") as a large circle on the photo's own palette colour, with a gentle shade from the bottom
-/// left; Meloday and Plex's own stations move in their colour field. Large boards (the Stations row)
-/// set their name bigger and heavier.
+/// left; Meloday and the stations move in their colour field.
 /// </summary>
 public sealed partial class SquareBoard : UserControl
 {
@@ -70,26 +69,6 @@ public sealed partial class SquareBoard : UserControl
         set => SetValue(BoardWidthProperty, value);
     }
 
-    public static readonly DependencyProperty IsLargeProperty = DependencyProperty.Register(
-        nameof(IsLarge), typeof(bool), typeof(SquareBoard), new PropertyMetadata(false, (d, _) => ((SquareBoard)d).ApplyLarge()));
-
-    /// <summary>A large board (the Stations row): its name set in the billboard size, further in from the edges.</summary>
-    public bool IsLarge
-    {
-        get => (bool)GetValue(IsLargeProperty);
-        set => SetValue(IsLargeProperty, value);
-    }
-
-    private void ApplyLarge()
-    {
-        var resources = Application.Current.Resources;
-        TitleText.FontSize = (double)resources[IsLarge ? "HumeFontBillboardTitle" : "HumeFontColourTitle"];
-        // The large station covers set their names a step heavier.
-        TitleText.FontWeight = IsLarge ? Microsoft.UI.Text.FontWeights.ExtraBold : Microsoft.UI.Text.FontWeights.Bold;
-        var inset = IsLarge ? 20 : 16;
-        TitleText.Margin = new Thickness(inset, 0, 56, inset - 2);
-    }
-
     private async void Update()
     {
         var version = ++_version;
@@ -99,11 +78,15 @@ public sealed partial class SquareBoard : UserControl
         var meloday = station?.StationKind == StationKind.Meloday;
         // Tag stations go by their tag ("Pop"); Meloday and Plex's own stations keep their names.
         TitleText.Text = item?.Title ?? string.Empty;
-        // A station sets its name and "Radio" as Meloday's cover sets its own (and so does Meloday's cover):
-        // the card's own title steps aside.
+        // A station sets its name and "Radio" (or "Meloday Live") as Meloday's cover sets its own (and so does Meloday's
+        // cover): the card's own title steps aside.
         var covered = station is not null;
         StationLabels.Visibility = covered && !meloday ? Visibility.Visible : Visibility.Collapsed;
-        if (covered && !meloday) StationLabels.Title = Helpers.Format.StationCoverName(station!);
+        if (covered && !meloday)
+        {
+            StationLabels.Title = Helpers.Format.StationCoverName(station!);
+            StationLabels.Label = Helpers.Format.StationCoverLabel(station!);
+        }
         TitleText.Visibility = covered ? Visibility.Collapsed : Visibility.Visible;
         MelodayCover.Visibility = meloday ? Visibility.Visible : Visibility.Collapsed;
         if (meloday) ShowMeloday();
@@ -123,9 +106,11 @@ public sealed partial class SquareBoard : UserControl
         {
             PortraitImage.SourcePath = null;
             Field.Field = meloday ? null : StationColours.Field(station);
+            Field.Tint = meloday ? null : StationColours.Tint(station);
             return;
         }
         Field.Field = null;
+        Field.Tint = null;
         PortraitImage.SourcePath = station.Thumb;
         var photo = station.Thumb;
         // The picture is an artist from the station, picked when the board is first shown.

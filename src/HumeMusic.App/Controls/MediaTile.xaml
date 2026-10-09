@@ -24,6 +24,8 @@
                 <controls:MotionArtwork x:Name="StationField" />
                 <controls:CoverLabels x:Name="StationLabels" Label="Radio" />
             </Grid>
+            <!-- Mixes have no artwork of their own: their artists on a field of colour. -->
+            <controls:MixCover x:Name="MixArt" x:Load="False" />
             <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource HumeOverlayButtonStyle}"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10"
                     IsTabStop="False" ToolTipService.ToolTip="Play" AutomationProperties.Name="Play"

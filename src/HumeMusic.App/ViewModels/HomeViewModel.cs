@@ -54,6 +54,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     private readonly Core.Home.RecentStore _recents;
     private readonly Core.Home.ListeningClock _listening;
     private readonly StaticCovers _covers;
+    private readonly TrendingService _trending;
     private readonly Dictionary<string, PinnedCover> _pinCovers = [];
     private readonly DispatcherQueueTimer _clock;
     private int _loadedVersion = -1;
@@ -63,8 +64,9 @@ public sealed partial class HomeViewModel : ViewModelBase
 
     public HomeViewModel(PlexSession session, PinStore pins, NavigationService navigation, HomeLayoutService layout, MixService mixes,
         StationService stations, Core.Home.RecentStore recents, Core.Home.ListeningClock listening, StaticCovers covers,
-        ILogger<HomeViewModel> log) : base(session, log)
+        TrendingService trending, ILogger<HomeViewModel> log) : base(session, log)
     {
+        _trending = trending;
         _recents = recents;
         _listening = listening;
         _covers = covers;
@@ -82,6 +84,8 @@ public sealed partial class HomeViewModel : ViewModelBase
             RefreshPinned();
             _ = ResolvePinsAsync(onlyUnresolved: true);
         });
+        // Turning trending on or off shows or drops its row.
+        App.Services.GetRequiredService<LastFmService>().TrendingChanged += (_, _) => _dispatcher.TryEnqueue(async () => await LoadCoreAsync(quiet: true));
         App.Services.GetRequiredService<LibraryActions>().PlaylistsChanged += (_, _) => _dispatcher.TryEnqueue(async () =>
         {
             using (Core.Caching.ResponseCache.FetchFresh())
@@ -171,9 +175,10 @@ public sealed partial class HomeViewModel : ViewModelBase
             var hubs = SafeAsync(client.GetSectionHubsAsync(sk, 16));
             var mixes = _mixes.GetMixesAsync();
             var stations = _stations.GetCatalogAsync();
+            var trending = _trending.GetAsync();
 
             await Task.WhenAll(recentlyPlayed, recentlyAdded, mostPlayedArtists, mostPlayedAlbums, playlists, collections, hubs);
-            var extras = Task.WhenAll(mixes, stations);
+            var extras = Task.WhenAll(mixes, stations, trending);
             if (!extras.IsCompleted && await Task.WhenAny(extras, Task.Delay(250)) != extras)
                 _ = extras.ContinueWith(_ => _dispatcher.TryEnqueue(async () => await LoadCoreAsync(quiet: true)), TaskScheduler.Default);
 
@@ -205,17 +210,19 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             if (mixes.IsCompletedSuccessfully)
             {
-                var niche = mixes.Result.OfType<NicheMix>().Cast<object>().ToList();
-                var regular = mixes.Result.Where(m => m is not NicheMix).Cast<object>().ToList();
-                Add("Mixes for You", regular, id: "artist.mixes", style: CardStyle.ColourBoard);
-                Add("Niche Mixes", niche,
+                // Home keeps a taste of Made for You (four cards): Meloday, then the three mixes that fit best.
+                Add("Made for You", new object[] { MelodayService.Station }.Concat(mixes.Result.Take(3)),
                     new RelayCommand(() => _navigation.Navigate(typeof(MadeForYouPage))),
-                    "Specific corners of your taste, built from more than one signal",
-                    id: "niche.mixes", style: CardStyle.ColourBoard);
+                    id: "artist.mixes", style: CardStyle.ColourBoard);
             }
 
+            // What is trending on Last.fm, as far as the library holds it (only when the listener has turned it on).
+            if (trending.IsCompletedSuccessfully && trending.Result is { InLibrary.Count: > 0 } chart)
+                Add("Trending on Last.fm", chart.InLibrary, subtitle: $"{chart.InLibrary.Count} of Last.fm's top {chart.ChartSize} are in your library", id: "trending");
+
             if (stations.IsCompletedSuccessfully && stations.Result.Stations.Count > 0)
-                Add("Stations", stations.Result.Stations, SeeAll(typeof(RadioPage), null), id: "stations", style: CardStyle.StationBoard);
+                Add("Live", stations.Result.Stations, SeeAll(typeof(RadioPage), null), "Always on: tune in and join mid-song",
+                    id: "stations", style: CardStyle.SquareBoard);
 
             Add("Recently Added", recentlyAdded.Result.Items, SeeAll(typeof(AlbumsPage), "addedAt:desc"), id: "recent.added");
             Add("Your Top Artists", mostPlayedArtists.Result.Items, SeeAll(typeof(ArtistsPage), "viewCount:desc"), id: "top.artists");

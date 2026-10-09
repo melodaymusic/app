@@ -31,6 +31,16 @@ public static class AppPaths
     public static string Credentials => Path.Combine(Root, "credentials.bin");
     public static string QueueState => Path.Combine(Root, "queue.json");
     public static string Pins => Path.Combine(Root, "pins.json");
+    /// <summary>Songs and artists the listener has muted for a while.</summary>
+    public static string Mutes => Path.Combine(Root, "mutes.json");
+    /// <summary>The running orders of the live stations.</summary>
+    /// <summary>What the listener has done to songs' lyrics (shifted their timing, or timed them in the Lyric Studio): one small file per song.</summary>
+    public static string LyricEdits => Path.Combine(Root, "lyrics", "edits");
+    public static string LiveStations => Path.Combine(Root, "radio", "live.json");
+    /// <summary>The songs the listener has taken off live stations ("not for this station").</summary>
+    public static string StationFeedback => Path.Combine(Root, "radio", "feedback.json");
+    /// <summary>The artists Headliners has featured lately (so it doesn't open on the same ones each time).</summary>
+    public static string HeadlinerHistory => Path.Combine(Root, "radio", "headliners.json");
     public static string Logs => Path.Combine(Root, "logs");
     public static string ArtworkCache => Path.Combine(Root, "cache", "artwork");
     /// <summary>Artist logos from fanart.tv, prepared for display (trimmed, alpha only).</summary>
@@ -41,4 +51,6 @@ public static class AppPaths
     public static string OpenAiKey => Path.Combine(Root, "openai.bin");
     /// <summary>Meloday's own files: the current mix, the tracks it used lately, its covers.</summary>
     public static string Meloday => Path.Combine(Root, "meloday");
+    /// <summary>The songs the listener has said are the same song (dupes), kept for Meloday.</summary>
+    public static string MelodayDupes => Path.Combine(Root, "meloday", "dupes.json");
 }

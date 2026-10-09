@@ -81,9 +81,16 @@
                                    AutomationProperties.AutomationId="NowPlayingTitle" />
                     </HyperlinkButton>
                     <TextBlock x:Name="TimeText" helpers:Anim.Appear="True" Grid.Column="1" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center"
-                               Typography.NumeralAlignment="Tabular" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                               Typography.NumeralAlignment="Tabular" Visibility="{x:Bind Player.ShowTime, Mode=OneWay}">
                         <Run Text="{x:Bind Player.PositionText, Mode=OneWay}" /><Run Text=" / " /><Run Text="{x:Bind Player.DurationText, Mode=OneWay}" />
                     </TextBlock>
+                    <!-- Live radio has no position: it says it is live instead. -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" helpers:Anim.Appear="True"
+                                Visibility="{x:Bind Player.IsLive, Mode=OneWay}" AutomationProperties.AutomationId="LiveBadge">
+                        <Ellipse Width="8" Height="8" Fill="{ThemeResource HumeAccentTextBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{x:Bind Player.LiveLabel, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" FontWeight="SemiBold"
+                                   Foreground="{ThemeResource HumeAccentTextBrush}" />
+                    </StackPanel>
                 </Grid>
                 <HyperlinkButton Grid.Row="1" Style="{StaticResource HumeLinkButtonStyle}" Command="{x:Bind Player.OpenArtistCommand}"
                                  HorizontalAlignment="Left" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
@@ -92,7 +99,7 @@
                 <Slider x:Name="ProgressSlider" Grid.Row="2" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False" Margin="0,-4,0,-10"
                         Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}"
                         Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
-                        IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                        IsEnabled="{x:Bind Player.CanSeek, Mode=OneWay}"
                         AutomationProperties.Name="Playback position" AutomationProperties.AutomationId="ProgressSlider" />
             </Grid>
         </Grid>
@@ -142,6 +149,9 @@
                 <controls:CastButton x:Name="CastToggle" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" IconSize="{StaticResource HumeIconM}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <!-- Where the guest curator is (not on live radio): live radio has "not for this station" instead. -->
+                <controls:CuratorButton Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" IconSize="{StaticResource HumeIconM}" />
+                <controls:StationFeedbackButton Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}" IconSize="{StaticResource HumeIconM}" />
                 <ToggleButton x:Name="LyricsToggle" Style="{StaticResource HumeIconToggleStyle}" Width="{StaticResource HumeButtonXS}" Height="{StaticResource HumeButtonXS}"
                           Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
                           ToolTipService.ToolTip="Lyrics (Ctrl+Shift+L)" AutomationProperties.Name="Lyrics" AutomationProperties.AutomationId="LyricsButton">

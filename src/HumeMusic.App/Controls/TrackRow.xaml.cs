@@ -204,12 +204,26 @@ public sealed partial class TrackRow : UserControl
     /// </summary>
     internal void UpdateRemove(bool on)
     {
-        var command = HostList() is { } list ? TrackListBehavior.GetRemoveCommand(list) : null;
-        var width = command is not null ? GridLength.Auto : new GridLength(0);
+        var host = HostList();
+        var command = host is not null ? TrackListBehavior.GetRemoveCommand(host) : null;
+        var dupe = host is not null ? TrackListBehavior.GetDupeCommand(host) : null;
+        var width = command is not null || dupe is not null ? GridLength.Auto : new GridLength(0);
         if (RemoveColumn.Width != width) RemoveColumn.Width = width;
-        var shown = command is not null && (on || HostContainer()?.IsSelected == true) && command.CanExecute(DataContext);
+        RemoveButton.Visibility = command is not null ? Visibility.Visible : Visibility.Collapsed;
+        DupeButton.Visibility = dupe is not null ? Visibility.Visible : Visibility.Collapsed;
+        var active = on || HostContainer()?.IsSelected == true;
+        var shown = command is not null && active && command.CanExecute(DataContext);
         RemoveButton.Opacity = shown ? 1 : 0;
         RemoveButton.IsHitTestVisible = shown;
+        var dupeShown = dupe is not null && active && dupe.CanExecute(DataContext);
+        DupeButton.Opacity = dupeShown ? 1 : 0;
+        DupeButton.IsHitTestVisible = dupeShown;
+    }
+
+    private void OnDupeClick(object sender, RoutedEventArgs e)
+    {
+        if (HostList() is { } list && TrackListBehavior.GetDupeCommand(list) is { } command && command.CanExecute(DataContext))
+            command.Execute(DataContext);
     }
 
     private void OnRemoveClick(object sender, RoutedEventArgs e)

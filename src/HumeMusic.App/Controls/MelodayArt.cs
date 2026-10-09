@@ -24,43 +24,15 @@ public sealed partial class MelodayArt : Grid
     private readonly Grid _canvas = new() { Width = Unit, Height = Unit };
     private readonly Grid _sun = new() { HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Top };
     private readonly List<(Ellipse Ring, SunRing Style)> _rings = [];
-    private readonly TextBlock _name = new()
-    {
-        Width = CoverType.NameWidth,
-        HorizontalAlignment = HorizontalAlignment.Right,
-        VerticalAlignment = VerticalAlignment.Top,
-        Margin = new Thickness(0, CoverType.NameTop, CoverType.NameRight, 0),
-        TextAlignment = TextAlignment.Right,
-        TextWrapping = TextWrapping.WrapWholeWords,
-        MaxLines = CoverType.NameLines,
-        TextTrimming = TextTrimming.CharacterEllipsis,
-        FontSize = CoverType.NameSize,
-        LineHeight = CoverType.NameLine,
-        LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-        FontWeight = Microsoft.UI.Text.FontWeights.ExtraBold,
-        Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
-    };
-    private readonly TextBlock _label = new()
-    {
-        Text = "Meloday",
-        HorizontalAlignment = HorizontalAlignment.Left,
-        VerticalAlignment = VerticalAlignment.Bottom,
-        Margin = new Thickness(CoverType.LabelLeft, 0, 0, CoverType.LabelBottom),
-        FontSize = CoverType.LabelSize,
-        FontWeight = Microsoft.UI.Text.FontWeights.Bold,
-        Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
-    };
+    // The name and "Meloday": the same boxes, sizes and fitting as every other cover.
+    private readonly CoverTextLayer _text = new() { Label = "Meloday" };
     private bool _onScreen = true;
     private bool _breathing;
 
     public MelodayArt()
     {
-        var font = (FontFamily)Application.Current.Resources["HumeFont"];
-        _name.FontFamily = font;
-        _label.FontFamily = font;
         _canvas.Children.Add(_sun);
-        _canvas.Children.Add(_name);
-        _canvas.Children.Add(_label);
+        _canvas.Children.Add(_text);
         Children.Add(new Viewbox { Stretch = Stretch.UniformToFill, Child = _canvas });
         Build();
 
@@ -110,7 +82,7 @@ public sealed partial class MelodayArt : Grid
     {
         var name = title ?? string.Empty;
         if (name.StartsWith(MelodayNaming.Prefix, StringComparison.OrdinalIgnoreCase)) name = name[MelodayNaming.Prefix.Length..];
-        _name.Text = name;
+        _text.Title = name;
     }
 
     /// <summary>Lays out the period's sky and sun.</summary>

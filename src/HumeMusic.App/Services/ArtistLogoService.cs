@@ -47,6 +47,7 @@ public sealed class ArtistLogoService
 
     private readonly ISecretStore _key;
     private readonly SettingsStore _settings;
+    private readonly PlexLogoService _plexLogos;
     private readonly ILogger _log;
     private readonly FanartTv _fanart;
     private readonly HttpClient _http;
@@ -55,8 +56,9 @@ public sealed class ArtistLogoService
     private Dictionary<string, Entry>? _index;
     private string? _cachedKey;
 
-    public ArtistLogoService(ISecretStore key, SettingsStore settings, ILogger<ArtistLogoService> log)
+    public ArtistLogoService(ISecretStore key, SettingsStore settings, PlexLogoService plexLogos, ILogger<ArtistLogoService> log)
     {
+        _plexLogos = plexLogos;
         _key = key;
         _settings = settings;
         _log = log;
@@ -128,9 +130,11 @@ public sealed class ArtistLogoService
     {
         if (!IsEnabled) return Task.FromResult<PreparedLogo?>(null);
         var key = KeyFor(artist);
-        var load = _loads.GetOrAdd(key, _ => LoadAsync(artist, key));
+        // The logo on the Plex server is part of what is remembered: set a new one there and the artist shows it.
+        var memo = key + "|" + artist.Logo;
+        var load = _loads.GetOrAdd(memo, _ => LoadAsync(artist, key));
         // A failed attempt is tried again on the next visit.
-        if (load.IsCompleted && load.Result is null) _loads.TryRemove(key, out _);
+        if (load.IsCompleted && load.Result is null) _loads.TryRemove(memo, out _);
         return load;
     }
 
@@ -140,9 +144,13 @@ public sealed class ArtistLogoService
         if (index.TryGetValue(key, out var known))
         {
             if (known.UseName) return null;
+            // A logo the listener chose here (fanart.tv's, or their own picture) comes first; otherwise the one the Plex server keeps.
+            if (!known.Chosen && artist.Logo is not null && await _plexLogos.GetAsync(artist).ConfigureAwait(false) is { } onServer) return onServer;
             if (known.File is { } f && File.Exists(Path.Combine(AppPaths.LogoCache, f))) return new PreparedLogo(Path.Combine(AppPaths.LogoCache, f), known.Aspect);
             if (known.File is null && DateTimeOffset.UtcNow - known.CheckedAt < RetryMissingAfter) return null;
         }
+        // Nothing chosen and nothing remembered: the logo the Plex server keeps for the artist, before fanart.tv's.
+        if (!index.ContainsKey(key) && artist.Logo is not null && await _plexLogos.GetAsync(artist).ConfigureAwait(false) is { } fromServer) return fromServer;
         if (artist.MusicBrainzId is not { } mbid) return null;
 
         var (result, logos) = await OptionsCoreAsync(mbid).ConfigureAwait(false);
@@ -274,7 +282,7 @@ public sealed class ArtistLogoService
     /// Trims the logo to its visible edges, keeping its colours (Colour Drop paints by its shape alone).
     /// A fanart.tv image without transparency is a picture, not a logo, and is skipped.
     /// </summary>
-    private static async Task<PreparedLogo?> PrepareAsync(byte[] bytes, string key, string source, bool requireTransparency)
+    internal static async Task<PreparedLogo?> PrepareAsync(byte[] bytes, string key, string source, bool requireTransparency)
     {
         using var input = new InMemoryRandomAccessStream();
         await input.WriteAsync(bytes.AsBuffer());

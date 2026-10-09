@@ -79,6 +79,15 @@ public sealed partial class MelodayViewModel : ViewModelBase
         if (mix is null) ErrorMessage = "Meloday couldn't make a mix just now. Check your connection, then try again.";
     }
 
+    /// <summary>The meta line (part of the day, how many tracks, how long) for the tracks the page holds now.</summary>
+    public void ShowCount()
+    {
+        if (_meloday.Current is not { } mix) return;
+        var length = TimeSpan.FromMilliseconds(Tracks.Sum(t => t.DurationMs));
+        var duration = length.TotalHours >= 1 ? $"{(int)length.TotalHours} hr {length.Minutes} min" : $"{length.Minutes} min";
+        Meta = $"{mix.Period.Name} · {Tracks.Count} tracks · {duration}";
+    }
+
     private void Show()
     {
         if (_meloday.IsMaking) return;
@@ -95,12 +104,10 @@ public sealed partial class MelodayViewModel : ViewModelBase
         Cover = mix.CoverPath;
         Period = mix.Period.Name;
         CoverTitle = mix.Title;
-        var length = TimeSpan.FromMilliseconds(mix.Tracks.Sum(t => t.DurationMs));
-        var duration = length.TotalHours >= 1 ? $"{(int)length.TotalHours} hr {length.Minutes} min" : $"{length.Minutes} min";
-        Meta = $"{mix.Period.Name} · {mix.Tracks.Count} tracks · {duration}";
         Description = mix.Description;
         Tracks.Clear();
         foreach (var t in mix.Tracks) Tracks.Add(t);
+        ShowCount();
         IsEmpty = Tracks.Count == 0;
     }
 }

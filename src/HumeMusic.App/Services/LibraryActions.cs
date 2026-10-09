@@ -25,13 +25,21 @@ public sealed class LibraryActions
     private readonly LocalRadio _localRadio;
     private readonly Core.Home.RecentStore _recents;
     private readonly StaticCovers _covers;
+    private readonly LiveRadio _live;
+    private Station? _lastLive;
     private readonly ILogger _log;
 
     public LibraryActions(PlexSession session, PlayerService player, NavigationService navigation, NotificationService notifications,
-        PinStore pins, MixService mixes, Dislikes dislikes, PlexPass pass, MelodayService meloday, LocalRadio localRadio, Core.Home.RecentStore recents, StaticCovers covers, ILogger<LibraryActions> log)
+        PinStore pins, MixService mixes, Dislikes dislikes, PlexPass pass, MelodayService meloday, LocalRadio localRadio, Core.Home.RecentStore recents, StaticCovers covers, LiveRadio live, ILogger<LibraryActions> log)
     {
         _recents = recents;
         _covers = covers;
+        _live = live;
+        // Live radio stopped and played again is rejoined where it is by then.
+        player.LiveRejoinRequested += (_, _) =>
+        {
+            if (_lastLive is { } station) _ = PlayMixAsync(station);
+        };
         _localRadio = localRadio;
         _meloday = meloday;
         _pass = pass;
@@ -193,6 +201,14 @@ public sealed class LibraryActions
         mix = Real(mix);
         try
         {
+            // A live station is joined where it is by now, in the middle of a song.
+            if (mix is Station { IsLive: true } station && await _live.TuneInAsync(station) is { } tuning)
+            {
+                _lastLive = station;
+                await _player.PlayLiveAsync(station.Title, tuning);
+                _notifications.ShowInfo("Live", $"Tuned in to {station.Title}");
+                return;
+            }
             var first = await _mixes.FirstTracksAsync(mix);
             if (first is null || first.Count == 0)
             {
@@ -235,7 +251,7 @@ public sealed class LibraryActions
             var disliked = await _dislikes.GetAsync();
             // The two ends as chosen; the steps between them, without anything rated one star or less.
             var tracks = new List<Track> { start };
-            tracks.AddRange(path.Where(t => t.RatingKey != start.RatingKey && t.RatingKey != end.RatingKey && disliked.Allows(t)).DistinctBy(t => t.RatingKey));
+            tracks.AddRange(path.Where(t => t.RatingKey != start.RatingKey && t.RatingKey != end.RatingKey && disliked.Eligible(t)).DistinctBy(t => t.RatingKey));
             tracks.Add(end);
             if (tracks.Count <= 2)
             {
@@ -280,7 +296,7 @@ public sealed class LibraryActions
             }
             // Like every station and mix: nothing rated one star or less (the seed itself was chosen).
             var disliked = await _dislikes.GetAsync();
-            var distinct = similar.DistinctBy(t => t.RatingKey).Where((t, i) => i == 0 && seed is Track || disliked.Allows(t)).ToList();
+            var distinct = similar.DistinctBy(t => t.RatingKey).Where((t, i) => i == 0 && seed is Track || disliked.Eligible(t)).ToList();
             if (distinct.Count <= 1)
             {
                 // Plex hasn't analysed this yet: Meloday's own radio plays instead.
@@ -338,6 +354,47 @@ public sealed class LibraryActions
 
     /// <summary>A playlist was created, changed or deleted (lists showing playlists should reload).</summary>
     public event EventHandler? PlaylistsChanged;
+
+    /// <summary>Opens Settings at the music the listener has muted.</summary>
+    public void OpenMutedMusic() => _navigation.Navigate(typeof(Views.SettingsPage), "muting");
+
+    /// <summary>Opens the Lyric Studio for a song, to time its lyrics by hand.</summary>
+    public void OpenLyricStudio(Track track) => _navigation.Navigate(typeof(Views.LyricStudioPage), track);
+
+    /// <summary>An item's artwork or details were changed on the server (from here): the pages showing it fetch it again.</summary>
+    public event EventHandler<MediaItem>? ItemChanged;
+
+    /// <summary>Tells the pages showing the item that it changed on the server.</summary>
+    public Task NotifyItemChangedAsync(MediaItem item)
+    {
+        if (item is Playlist) PlaylistsChanged?.Invoke(this, EventArgs.Empty);
+        ItemChanged?.Invoke(this, item);
+        return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Changes an album's, artist's or collection's name and description on the server (a playlist has
+    /// <see cref="EditPlaylistAsync"/>). The server needs the library section the item is in, which the item itself doesn't carry.
+    /// </summary>
+    public async Task<bool> EditDetailsAsync(MediaItem item, string title, string? summary)
+    {
+        if (_session.Client is not { } client) return false;
+        var type = item switch { Album => PlexTypes.Album, Artist => PlexTypes.Artist, MusicCollection => PlexTypes.Collection, _ => 0 };
+        if (type == 0) return false;
+        try
+        {
+            var section = (await client.GetMetadataAsync(item.RatingKey))?.LibrarySectionID;
+            if (string.IsNullOrEmpty(section)) throw new PlexException("Plex didn't say which library this is in.");
+            await client.EditDetailsAsync(section, type, item.RatingKey, title, summary);
+            await NotifyItemChangedAsync(item);
+            return true;
+        }
+        catch (PlexException ex)
+        {
+            Report(ex, "Couldn't save the details");
+            return false;
+        }
+    }
 
     /// <summary>What an item adds to a playlist: tracks, albums and artists directly; other items as their tracks.</summary>
     private async Task<IReadOnlyList<string>> PlaylistKeysAsync(MediaItem item) => item switch

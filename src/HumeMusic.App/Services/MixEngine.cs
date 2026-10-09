@@ -68,6 +68,20 @@ public sealed class MixEngine : IPlaybackEngine
         }
     }
 
+    // What the mixer made lately, for the visualizers (see SampleRing): the audio thread only copies into it.
+    private readonly SampleRing _tap = new();
+
+    /// <summary>
+    /// Fills <paramref name="destination"/> with the last stretch of what the speakers are playing now (the device
+    /// holds a little ahead of that). False while nothing is playing or there isn't enough yet.
+    /// </summary>
+    public bool TryReadHeard(float[] destination, out int sampleRate)
+    {
+        sampleRate = _rate;
+        if (!_playing || _current is null) return false;
+        return _tap.CopyHeard(destination, (long)((_output?.QueuedSeconds ?? 0) * _rate));
+    }
+
     public TimeSpan? NaturalDuration => _current?.Duration;
     public bool CanSeek => _current?.CanSeek ?? false;
 
@@ -255,6 +269,8 @@ public sealed class MixEngine : IPlaybackEngine
         {
             deck.Voice.Gain = 1;
             deck.Voice.Cutoff = 0;
+            deck.Voice.LowCutoff = 0;
+            deck.Voice.EchoWet = 0;
             deck.Voice.Rate = 1;
         }
     }
@@ -324,6 +340,7 @@ public sealed class MixEngine : IPlaybackEngine
         }
         made = produced * Channels;
         Limit(buffer, offset, made);
+        _tap.WriteStereo(buffer, offset, made);
         Diagnostics(buffer, offset, made);
         if (Silent)
             for (var i = offset; i < offset + made; i++) buffer[i] = 0;
@@ -413,6 +430,7 @@ public sealed class MixEngine : IPlaybackEngine
                 _outgoing?.ContentSeconds, incoming.ContentSeconds, incoming.Describe());
             incoming.Voice.Rate = plan.TempoRatio;
             incoming.Voice.Cutoff = plan.BassSwap is null ? 0 : BeatMix.BassCut;
+            incoming.Voice.LowCutoff = plan.Style == MixStyle.Filter ? BeatMix.FilterOpening : 0;
             incoming.Voice.Gain = 0;
         }
         _dispatcher.TryEnqueue(() => MixStarted?.Invoke(this, EventArgs.Empty));
@@ -429,6 +447,8 @@ public sealed class MixEngine : IPlaybackEngine
             {
                 outgoing.Voice.Gain = (float)moment.OutGain;
                 outgoing.Voice.Cutoff = moment.OutCutoff;
+                outgoing.Voice.EchoDelay = plan.EchoDelay.TotalSeconds;
+                outgoing.Voice.EchoWet = moment.OutEcho;
                 outgoing.Read(_scratch, frames);
                 Add(buffer, offset, frames);
             }
@@ -441,6 +461,7 @@ public sealed class MixEngine : IPlaybackEngine
             {
                 incoming.Voice.Gain = (float)moment.InGain;
                 incoming.Voice.Cutoff = moment.InCutoff;
+                incoming.Voice.LowCutoff = moment.InLowPass;
                 incoming.Voice.Rate = moment.InRate;
             }
             _mixFrames += frames;

@@ -37,7 +37,7 @@
             <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" TextTrimming="CharacterEllipsis" />
             <Slider x:Name="Progress" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False" Margin="0,4,0,0"
                     Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}" Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
-                    IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}" AutomationProperties.Name="Playback position" />
+                    IsEnabled="{x:Bind Player.CanSeek, Mode=OneWay}" AutomationProperties.Name="Playback position" />
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />

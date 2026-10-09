@@ -191,7 +191,7 @@ public sealed partial class ArtistViewModel : ViewModelBase
             .ToList();
     }
 
-    /// <summary>Fetches the artist again (after their photo or backdrop changed), without reloading the page.</summary>
+    /// <summary>Fetches the artist again (after their photo, backdrop, logo or details changed), without reloading the page.</summary>
     public async Task RefreshArtistAsync()
     {
         if (Artist is not { } current || Session.Client is not { } client) return;
@@ -328,6 +328,20 @@ public sealed partial class AlbumViewModel : ViewModelBase
 
     public IReadOnlyList<Track> TrackList => Tracks.Select(r => r.Track).ToList();
 
+    /// <summary>Fetches the album again (after its cover, backdrop, logo or details changed), without reloading the page.</summary>
+    public async Task RefreshAlbumAsync()
+    {
+        if (Album is not { } current || Session.Client is not { } client) return;
+        try
+        {
+            if (await client.GetAlbumAsync(current.RatingKey) is { } fresh) Album = fresh;
+        }
+        catch (PlexException ex)
+        {
+            Log.LogInformation("Album not refreshed: {Message}", ex.Message);
+        }
+    }
+
     public async Task LoadAsync(Album seed)
     {
         Album = seed;
@@ -404,34 +418,126 @@ public sealed partial class AlbumViewModel : ViewModelBase
 
 public sealed partial class PlaylistViewModel : ViewModelBase
 {
-    public PlaylistViewModel(PlexSession session, ILogger<PlaylistViewModel> log) : base(session, log) { }
+    private List<Track>? _all;
+    private int _viewVersion;
+
+    public PlaylistViewModel(PlexSession session, ILogger<PlaylistViewModel> log) : base(session, log)
+    {
+        SortOptions = Core.Playlists.PlaylistView.Sorts.Select(s => new SortOption(s.Label, s.Key)).ToList();
+        SelectedSort = SortOptions[0];
+    }
 
     [ObservableProperty] public partial Playlist? Playlist { get; private set; }
     [ObservableProperty] public partial IncrementalCollection<Track>? Tracks { get; private set; }
     [ObservableProperty] public partial string MetaText { get; private set; } = string.Empty;
 
-    /// <summary>Tracks can be dragged into a new order (not in smart playlists, which Plex fills by rules).</summary>
-    public bool CanReorder => Playlist is { IsSmart: false };
+    /// <summary>The playlist's backdrop on the Plex server (set from Edit Artwork, here or in any Plex app), or null.</summary>
+    [ObservableProperty] public partial string? Backdrop { get; private set; }
+
+    /// <summary>The orders the songs can be viewed in (the playlist's own first); a view only, the playlist itself isn't changed.</summary>
+    public IReadOnlyList<SortOption> SortOptions { get; }
+
+    [ObservableProperty] public partial SortOption SelectedSort { get; set; }
+
+    /// <summary>What was typed in the page's own search (empty: all the songs).</summary>
+    [ObservableProperty] public partial string SearchText { get; set; } = string.Empty;
+
+    /// <summary>The songs the page shows: the playlist as it loads, or, sorted or searched, all of them in that order.</summary>
+    [ObservableProperty] public partial System.Collections.IList? Shown { get; private set; }
+
+    /// <summary>The search matched nothing in a playlist that has songs.</summary>
+    [ObservableProperty] public partial bool NoMatches { get; private set; }
+
+    /// <summary>Shown as the playlist keeps it: its own order and no search.</summary>
+    private bool IsPlain => SelectedSort.Value == Core.Playlists.PlaylistView.Order && string.IsNullOrWhiteSpace(SearchText);
+
+    /// <summary>Tracks can be dragged into a new order (not in smart playlists, which Plex fills by rules, nor in a sorted or searched view).</summary>
+    public bool CanReorder => Playlist is { IsSmart: false } && IsPlain;
 
     /// <summary>Removing songs, for the track list: none at all for a smart playlist (Plex chooses its songs).</summary>
-    public System.Windows.Input.ICommand? RemoveCommand => CanReorder ? RemoveTrackCommand : null;
+    public System.Windows.Input.ICommand? RemoveCommand => Playlist is { IsSmart: false } ? RemoveTrackCommand : null;
 
     partial void OnPlaylistChanged(Playlist? value)
     {
         OnPropertyChanged(nameof(CanReorder));
         OnPropertyChanged(nameof(RemoveCommand));
         RemoveTrackCommand.NotifyCanExecuteChanged();
+        Backdrop = value?.Art;
+    }
+
+    partial void OnSelectedSortChanged(SortOption value) => ViewChanged();
+
+    partial void OnSearchTextChanged(string value) => ViewChanged();
+
+    partial void OnTracksChanged(IncrementalCollection<Track>? value)
+    {
+        _all = null;
+        ViewChanged();
+    }
+
+    private void ViewChanged()
+    {
+        OnPropertyChanged(nameof(CanReorder));
+        _ = ApplyViewAsync();
+    }
+
+    /// <summary>
+    /// Shows the songs in the chosen order and narrowed by the search. Sorting and searching need every song, so the rest
+    /// of the playlist is read the first time one is asked for (a playlist is small beside a library); in the playlist's
+    /// own order and with no search, the page shows the playlist as it loads.
+    /// </summary>
+    private async Task ApplyViewAsync()
+    {
+        var version = ++_viewVersion;
+        var tracks = Tracks;
+        if (IsPlain || tracks is null || Playlist is null)
+        {
+            Shown = tracks;
+            NoMatches = false;
+            return;
+        }
+        List<Track> all;
+        try
+        {
+            all = await AllTracksAsync(Playlist.RatingKey);
+        }
+        catch (PlexException ex)
+        {
+            Log.LogInformation("The whole playlist couldn't be read to sort or search it: {Message}", ex.Message);
+            return;
+        }
+        if (version != _viewVersion || !ReferenceEquals(tracks, Tracks)) return;
+        var view = Core.Playlists.PlaylistView.Sort(all.Where(t => Core.Playlists.PlaylistView.Matches(t, SearchText)), SelectedSort.Value).ToList();
+        Shown = new System.Collections.ObjectModel.ObservableCollection<Track>(view);
+        NoMatches = view.Count == 0 && all.Count > 0;
+    }
+
+    private async Task<List<Track>> AllTracksAsync(string playlistKey)
+    {
+        if (_all is { } known) return known;
+        var list = new List<Track>();
+        PagedResult<Track> page;
+        do
+        {
+            page = await Client.GetPlaylistItemsAsync(playlistKey, list.Count, 500);
+            list.AddRange(page.Items);
+        }
+        while (page.Items.Count > 0 && list.Count < (page.TotalSize ?? int.MaxValue));
+        return _all = list;
     }
 
     /// <summary>Removes a track from the playlist (normal playlists only) and from Plex.</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand(CanExecute = nameof(CanRemoveTrack))]
     private async Task RemoveTrackAsync(Track? track)
     {
-        if (track is null || Playlist is not { } playlist || Tracks is not { } tracks || track.PlaylistItemId is not { } id) return;
-        var index = tracks.IndexOf(track);
+        if (track is null || Playlist is not { } playlist || Shown is not { } shown || track.PlaylistItemId is not { } id) return;
+        var index = shown.IndexOf(track);
         if (index < 0) return;
-        tracks.RemoveAt(index);
-        IsEmpty = tracks.Count == 0;
+        shown.RemoveAt(index);
+        // The same song, wherever else the page keeps it (the playlist as it loads, and the whole of it).
+        if (!ReferenceEquals(shown, Tracks)) Tracks?.Remove(track);
+        _all?.Remove(track);
+        IsEmpty = (Tracks?.Count ?? 0) == 0;
         try
         {
             await Client.RemovePlaylistItemAsync(playlist.RatingKey, id);
@@ -439,14 +545,14 @@ public sealed partial class PlaylistViewModel : ViewModelBase
         catch (PlexException ex)
         {
             Log.LogWarning("Couldn't remove {Track} from {Playlist}: {Message}", track.Title, playlist.Title, ex.Message);
-            tracks.Insert(Math.Min(index, tracks.Count), track);
-            IsEmpty = false;
             ErrorMessage = null;
             App.Services.GetRequiredService<Services.NotificationService>().ShowError("Couldn't remove the track", "Plex didn't accept the change.", autoHide: true);
+            // Plex still has it: show the playlist as Plex has it.
+            await LoadAsync(playlist);
         }
     }
 
-    private bool CanRemoveTrack(Track? track) => CanReorder && track?.PlaylistItemId is not null;
+    private bool CanRemoveTrack(Track? track) => Playlist is { IsSmart: false } && track?.PlaylistItemId is not null;
 
     /// <summary>
     /// Saves a drag reorder to Plex: the moved track now follows the track before it in the list.

@@ -21,66 +21,37 @@ public static class SonicAdventureDialog
         if (session.Client is not { } client || session.Section is not { } section) return;
         start ??= App.Services.GetRequiredService<PlayerService>().CurrentTrack;
         Track? end = null;
+        var resources = Application.Current.Resources;
 
         var dialog = Dialogs.Create("Sonic Adventure");
-        var fromRow = new Grid { ColumnSpacing = 12, Visibility = Visibility.Collapsed };
-        var toRow = new Grid { ColumnSpacing = 12, Visibility = Visibility.Collapsed };
-        var fromPicker = Picker("Start with a track", t => { start = t; Update(); });
-        var toPicker = Picker("End up at a track", t => { end = t; Update(); });
-        dialog.Content = new StackPanel
-        {
-            Spacing = 16,
-            MinWidth = 460,
-            Children =
-            {
-                Dialogs.Text("Choose a track to start with and one to end up at. The music travels between them, each track a small sonic step from the last."),
-                Section("From", fromPicker, fromRow),
-                Section("To", toPicker, toRow),
-            },
-        };
         dialog.PrimaryButtonText = "Start Adventure";
         dialog.CloseButtonText = "Cancel";
+        dialog.IsPrimaryButtonEnabled = false;
+
+        // Each end of the journey is a song: once chosen it is shown, with a way to change it; until then a search finds it.
+        End from = null!, to = null!;
+        from = new End("From", "Search for the song to start with", client, section.Key, t => { start = t; Update(); });
+        to = new End("To", "Search for the song to end up at", client, section.Key, t => { end = t; Update(); });
+        from.Change.Click += (_, _) => { start = null; Update(); from.Search.Box.Focus(FocusState.Programmatic); };
+        to.Change.Click += (_, _) => { end = null; Update(); to.Search.Box.Focus(FocusState.Programmatic); };
+
+        dialog.Content = new StackPanel
+        {
+            Spacing = 24,
+            Width = 480,
+            Children =
+            {
+                Dialogs.Text("Choose a song to start with and one to end up at. The music travels between them, each song a small sonic step from the last."),
+                from.Root,
+                to.Root,
+            },
+        };
 
         void Update()
         {
-            Show(fromRow, start);
-            Show(toRow, end);
+            from.Show(start);
+            to.Show(end);
             dialog.IsPrimaryButtonEnabled = start is not null && end is not null && start.RatingKey != end.RatingKey;
-        }
-
-        AutoSuggestBox Picker(string placeholder, Action<Track> chosen)
-        {
-            var box = new AutoSuggestBox { PlaceholderText = placeholder, QueryIcon = new SymbolIcon(Symbol.Find), MinWidth = 440 };
-            var version = 0;
-            box.TextChanged += async (b, args) =>
-            {
-                if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
-                var mine = ++version;
-                var query = b.Text.Trim();
-                if (query.Length < 2)
-                {
-                    b.ItemsSource = null;
-                    return;
-                }
-                await Task.Delay(250);
-                if (mine != version) return;
-                try
-                {
-                    var results = await client.SearchAsync(query, section.Key, 8);
-                    if (mine == version) b.ItemsSource = results.Tracks.Select(t => new Choice(t)).ToList();
-                }
-                catch (PlexException)
-                {
-                    b.ItemsSource = null;
-                }
-            };
-            box.SuggestionChosen += (b, args) =>
-            {
-                if (args.SelectedItem is Choice choice) chosen(choice.Track);
-                b.Text = string.Empty;
-                b.ItemsSource = null;
-            };
-            return box;
         }
 
         Update();
@@ -88,43 +59,50 @@ public static class SonicAdventureDialog
             await App.Services.GetRequiredService<LibraryActions>().PlaySonicAdventureAsync(start, end);
     }
 
-    private static StackPanel Section(string label, AutoSuggestBox picker, Grid row) => new()
+    /// <summary>One end of the journey: its heading, the song once chosen (in a group row, with Change), and the search before.</summary>
+    private sealed class End
     {
-        Spacing = 8,
-        Children = { new TextBlock { Text = label, Style = (Style)Application.Current.Resources["HumeBodyStrongText"] }, row, picker },
-    };
+        private readonly Border _chosen;
+        private readonly Border _group;
 
-    /// <summary>The chosen track: its artwork, title and artist.</summary>
-    private static void Show(Grid row, Track? track)
-    {
-        row.Children.Clear();
-        row.ColumnDefinitions.Clear();
-        row.Visibility = track is null ? Visibility.Collapsed : Visibility.Visible;
-        if (track is null) return;
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-        var resources = Application.Current.Resources;
-        row.Children.Add(new ArtworkImage
+        public End(string heading, string placeholder, PlexServerClient client, string sectionKey, Action<Track> picked)
         {
-            Width = 40, Height = 40, DecodeSize = 80, SourcePath = track.AlbumThumb ?? track.Thumb,
-            ArtworkCornerRadius = (CornerRadius)resources["HumeRadiusThumb"], PlaceholderIcon = "Music",
-        });
-        var text = new StackPanel
-        {
-            Spacing = 2,
-            VerticalAlignment = VerticalAlignment.Center,
-            Children =
+            var resources = Application.Current.Resources;
+            Search = new SearchPicker(placeholder, async query =>
             {
-                new TextBlock { Text = track.Title, Style = (Style)resources["HumeBodyStrongText"] },
-                new TextBlock { Text = track.ArtistTitle, Style = (Style)resources["HumeSecondaryText"] },
-            },
-        };
-        Grid.SetColumn(text, 1);
-        row.Children.Add(text);
+                var results = await client.SearchAsync(query, sectionKey, 8);
+                return results.Tracks.Select(t => new PickResult(t, t.Title, Details(t), t.AlbumThumb ?? t.Thumb, "Music", Dialogs.AlbumRadius)).ToList();
+            }, item => { if (item is Track t) picked(t); });
+            Change = Dialogs.SecondaryButton("Change");
+            _chosen = new Border { Style = (Style)resources["HumeGroupListStyle"] };
+            _group = _chosen;
+            _group.Visibility = Visibility.Collapsed;
+            Root = new StackPanel
+            {
+                Style = (Style)resources["HumeGroupStyle"],
+                Children = { new TextBlock { Text = heading, Style = (Style)resources["HumeGroupHeaderText"] }, _group, Search.Root },
+            };
+        }
+
+        public StackPanel Root { get; }
+
+        public SearchPicker Search { get; }
+
+        public Button Change { get; }
+
+        public void Show(Track? track)
+        {
+            // The Change button moves to the new row, so it leaves the old one first.
+            _chosen.Child = null;
+            _group.Visibility = track is null ? Visibility.Collapsed : Visibility.Visible;
+            Search.Root.Visibility = track is null ? Visibility.Visible : Visibility.Collapsed;
+            if (track is null) return;
+            var row = Dialogs.MediaRow(track.AlbumThumb ?? track.Thumb, track.Title, Details(track), "Music", Dialogs.AlbumRadius, 40, Change);
+            row.Style = (Style)Application.Current.Resources["HumeGroupRowStyle"];
+            _chosen.Child = row;
+        }
     }
 
-    private sealed record Choice(Track Track)
-    {
-        public override string ToString() => $"{Track.Title} — {Track.ArtistTitle}";
-    }
+    private static string Details(Track t) =>
+        string.IsNullOrEmpty(t.AlbumTitle) ? t.DisplayArtist : $"{t.DisplayArtist} · {t.AlbumTitle}";
 }

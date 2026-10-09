@@ -31,7 +31,11 @@ public static class ItemRefs
     };
 
     /// <summary>The name an item is kept under: Meloday is "Meloday" (the page's own title is the mix it has now).</summary>
-    public static string TitleOf(MediaItem item) => item is Station { StationKind: StationKind.Meloday } ? "Meloday" : item.Title;
+    public static string TitleOf(MediaItem item) => item switch
+    {
+        Station { StationKind: StationKind.Meloday } => "Meloday",
+        _ => item.Title,
+    };
 
     /// <summary>Kinds Plex can't be asked for: Meloday Music makes them, so they are kept with their facts.</summary>
     public static bool IsSynthetic(PinKind kind) => kind is PinKind.Station or PinKind.ArtistMix or PinKind.TagMix or PinKind.BuiltMix or PinKind.Tag;
@@ -69,6 +73,11 @@ public static class ItemRefs
                 case PinKind.Album: return new Album { RatingKey = ratingKey, Title = title, Thumb = thumb };
                 case PinKind.Track: return new Track { RatingKey = ratingKey, Title = title, Thumb = thumb, AlbumThumb = thumb };
                 case PinKind.Station when data is not null && JsonSerializer.Deserialize<StationData>(data, Json) is { } s:
+                    // Your Day and Time Travel are gone: what was pinned of them becomes their successors. A live station
+                    // Meloday makes is always as it is named now (it has been renamed).
+                    if (s.Kind == StationKind.YourDay) return Radio.StationBrand.For(StationKind.Flagship)!.ToStation();
+                    if (s.Kind == StationKind.TimeTravel) return Radio.StationBrand.For(StationKind.Hits)!.ToStation();
+                    if (s.Local && Radio.StationBrand.For(s.Kind) is { } brand) return brand.ToStation();
                     return new Station { RatingKey = ratingKey, Title = title, StationKind = s.Kind, Key = s.Key, Tag = s.Tag, Colour = s.Colour, IsLocal = s.Local, Summary = s.Summary };
                 case PinKind.ArtistMix when data is not null && JsonSerializer.Deserialize<ArtistMixData>(data, Json) is { } a:
                     return new ArtistMix

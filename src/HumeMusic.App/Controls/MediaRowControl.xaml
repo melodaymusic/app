@@ -23,9 +23,6 @@
         <DataTemplate x:Key="SquareBoardTemplate" x:DataType="models:MediaItem">
             <controls:SquareBoard Item="{x:Bind}" />
         </DataTemplate>
-        <DataTemplate x:Key="StationBoardTemplate" x:DataType="models:MediaItem">
-            <controls:SquareBoard Item="{x:Bind}" IsLarge="True" />
-        </DataTemplate>
     </UserControl.Resources>
 
     <Grid RowSpacing="12">

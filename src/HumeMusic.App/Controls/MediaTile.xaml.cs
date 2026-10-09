@@ -82,6 +82,11 @@ public sealed partial class MediaTile : UserControl
         if (smart && SmartIcon is null) FindName(nameof(SmartIcon));
         if (SmartIcon is not null) SmartIcon.Visibility = smart ? Visibility.Visible : Visibility.Collapsed;
         UpdateStation(item as Station);
+        // A mix is named on its cover (bottom left), so no name beneath it.
+        var isMix = item is ArtistMix or TagMix or BuiltMix;
+        TitleText.Visibility = isMix ? Visibility.Collapsed : Visibility.Visible;
+        SubtitleRow.Margin = isMix ? new Thickness(0, 10, 0, 0) : new Thickness(0);
+        UpdateMix(isMix ? item : null);
         if (round) SubtitleText.Text = "Artist";
         Art.PlaceholderIcon = item switch
         {
@@ -109,7 +114,7 @@ public sealed partial class MediaTile : UserControl
         AutomationProperties.SetName(PlayButton, Item is null ? "Play" : $"Play {Item.Title}");
     }
 
-    /// <summary>A station's own art: its colour field (moving, or still with motion off) and its name.</summary>
+    /// <summary>A station's own art: its colour field (moving, or still with motion off, tinted where the station has a tint) and its name.</summary>
     private void UpdateStation(Station? station)
     {
         Art.Visibility = station is null ? Visibility.Visible : Visibility.Collapsed;
@@ -117,10 +122,32 @@ public sealed partial class MediaTile : UserControl
         if (StationArt is null) return;
         StationArt.Visibility = station is null ? Visibility.Collapsed : Visibility.Visible;
         StationField.Field = station is null ? null : StationColours.Field(station);
+        StationField.Tint = station is null ? null : StationColours.Tint(station);
         if (station is null) return;
-        // The builders are named in full; stations as Meloday's cover is: the name on top, "Radio" below.
+        // The builders are named in full; stations as Meloday's cover is: the name on top, "Radio" (or "Meloday Live") below.
         StationLabels.Title = station.IsBuilder ? station.Title : Helpers.Format.StationCoverName(station);
-        StationLabels.Label = station.IsBuilder ? string.Empty : "Radio";
+        StationLabels.Label = station.IsBuilder ? string.Empty : Helpers.Format.StationCoverLabel(station);
+    }
+
+    /// <summary>A mix's cover: its main artist and two others on a field of colour, and "Featuring ..." below its name.</summary>
+    private async void UpdateMix(MediaItem? mix)
+    {
+        if (mix is not null && MixArt is null) FindName(nameof(MixArt));
+        if (MixArt is null) return;
+        MixArt.Visibility = mix is null ? Visibility.Collapsed : Visibility.Visible;
+        if (mix is null) return;
+        Art.Visibility = Visibility.Collapsed;
+        SubtitleText.TextTrimming = TextTrimming.CharacterEllipsis;
+        MixArt.Show(null);
+        MixArt.Title = mix.Title;
+        var data = await MixCoverData.LoadAsync(mix);
+        if (!ReferenceEquals(mix, Item)) return;
+        MixArt.Show(data);
+        if (data is null) return;
+        TitleText.Text = data.Info.Title;
+        MixArt.Title = data.Info.Title;
+        if (data.Info.Featuring.Length > 0) SubtitleText.Text = data.Info.Featuring;
+        AutomationProperties.SetName(this, $"{data.Info.Title}, {SubtitleText.Text}");
     }
 
     private void UpdateCorners()

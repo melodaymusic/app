@@ -88,6 +88,48 @@ internal static class Dialogs
 
     public static Button SecondaryButton(string text) => new() { Content = text, Style = (Style)Application.Current.Resources["HumeSecondaryButtonStyle"] };
 
+    /// <summary>Room for a dialog's content beyond the usual width (a dialog's own content is then set a little narrower).</summary>
+    public static void Wide(ContentDialog dialog, double width) => dialog.Resources["ContentDialogMaxWidth"] = width;
+
+    /// <summary>The corners of a small picture in a row: an artist's is round, an album's or song's the thumbnail radius.</summary>
+    public static CornerRadius ArtistRadius => new(20);
+
+    public static CornerRadius AlbumRadius => (CornerRadius)Application.Current.Resources["HumeRadiusThumb"];
+
+    /// <summary>
+    /// A row in a dialog's list, as everywhere: a small picture, a title with what it is under it, and anything at the far end
+    /// (a remove button, a "Change"). Give it <c>HumeGroupRowStyle</c> in a group, or leave it plain in a list of matches.
+    /// </summary>
+    public static Grid MediaRow(string? thumb, string title, string? detail, string icon, CornerRadius radius, double size, FrameworkElement? trailing = null)
+    {
+        var resources = Application.Current.Resources;
+        var row = new Grid { ColumnSpacing = 12, Padding = new Thickness(4, 2, 4, 2) };
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+        row.Children.Add(new ArtworkImage
+        {
+            Width = size, Height = size, DecodeSize = (int)size * 2, SourcePath = thumb, ArtworkCornerRadius = radius, PlaceholderIcon = icon,
+        });
+        var text = new StackPanel
+        {
+            Spacing = 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children = { new TextBlock { Text = title, Style = (Style)resources["HumeBodyStrongText"], TextTrimming = TextTrimming.CharacterEllipsis } },
+        };
+        if (!string.IsNullOrEmpty(detail))
+            text.Children.Add(new TextBlock { Text = detail, Style = (Style)resources["HumeSecondaryText"], TextTrimming = TextTrimming.CharacterEllipsis });
+        Grid.SetColumn(text, 1);
+        row.Children.Add(text);
+        if (trailing is not null)
+        {
+            trailing.VerticalAlignment = VerticalAlignment.Center;
+            Grid.SetColumn(trailing, 2);
+            row.Children.Add(trailing);
+        }
+        return row;
+    }
+
     /// <summary>An image file the listener picks (PNG, WebP or JPEG), as bytes; null if they cancel.</summary>
     public static async Task<byte[]?> PickImageAsync()
     {
@@ -106,6 +148,7 @@ internal static class Dialogs
 /// <summary>Creating, editing and deleting playlists.</summary>
 public static class PlaylistDialogs
 {
+
     private static LibraryActions Actions => App.Services.GetRequiredService<LibraryActions>();
 
     /// <summary>A new playlist holding <paramref name="items"/>, named by the listener.</summary>
@@ -137,32 +180,6 @@ public static class PlaylistDialogs
         await dialog.ShowAsync();
     }
 
-    /// <summary>Renames a playlist and edits its description.</summary>
-    public static async Task EditAsync(Playlist playlist)
-    {
-        var dialog = Dialogs.Create("Edit Playlist");
-        var name = new TextBox { Header = "Name", Text = playlist.Title, MinWidth = 380 };
-        var summary = new TextBox
-        {
-            Header = "Description",
-            Text = playlist.Summary ?? string.Empty,
-            AcceptsReturn = true,
-            TextWrapping = TextWrapping.Wrap,
-            Height = 110,
-        };
-        dialog.Content = new StackPanel { Spacing = 12, Children = { name, summary } };
-        dialog.PrimaryButtonText = "Save";
-        dialog.CloseButtonText = "Cancel";
-        name.TextChanged += (_, _) => dialog.IsPrimaryButtonEnabled = name.Text.Trim().Length > 0;
-        dialog.PrimaryButtonClick += async (_, e) =>
-        {
-            var deferral = e.GetDeferral();
-            if (!await Actions.EditPlaylistAsync(playlist, name.Text.Trim(), summary.Text.Trim())) e.Cancel = true;
-            deferral.Complete();
-        };
-        await dialog.ShowAsync();
-    }
-
     /// <summary>Asks before deleting: a playlist is gone from the server for every app that uses it.</summary>
     public static async Task DeleteAsync(Playlist playlist)
     {
@@ -175,6 +192,7 @@ public static class PlaylistDialogs
         if (await dialog.ShowAsync() == ContentDialogResult.Primary) await Actions.DeletePlaylistAsync(playlist);
     }
 }
+
 
 /// <summary>
 /// Meloday's mix builders: choose artists (or albums) and they play together, shuffled and topped up
@@ -189,72 +207,78 @@ public static class MixBuilderDialog
         var albums = kind == StationKind.AlbumMixBuilder;
         var session = App.Services.GetRequiredService<PlexSession>();
         if (session.Client is not { } client || session.Section is not { } section) return;
+        var resources = Application.Current.Resources;
         var chosen = new List<MediaItem>();
 
-        var dialog = Dialogs.Create(albums ? "Album Mix Builder" : "Artist Mix Builder");
-        var search = new AutoSuggestBox
+        var dialog = Dialogs.Create(albums ? "Album Radio Builder" : "Artist Radio Builder");
+        dialog.PrimaryButtonText = "Play Radio";
+        dialog.SecondaryButtonText = "Save as Playlist";
+        dialog.CloseButtonText = "Cancel";
+
+        var heading = new TextBlock { Style = (Style)resources["HumeGroupHeaderText"] };
+        var rows = new StackPanel { Style = (Style)resources["HumeGroupRowsStyle"] };
+        var group = new StackPanel
         {
-            PlaceholderText = albums ? "Add an album" : "Add an artist",
-            QueryIcon = new SymbolIcon(Symbol.Find),
-            MinWidth = 440,
+            Style = (Style)resources["HumeGroupStyle"],
+            Visibility = Visibility.Collapsed,
+            Children = { heading, new Border { Style = (Style)resources["HumeGroupListStyle"], Child = rows } },
         };
-        var list = new StackPanel { Spacing = 8 };
-        var suggestionsLabel = Dialogs.Note("You might add");
         var suggestions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
         var suggestionsHost = new StackPanel
         {
             Spacing = 8,
             Visibility = Visibility.Collapsed,
-            Children = { suggestionsLabel, new ScrollViewer { Content = suggestions, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollMode = ScrollMode.Enabled, VerticalScrollMode = ScrollMode.Disabled } },
+            Children =
+            {
+                new TextBlock { Text = "You might add", Style = (Style)resources["HumeBodyStrongText"] },
+                new ScrollViewer { Content = suggestions, HorizontalScrollBarVisibility = ScrollBarVisibility.Hidden, HorizontalScrollMode = ScrollMode.Enabled, VerticalScrollMode = ScrollMode.Disabled },
+            },
         };
+        SearchPicker search = null!;
+        search = new SearchPicker(albums ? "Search for an album" : "Search for an artist", async query =>
+        {
+            var results = await client.SearchAsync(query, section.Key, 8);
+            return albums
+                ? results.Albums.Select(a => new PickResult(a, a.Title, a.ArtistTitle, a.Thumb, "Disc3", Dialogs.AlbumRadius)).ToList()
+                : results.Artists.Select(a => new PickResult(a, a.Title, null, a.Thumb, "MicVocal", Dialogs.ArtistRadius)).ToList();
+        }, item => Add(item));
+
         dialog.Content = new StackPanel
         {
-            Spacing = 16,
-            MinWidth = 460,
+            Spacing = 24,
+            Width = 480,
             Children =
             {
                 Dialogs.Text(albums
                     ? "Choose up to 10 albums and Meloday plays them together, shuffled."
                     : "Choose up to 10 artists and Meloday plays their music together, shuffled."),
-                search,
-                list,
+                search.Root,
+                group,
                 suggestionsHost,
             },
         };
-        dialog.PrimaryButtonText = "Play Mix";
-        dialog.SecondaryButtonText = "Save as Playlist";
-        dialog.CloseButtonText = "Cancel";
 
         void Refresh()
         {
-            list.Children.Clear();
+            rows.Children.Clear();
             foreach (var item in chosen)
             {
-                var row = new Grid { ColumnSpacing = 12 };
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                row.Children.Add(new ArtworkImage
-                {
-                    Width = 32, Height = 32, DecodeSize = 64, SourcePath = item.Thumb,
-                    ArtworkCornerRadius = new CornerRadius(albums ? 4 : 16), PlaceholderIcon = albums ? "Disc3" : "MicVocal",
-                });
-                var name = new TextBlock { Text = item.Title, Style = (Style)Application.Current.Resources["HumeBodyText"], VerticalAlignment = VerticalAlignment.Center };
-                Grid.SetColumn(name, 1);
-                row.Children.Add(name);
                 var remove = new Button
                 {
-                    Style = (Style)Application.Current.Resources["HumeIconButtonStyle"],
-                    Content = new LucideIcon { Icon = "X", Width = 14, Height = 14 },
+                    Style = (Style)resources["HumeIconButtonStyle"],
+                    Content = new LucideIcon { Icon = "X", Width = (double)resources["HumeIconXS"], Height = (double)resources["HumeIconXS"] },
                 };
                 Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(remove, $"Remove {item.Title}");
                 remove.Click += (_, _) => { chosen.Remove(item); Refresh(); };
-                Grid.SetColumn(remove, 2);
-                row.Children.Add(remove);
-                list.Children.Add(row);
+                var row = Dialogs.MediaRow(item.Thumb, item.Title, (item as Album)?.ArtistTitle, albums ? "Disc3" : "MicVocal",
+                    albums ? Dialogs.AlbumRadius : Dialogs.ArtistRadius, 40, remove);
+                row.Style = (Style)resources["HumeGroupRowStyle"];
+                rows.Children.Add(row);
             }
+            heading.Text = $"{(albums ? "Albums" : "Artists")} · {chosen.Count} of {MaxChoices}";
+            group.Visibility = chosen.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
             dialog.IsPrimaryButtonEnabled = dialog.IsSecondaryButtonEnabled = chosen.Count > 0;
-            search.IsEnabled = chosen.Count < MaxChoices;
+            search.Box.IsEnabled = chosen.Count < MaxChoices;
             if (!albums) _ = SuggestAsync();
         }
 
@@ -281,7 +305,8 @@ public static class MixBuilderDialog
                 suggestions.Children.Clear();
                 foreach (var artist in similar)
                 {
-                    var button = Dialogs.SecondaryButton("+ " + artist.Title);
+                    var button = Dialogs.SecondaryButton(string.Empty);
+                    button.Content = new IconLabel { Icon = "Plus", Text = artist.Title };
                     button.Click += (_, _) => Add(artist);
                     suggestions.Children.Add(button);
                 }
@@ -293,39 +318,6 @@ public static class MixBuilderDialog
             }
         }
 
-        var searchVersion = 0;
-        search.TextChanged += async (box, args) =>
-        {
-            if (args.Reason != AutoSuggestionBoxTextChangeReason.UserInput) return;
-            var version = ++searchVersion;
-            var query = box.Text.Trim();
-            if (query.Length < 2)
-            {
-                box.ItemsSource = null;
-                return;
-            }
-            await Task.Delay(250);
-            if (version != searchVersion) return;
-            try
-            {
-                var results = await client.SearchAsync(query, section.Key, 8);
-                if (version != searchVersion) return;
-                box.ItemsSource = albums
-                    ? results.Albums.Select(a => new SearchChoice(a, $"{a.Title} — {a.ArtistTitle}")).ToList()
-                    : results.Artists.Select(a => new SearchChoice(a, a.Title)).ToList();
-            }
-            catch (PlexException)
-            {
-                box.ItemsSource = null;
-            }
-        };
-        search.SuggestionChosen += (box, args) =>
-        {
-            if (args.SelectedItem is SearchChoice choice) Add(choice.Item);
-            box.Text = string.Empty;
-            box.ItemsSource = null;
-        };
-
         Refresh();
         var result = await dialog.ShowAsync();
         if (chosen.Count == 0 || result == ContentDialogResult.None) return;
@@ -333,9 +325,9 @@ public static class MixBuilderDialog
         var names = chosen.Select(c => c.Title).ToList();
         var title = names.Count switch
         {
-            1 => $"{names[0]} Mix",
-            2 => $"{names[0]} & {names[1]} Mix",
-            _ => $"{names[0]}, {names[1]} & More Mix",
+            1 => $"{names[0]} Radio",
+            2 => $"{names[0]} & {names[1]} Radio",
+            _ => $"{names[0]}, {names[1]} & More Radio",
         };
         var mix = new BuiltMix
         {
@@ -354,107 +346,5 @@ public static class MixBuilderDialog
             var tracks = await App.Services.GetRequiredService<MixService>().SampleAsync(mix, 100);
             if (tracks.Count > 0) await PlaylistDialogs.NewAsync(tracks, title);
         }
-    }
-
-    private sealed record SearchChoice(MediaItem Item, string Text)
-    {
-        public override string ToString() => Text;
-    }
-}
-
-/// <summary>Choosing an artist's photo or backdrop from the images Plex found, or uploading one.</summary>
-public static class ArtworkPickerDialog
-{
-    /// <summary>Returns whether the image changed.</summary>
-    public static async Task<bool> ShowAsync(Artist artist, ArtworkKind kind, XamlRoot root)
-    {
-        var session = App.Services.GetRequiredService<PlexSession>();
-        if (session.Client is not { } client) return false;
-        var photo = kind == ArtworkKind.Poster;
-        var dialog = Dialogs.Create(photo ? "Artist Photo" : "Artist Backdrop", root);
-        var status = Dialogs.Note(string.Empty);
-        var busy = new ProgressRing { IsActive = true, Width = 24, Height = 24, HorizontalAlignment = HorizontalAlignment.Left };
-        var grid = new GridView { SelectionMode = ListViewSelectionMode.Single, MaxHeight = 420, Visibility = Visibility.Collapsed };
-        var upload = Dialogs.SecondaryButton("Upload Image…");
-        dialog.Content = new StackPanel
-        {
-            Spacing = 16,
-            MinWidth = 520,
-            Children =
-            {
-                Dialogs.Text($"Choose one of the images Plex found for {artist.Title}, or upload your own."),
-                busy, status, grid, upload,
-            },
-        };
-        dialog.PrimaryButtonText = "Use This Image";
-        dialog.CloseButtonText = "Cancel";
-        dialog.IsPrimaryButtonEnabled = false;
-        var options = new List<ArtworkOption>();
-        var changed = false;
-        var current = -1;
-        grid.SelectionChanged += (_, _) => dialog.IsPrimaryButtonEnabled = grid.SelectedIndex >= 0 && grid.SelectedIndex != current;
-
-        upload.Click += async (_, _) =>
-        {
-            try
-            {
-                if (await Dialogs.PickImageAsync() is not { } bytes) return;
-                status.Text = "Uploading…";
-                await client.UploadArtworkAsync(artist.RatingKey, kind, bytes);
-                changed = true;
-                dialog.Hide();
-            }
-            catch (Exception ex) when (ex is PlexException or IOException or UnauthorizedAccessException or System.Runtime.InteropServices.COMException)
-            {
-                status.Text = "That image couldn't be uploaded.";
-            }
-        };
-        dialog.PrimaryButtonClick += async (_, e) =>
-        {
-            if (grid.SelectedIndex < 0 || grid.SelectedIndex >= options.Count) return;
-            var deferral = e.GetDeferral();
-            try
-            {
-                await client.SelectArtworkAsync(artist.RatingKey, kind, options[grid.SelectedIndex]);
-                changed = true;
-            }
-            catch (PlexException)
-            {
-                status.Text = "Plex couldn't use that image. Try another.";
-                e.Cancel = true;
-            }
-            deferral.Complete();
-        };
-
-        var show = dialog.ShowAsync();
-        try
-        {
-            options.AddRange(await client.GetArtworkOptionsAsync(artist.RatingKey, kind));
-        }
-        catch (PlexException)
-        {
-            status.Text = "Plex couldn't list the images for this artist.";
-        }
-        busy.IsActive = false;
-        busy.Visibility = Visibility.Collapsed;
-        if (options.Count == 0 && status.Text.Length == 0) status.Text = "Plex hasn't found any images for this artist. You can upload one.";
-        var (w, h) = photo ? (150, 150) : (240, 135);
-        foreach (var option in options)
-        {
-            var uri = option.Thumb is { } thumb && thumb.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                ? new Uri(thumb)
-                : client.BuildArtworkUri(option.Thumb ?? option.Key, w * 2, h * 2);
-            var image = new Image { Stretch = Stretch.UniformToFill, Width = w, Height = h };
-            if (uri is not null) image.Source = new BitmapImage(uri) { DecodePixelWidth = w * 2 };
-            var tile = new Border { CornerRadius = new CornerRadius(photo ? w / 2.0 : 8), Child = image, Background = new SolidColorBrush(Windows.UI.Color.FromArgb(40, 128, 128, 128)) };
-            Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(tile, $"Image {options.IndexOf(option) + 1}{(option.Selected ? ", in use" : string.Empty)}{(option.Provider is { } p ? $", from {p}" : string.Empty)}");
-            grid.Items.Add(tile);
-        }
-        if (options.Count > 0) grid.Visibility = Visibility.Visible;
-        current = options.FindIndex(o => o.Selected);
-        grid.SelectedIndex = current;
-        dialog.IsPrimaryButtonEnabled = false;
-        await show;
-        return changed;
     }
 }

@@ -67,6 +67,11 @@ public sealed partial class ColourBoard : UserControl
         _colour = null;
         Panel.BackgroundTransition = Motion.Brush(Motion.Emphasized);
         ApplyNeutral();
+        if (item is Station { StationKind: StationKind.Meloday } meloday)
+        {
+            UpdateMeloday(meloday);
+            return;
+        }
         var mix = item is ArtistMix or TagMix ? item : null;
         SmartIcon.Visibility = item is Playlist { IsSmart: true } ? Visibility.Visible : Visibility.Collapsed;
         MixArt.Visibility = mix is not null ? Visibility.Visible : Visibility.Collapsed;
@@ -101,6 +106,29 @@ public sealed partial class ColourBoard : UserControl
             var line = await artistsTask;
             if (ReferenceEquals(item, Item) && line is not null) SummaryText.Text = line;
         }
+    }
+
+    /// <summary>
+    /// Meloday: the playlist made for this part of the day (not a station). Its cover is the one it has
+    /// now, with the board in the cover's colour and the mix's own title beneath.
+    /// </summary>
+    private async void UpdateMeloday(Station station)
+    {
+        MixArt.Visibility = Visibility.Collapsed;
+        Art.Visibility = Visibility.Visible;
+        Art.PlaceholderIcon = "Sparkles";
+        Art.SourcePath = null;
+        TitleText.Text = "Meloday";
+        SummaryText.Text = App.Services.GetRequiredService<MelodayService>().Current?.Title ?? station.Summary ?? string.Empty;
+        AutomationProperties.SetName(this, "Meloday");
+        SetPlayName("Play Meloday");
+
+        var cover = await App.Services.GetRequiredService<StaticCovers>().GetAsync(station);
+        if (!ReferenceEquals(station, Item)) return;
+        Art.SourcePath = cover;
+        var colour = await App.Services.GetRequiredService<ArtworkService>().GetDominantColorAsync(cover);
+        if (!ReferenceEquals(station, Item)) return;
+        ApplyColour(colour, "Meloday");
     }
 
     // A screen of boards would otherwise fire one large playlist request per board at once.

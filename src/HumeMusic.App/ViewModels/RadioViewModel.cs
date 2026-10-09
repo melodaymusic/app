@@ -10,10 +10,10 @@ using Microsoft.Extensions.Logging;
 namespace HumeMusic.ViewModels;
 
 /// <summary>
-/// Radio: Meloday and Plex's stations (Library Radio, Deep Cuts, Time Travel) as large squareboards,
-/// then the listener's six favourite genre, style, mood and decade stations as squareboards, each
-/// row opening onto every station of its kind. The mix builders are the page's buttons. Without
-/// Plex Pass there are no Plex stations: Meloday and the builders.
+/// Radio: the live stations (Headliners, Hits, Club and Chill, then Library Radio and Deep Cuts) as
+/// squareboards with their logos, then the listener's six favourite genre, style, mood and decade radios
+/// as squareboards, each row opening onto every radio of its kind. The radio builders are the page's
+/// buttons. Without Plex Pass Meloday makes Library Radio and Deep Cuts itself.
 /// </summary>
 public sealed partial class RadioViewModel : ViewModelBase
 {
@@ -44,11 +44,13 @@ public sealed partial class RadioViewModel : ViewModelBase
             var picks = picksTask.Result;
 
             var rows = new List<MediaRow>();
-            Description = catalog.Stations.Count > 1
-                ? "Meloday for this part of your day, and stations made from your library. Or build a mix of your own."
-                : "Meloday for this part of your day. Or build a mix from the artists or albums you choose.";
+            Description = "Live stations are always on: tune in and you join them mid-song. Any other radio starts from something you choose, from its first song, and never ends.";
             if (catalog.Stations.Count > 0)
-                rows.Add(new MediaRow { Title = "Stations", Items = catalog.Stations, Identifier = "stations", CardStyle = CardStyle.StationBoard });
+                rows.Add(new MediaRow
+                {
+                    Title = "Live", Subtitle = "Always on, whether or not you're listening", Items = catalog.Stations,
+                    Identifier = "stations", CardStyle = CardStyle.SquareBoard,
+                });
 
             // The listener's own favourites of each kind, opening onto every station of that kind.
             foreach (var directory in catalog.Directories)

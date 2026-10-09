@@ -7,20 +7,55 @@ using Windows.Foundation;
 
 namespace HumeMusic.Controls;
 
+/// <summary>How the circles of a mix are placed.</summary>
+public enum MixCirclesLayout
+{
+    /// <summary>On a colour board: large top left, medium right, small bottom left.</summary>
+    Cascade,
+    /// <summary>On a square cover: the main artist in the middle, two small ones in opposite corners.</summary>
+    Orbit,
+}
+
 /// <summary>
-/// The artwork of an artist mix: up to three round artist photos, each a size smaller than the last
-/// (large top left, medium right, small bottom left), gently drifting around their places.
-/// Positions are fractions of the square, so it scales with the card and never feeds back into layout.
+/// The artwork of a mix: up to three round artist photos, each a size smaller than the last, gently
+/// drifting around their places. Positions are fractions of the square, so it scales with the card and
+/// never feeds back into layout.
 /// </summary>
 public sealed partial class MixCircles : Panel
 {
     // Centre x, centre y and diameter of each circle, as fractions of the square.
-    private static readonly (double X, double Y, double D)[] Slots =
+    private static readonly (double X, double Y, double D)[] CascadeSlots =
     [
         (0.33, 0.30, 0.44),
         (0.715, 0.57, 0.35),
         (0.325, 0.775, 0.27),
     ];
+
+    /// <summary>Where the main artist and the two around them sit on a mix cover, high enough to leave the bottom left for the mix's name (also drawn into still covers).</summary>
+    public static readonly (double X, double Y, double D)[] OrbitSlots =
+    [
+        (0.5, 0.42, 0.54),
+        (0.2, 0.17, 0.25),
+        (0.82, 0.66, 0.27),
+    ];
+
+    /// <summary>
+    /// The same places for a still cover (pins), where nothing drifts: the two small circles overlap the
+    /// main one more, as on a radio cover, and each has a ring of the field's colour round it.
+    /// </summary>
+    public static readonly (double X, double Y, double D)[] StillSlots =
+    [
+        (0.52, 0.43, 0.56),
+        (0.24, 0.19, 0.28),
+        (0.78, 0.66, 0.30),
+    ];
+
+    /// <summary>How wide the ring of the field's colour round a small circle is, as a share of the square.</summary>
+    public const double RingShare = 0.016;
+
+    public MixCirclesLayout Layout { get; set; } = MixCirclesLayout.Cascade;
+
+    private (double X, double Y, double D)[] Slots => Layout == MixCirclesLayout.Orbit ? OrbitSlots : CascadeSlots;
 
     // Every circle on every card gets its own random drift, so nothing moves in step.
     private static readonly Random Random = new();

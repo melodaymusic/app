@@ -40,6 +40,10 @@ public sealed partial class ChipTabs : UserControl
             Defer(animate: false);
         };
         List.SizeChanged += (_, _) => Defer(animate: false);
+        // The pill is drawn behind the chips, so it stops where the row does: a chip scrolled out of sight takes its pill with it.
+        Host.SizeChanged += (_, e) => Host.Clip = new RectangleGeometry { Rect = new Windows.Foundation.Rect(0, 0, e.NewSize.Width, e.NewSize.Height) };
+        // Chips that don't all fit are reached with the wheel too.
+        List.PointerWheelChanged += OnWheel;
     }
 
     public static readonly DependencyProperty ItemsSourceProperty = DependencyProperty.Register(
@@ -116,6 +120,7 @@ public sealed partial class ChipTabs : UserControl
             PillIndicator.Opacity = 0;
             return;
         }
+        if (animate) item.StartBringIntoView(new BringIntoViewOptions { AnimationDesired = false });
         var at = item.TransformToVisual(Host).TransformPoint(default);
         animate &= Helpers.Motion.IsEnabled && PillIndicator.Opacity > 0;
         PillIndicator.Height = item.ActualHeight;
@@ -139,6 +144,14 @@ public sealed partial class ChipTabs : UserControl
         }
         else PillIndicator.Width = item.ActualWidth;
         PillIndicator.Opacity = 1;
+    }
+
+    private void OnWheel(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (FindScroller(List) is not { ScrollableWidth: > 0 } scroller) return;
+        var delta = e.GetCurrentPoint(List).Properties.MouseWheelDelta;
+        scroller.ChangeView(scroller.HorizontalOffset - delta, null, null, disableAnimation: true);
+        e.Handled = true;
     }
 
     private static ScrollViewer? FindScroller(DependencyObject root)

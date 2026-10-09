@@ -169,7 +169,6 @@ public sealed partial class MediaRowControl : UserControl
             CardStyle.EditorialBoard => ("EditorialTemplate", "HumeRowBoardItemStyle"),
             CardStyle.ColourBoard => ("ColourBoardTemplate", "HumeRowBoardItemStyle"),
             CardStyle.SquareBoard => ("SquareBoardTemplate", "HumeRowBoardItemStyle"),
-            CardStyle.StationBoard => ("StationBoardTemplate", "HumeRowBoardItemStyle"),
             _ => ("TileTemplate", "HumeRowTileItemStyle"),
         };
         List.ItemTemplate = (DataTemplate)Resources[template];
@@ -231,7 +230,7 @@ public sealed partial class MediaRowControl : UserControl
         var size = -RoundingSlack + Math.Floor(CardStyle switch
         {
             CardStyle.Billboard or CardStyle.EditorialBoard => 2 * column + UiScale.RowGap, // two columns and the gap between
-            CardStyle.ColourBoard or CardStyle.StationBoard => 1.5 * column + 0.5 * UiScale.RowGap, // two boards = three columns
+            CardStyle.ColourBoard => 1.5 * column + 0.5 * UiScale.RowGap, // two boards = three columns
             // Squareboards show six across (a row of favourites), unless that would make them too small.
             CardStyle.SquareBoard => (span - 5 * UiScale.RowGap) / 6 is var six && six >= UiScale.Size(140) ? six : column,
             _ => column,

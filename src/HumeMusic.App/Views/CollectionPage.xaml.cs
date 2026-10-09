@@ -17,6 +17,28 @@ public sealed partial class CollectionPage : Page
     {
         ViewModel = App.Services.GetRequiredService<CollectionViewModel>();
         InitializeComponent();
+        ViewModel.PropertyChanged += OnViewModelChanged;
+        Loaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged += OnItemChanged;
+        Unloaded += (_, _) => App.Services.GetRequiredService<LibraryActions>().ItemChanged -= OnItemChanged;
+    }
+
+    // Its cover, backdrop, logo or details were changed (from the menu): show them.
+    private void OnItemChanged(object? sender, MediaItem item) => DispatcherQueue.TryEnqueue(async () =>
+    {
+        if (item.RatingKey == ViewModel.Collection?.RatingKey) await ViewModel.RefreshCollectionAsync();
+    });
+
+    private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(CollectionViewModel.Collection)) UpdateWash();
+    }
+
+    /// <summary>The top of the page takes the UltraBlur of the collection's artwork (a backdrop dissolves into it).</summary>
+    private void UpdateWash()
+    {
+        if (_collection is not { } c) return;
+        _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(c, c.Thumb,
+            () => ReferenceEquals(Frame?.Content, this) && ReferenceEquals(c, _collection));
     }
 
     public CollectionViewModel ViewModel { get; private set; }
@@ -32,17 +54,17 @@ public sealed partial class CollectionPage : Page
         if (e.Parameter is MusicCollection c)
         {
             _collection = c;
-            // The top of the page takes the UltraBlur of the collection's artwork.
-            _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(c, c.Thumb,
-                () => ReferenceEquals(Frame?.Content, this) && ReferenceEquals(c, _collection));
             // A recently visited collection comes back as it was left, without loading again.
             _cacheKey = "collection:" + c.RatingKey;
             var vm = Cache.Get(_cacheKey, () => App.Services.GetRequiredService<CollectionViewModel>(), out var isNew, e.NavigationMode == NavigationMode.Back);
             if (!ReferenceEquals(vm, ViewModel))
             {
+                ViewModel.PropertyChanged -= OnViewModelChanged;
                 ViewModel = vm;
+                vm.PropertyChanged += OnViewModelChanged;
                 Bindings.Update();
             }
+            UpdateWash();
             if (isNew)
             {
                 await vm.LoadAsync(c);

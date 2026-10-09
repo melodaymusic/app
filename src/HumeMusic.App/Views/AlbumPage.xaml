@@ -13,6 +13,9 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
+        <!-- The album's backdrop from the Plex server, when it has one. -->
+        <controls:BackdropLayer Grid.RowSpan="2" ScrollSource="{x:Bind Scroller}" SourcePath="{x:Bind ViewModel.Album.Art, Mode=OneWay}" />
+
         <controls:DetailHeader x:Name="Header" Item="{x:Bind ViewModel.Album, Mode=OneWay}" Artwork="{x:Bind ViewModel.Album.Thumb, Mode=OneWay}"
                                Subtitle="{x:Bind ViewModel.Album.ArtistTitle, Mode=OneWay}" Meta="{x:Bind ViewModel.MetaText, Mode=OneWay}"
                                Description="{x:Bind ViewModel.Album.Summary, Mode=OneWay}" PlaceholderIcon="Disc3"

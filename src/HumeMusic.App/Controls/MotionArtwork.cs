@@ -11,8 +11,8 @@ using Microsoft.UI.Dispatching;
 namespace HumeMusic.Controls;
 
 /// <summary>
-/// A station's own artwork: one of Meloday Music's four colour fields, moving (a silent looping video)
-/// or, with motion off, its still. The still also sits under the video, so there is never a blank
+/// A station's own artwork: one of Meloday Music's colour fields, moving (a silent looping video)
+/// or, with motion off, its still; optionally with a colour laid over it (the neutral "mono" field takes any). The still also sits under the video, so there is never a blank
 /// frame. A video only plays while it can be seen: scrolled out of view or minimised, it pauses.
 /// </summary>
 public sealed partial class MotionArtwork : Grid
@@ -27,6 +27,8 @@ public sealed partial class MotionArtwork : Grid
     ];
 
     private readonly Image _still = new() { Stretch = Stretch.UniformToFill };
+    // The tint lies over the still and the video alike (the video is inserted beneath it).
+    private readonly Border _tint = new() { Opacity = Core.Radio.StationBrand.TintOpacity, Visibility = Visibility.Collapsed, IsHitTestVisible = false };
     private MediaPlayerElement? _video;
     private string? _field;
     private bool _onScreen;
@@ -44,6 +46,7 @@ public sealed partial class MotionArtwork : Grid
     {
         IsHitTestVisible = false;
         Children.Add(_still);
+        Children.Add(_tint);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -56,6 +59,21 @@ public sealed partial class MotionArtwork : Grid
         static double Gap(double a, double b) => Math.Min(Math.Abs(a - b), 360 - Math.Abs(a - b));
         return Fields.MinBy(f => Gap(f.Hue, hue)).Name;
     }
+
+    /// <summary>A colour (0xRRGGBB) laid over the field, still and video; null for none.</summary>
+    public uint? Tint
+    {
+        get => _tintColour;
+        set
+        {
+            _tintColour = value;
+            _tint.Visibility = value is null ? Visibility.Collapsed : Visibility.Visible;
+            if (value is { } rgb)
+                _tint.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, (byte)((rgb >> 16) & 0xFF), (byte)((rgb >> 8) & 0xFF), (byte)(rgb & 0xFF)));
+        }
+    }
+
+    private uint? _tintColour;
 
     public string? Field
     {
@@ -197,7 +215,7 @@ public sealed partial class MotionArtwork : Grid
             IsHitTestVisible = false,
         };
         _video.SetMediaPlayer(player);
-        Children.Add(_video);
+        Children.Insert(1, _video);
         UpdatePlayback();
     }
 

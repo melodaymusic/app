@@ -35,6 +35,16 @@ public static class TrackListBehavior
     public static System.Windows.Input.ICommand? GetRemoveCommand(DependencyObject o) => (System.Windows.Input.ICommand?)o.GetValue(RemoveCommandProperty);
     public static void SetRemoveCommand(DependencyObject o, System.Windows.Input.ICommand? value) => o.SetValue(RemoveCommandProperty, value);
 
+    /// <summary>
+    /// Marks a row's track as a dupe of another (Meloday's page); rows show a "this is a dupe" button when set. Runs with the
+    /// row's track as its parameter.
+    /// </summary>
+    public static readonly DependencyProperty DupeCommandProperty = DependencyProperty.RegisterAttached(
+        "DupeCommand", typeof(System.Windows.Input.ICommand), typeof(TrackListBehavior), new PropertyMetadata(null, OnRemoveCommandChanged));
+
+    public static System.Windows.Input.ICommand? GetDupeCommand(DependencyObject o) => (System.Windows.Input.ICommand?)o.GetValue(DupeCommandProperty);
+    public static void SetDupeCommand(DependencyObject o, System.Windows.Input.ICommand? value) => o.SetValue(DupeCommandProperty, value);
+
     /// <summary>Rows already made reserve (or drop) their remove column when the list's command arrives.</summary>
     private static void OnRemoveCommandChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {

@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Text.Json;
 using HumeMusic.Core;
 using HumeMusic.Core.Meloday;
+using HumeMusic.Core.Mixes;
 using HumeMusic.Core.Models;
 using HumeMusic.Core.Plex;
 using HumeMusic.Core.Security;
@@ -50,6 +51,7 @@ public sealed class MelodayService
     private readonly PlexPass _pass;
     private readonly Dislikes _dislikes;
     private readonly SettingsStore _settings;
+    private readonly DupeStore _dupes;
     private readonly ISecretStore _aiKey;
     private readonly OpenAiClient _openAi;
     private readonly ILogger _log;
@@ -58,11 +60,14 @@ public sealed class MelodayService
     private Timer? _timer;
     private readonly object _gate = new();
     private Task<MelodayMix?>? _making;
+    private readonly Core.Mutes.MuteStore _mutes;
     private Dictionary<string, string[]>? _moodMap;
     private Dictionary<string, string[]>? _eraMap;
 
-    public MelodayService(PlexSession session, PlexPass pass, Dislikes dislikes, SettingsStore settings, ISecretStore aiKey, ILogger<MelodayService> log)
+    public MelodayService(PlexSession session, PlexPass pass, Dislikes dislikes, SettingsStore settings, DupeStore dupes, Core.Mutes.MuteStore mutes, ISecretStore aiKey, ILogger<MelodayService> log)
     {
+        _dupes = dupes;
+        _mutes = mutes;
         _session = session;
         _pass = pass;
         _dislikes = dislikes;
@@ -182,7 +187,8 @@ public sealed class MelodayService
         {
             try
             {
-                var tracks = await TracksAsync(client, saved.Keys, default).ConfigureAwait(false);
+                var tracks = (await TracksAsync(client, saved.Keys, default).ConfigureAwait(false))
+                    .Where(t => !_mutes.IsMuted(saved.Server, t.RatingKey, t.ArtistRatingKey)).ToList();
                 if (tracks.Count > 0)
                 {
                     var cover = saved.Cover is { } path && File.Exists(path) ? path : null;
@@ -198,6 +204,59 @@ public sealed class MelodayService
             }
         }
         return await MakeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// The songs with each dupe (see <see cref="DupeStore"/>) replaced by its keeper where it stood, and a keeper met
+    /// twice kept once. A keeper the list didn't hold is fetched.
+    /// </summary>
+    private async Task<List<Track>> ApplyDupesAsync(PlexServerClient client, List<Track> tracks, CancellationToken ct)
+    {
+        var map = _dupes.Map(client.Server.MachineIdentifier);
+        if (map.Count == 0 || !tracks.Any(t => map.ContainsKey(t.RatingKey))) return tracks;
+        var keys = Dupes.Collapse(tracks.Select(t => t.RatingKey), map);
+        var have = tracks.ToDictionary(t => t.RatingKey, StringComparer.Ordinal);
+        var missing = keys.Where(k => !have.ContainsKey(k)).ToList();
+        if (missing.Count > 0)
+            foreach (var t in (await client.GetItemsAsync(missing, ct).ConfigureAwait(false)).OfType<Track>()) have[t.RatingKey] = t;
+        return keys.Where(have.ContainsKey).Select(k => have[k]).ToList();
+    }
+
+    /// <summary>
+    /// A dupe has just been made: the current Meloday is put right (each dupe replaced by its keeper, and kept for the
+    /// next start), quietly: nothing is announced, because the page shows the change itself (it animates it).
+    /// </summary>
+    public async Task ApplyDupesToCurrentAsync()
+    {
+        if (Current is not { } mix || _session.Client is not { } client) return;
+        var tracks = await ApplyDupesAsync(client, mix.Tracks.ToList(), default).ConfigureAwait(false);
+        Current = mix with { Tracks = tracks };
+        var state = LoadState();
+        if (state.Mix is { } saved && saved.PeriodStart == mix.PeriodStart)
+        {
+            saved.Keys = tracks.Select(t => t.RatingKey).ToList();
+            SaveState(state);
+        }
+    }
+
+    /// <summary>
+    /// Takes the songs the listener has muted (and those of artists they have muted) out of the Meloday on show, and out of the one kept
+    /// for the rest of this part of the day. The next Meloday leaves them out as it is made. Returns how many went.
+    /// </summary>
+    public int PruneMuted()
+    {
+        if (Current is not { } mix || _session.Server?.MachineIdentifier is not { } server) return 0;
+        var kept = mix.Tracks.Where(t => !_mutes.IsMuted(server, t.RatingKey, t.ArtistRatingKey)).ToList();
+        if (kept.Count == mix.Tracks.Count || kept.Count == 0) return 0;
+        Current = mix with { Tracks = kept };
+        var state = LoadState();
+        if (state.Mix is { } saved && saved.PeriodStart == mix.PeriodStart)
+        {
+            saved.Keys = kept.Select(t => t.RatingKey).ToList();
+            SaveState(state);
+        }
+        Changed?.Invoke(this, EventArgs.Empty);
+        return mix.Tracks.Count - kept.Count;
     }
 
     private MelodayMix? Publish(MelodayMix? mix)
@@ -274,7 +333,7 @@ public sealed class MelodayService
         // Seeds: the defining tracks, topped up to 30% of the mix from the rest of the history pick.
         var defining = profile.DefiningKeys.ToHashSet(StringComparer.Ordinal);
         var seeds = historical.Where(t => defining.Contains(t.RatingKey)).ToList();
-        var others = historical.Where(t => !defining.Contains(t.RatingKey)).OrderBy(_ => random.Next()).ToList();
+        var others = Freshness.WeightedOrder(historical.Where(t => !defining.Contains(t.RatingKey)), t => t.LastViewedAt, now, random).ToList();
         seeds.AddRange(others.Take(Math.Max(0, (int)(MelodayCurator.MaxTracks * MelodayCurator.HistoricalRatio) - seeds.Count)));
 
         var similar = await SimilarAsync(run, seeds, ct).ConfigureAwait(false);
@@ -285,7 +344,7 @@ public sealed class MelodayService
         {
             var before = final.Count;
             var leftover = MelodayCurator.MaxTracks - final.Count;
-            var moreHistory = (await HistoricalAsync(run, plays, profile, random, ct).ConfigureAwait(false)).OrderBy(_ => random.Next()).Take(leftover);
+            var moreHistory = Freshness.WeightedOrder(await HistoricalAsync(run, plays, profile, random, ct).ConfigureAwait(false), t => t.LastViewedAt, now, random).Take(leftover);
             var moreSimilar = await SimilarAsync(run, final, ct).ConfigureAwait(false);
             var have = final.Select(t => t.RatingKey).ToHashSet(StringComparer.Ordinal);
             var extra = Theme(run, MelodayText.Dedupe(moreHistory.Concat(moreSimilar).Where(t => !have.Contains(t.RatingKey))), profile);
@@ -321,6 +380,8 @@ public sealed class MelodayService
         ordered = MelodayText.Dedupe(capped).Take(MelodayCurator.MaxTracks).ToList();
         ordered = await PathfindAsync(run, ordered, ct).ConfigureAwait(false);
         ordered = MelodayCurator.SpreadArtists(ordered);
+        // Songs the listener has said are the same song: only the one they chose to play is in.
+        ordered = await ApplyDupesAsync(client, ordered, ct).ConfigureAwait(false);
         // The last word: nothing rated one star or less, however it got in.
         ordered = ordered.Where(run.Disliked.Allows).ToList();
         if (ordered.Count == 0) return null;
@@ -465,7 +526,7 @@ public sealed class MelodayService
             candidates = byGenre;
         if (mood is not null && candidates.Where(t => Tags(t).Moods.Any(m => m.Equals(mood, StringComparison.OrdinalIgnoreCase))).ToList() is { Count: > 0 } byMood)
             candidates = byMood;
-        return candidates.OrderBy(_ => random.Next()).Take(limit).ToList();
+        return Freshness.WeightedOrder(candidates, t => t.LastViewedAt, DateTimeOffset.Now, random).Take(limit).ToList();
     }
 
     private List<Track> Theme(Run run, IEnumerable<Track> tracks, PeriodProfile profile) =>
@@ -791,7 +852,11 @@ public sealed class MelodayService
         try
         {
             var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Meloday", file);
-            return JsonSerializer.Deserialize<Dictionary<string, string[]>>(File.ReadAllText(path)) ?? [];
+            // Plex's moods and the map's keys are matched without regard to case ("Dreamy", "dreamy").
+            var map = new Dictionary<string, string[]>(
+                JsonSerializer.Deserialize<Dictionary<string, string[]>>(File.ReadAllText(path)) ?? [], StringComparer.OrdinalIgnoreCase);
+            _log.LogInformation("Meloday: {File} loaded ({Count} entries)", file, map.Count);
+            return map;
         }
         catch (Exception ex) when (ex is IOException or JsonException)
         {

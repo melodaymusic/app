@@ -81,6 +81,14 @@ public sealed partial class PlayerViewModel : ObservableObject
     /// <summary>The next few tracks, for compact previews (Now Playing).</summary>
     public IReadOnlyList<QueueItemViewModel> UpNextPreview => UpNext.Take(8).ToList();
 
+    private void OnFeaturedChanged()
+    {
+        OnPropertyChanged(nameof(HasFeatured));
+        OnPropertyChanged(nameof(FeaturedArtist));
+        OnPropertyChanged(nameof(FeaturedArtistThumb));
+        OnPropertyChanged(nameof(FeaturedProgress));
+    }
+
     public Track? Track => _player.CurrentTrack;
     public bool HasTrack => _player.CurrentTrack is not null;
     public string Title => Track?.Title ?? "Nothing playing";
@@ -90,8 +98,22 @@ public sealed partial class PlayerViewModel : ObservableObject
     public string? BackdropPath => Track?.Art ?? Track?.DisplayThumb;
     public bool IsPlaying => _player.IsPlaying;
     public bool IsBuffering => _player.IsBuffering;
-    public string PlayPauseIcon => _player.IsPlaying ? "Pause" : "Play";
-    public string PlayPauseLabel => _player.IsPlaying ? "Pause" : "Play";
+    // Live radio can't be paused: where a song would pause, it stops (and playing again tunes in to where the station is by now).
+    public string PlayPauseIcon => _player.IsPlaying ? (_player.IsLive ? "Square" : "Pause") : "Play";
+    public string PlayPauseLabel => _player.IsPlaying ? (_player.IsLive ? "Stop" : "Pause") : _player.IsLive ? "Tune in" : "Play";
+    /// <summary>A live station is playing: its songs can't be skipped, sought or restarted.</summary>
+    public bool IsLive => _player.IsLive;
+    public bool CanSeek => _player.CanSeek;
+    /// <summary>What's up next can be cleared (not on live radio, whose order is its own).</summary>
+    public bool CanClearUpNext => HasUpNext && !IsLive;
+    public string LiveLabel => _player.LiveStation is { } station ? $"{(_player.IsPlaying || _player.IsBuffering ? "LIVE" : "OFF AIR")} \u00B7 {station}" : string.Empty;
+
+    // Headliners plays an artist at a time: Now Playing features the artist whose block it is.
+    public bool HasFeatured => _player.LiveBlock is not null;
+    public string FeaturedArtist => Track?.ArtistTitle ?? Artist;
+    public string? FeaturedArtistThumb => Track?.ArtistThumb ?? Track?.DisplayThumb;
+    public string FeaturedProgress => _player.LiveBlock is { } block ? $"Song {block.Position} of {block.Count} \u00B7 {_player.LiveStation}" : string.Empty;
+    public bool ShowTime => HasTrack && !IsLive;
     public bool HasNext => _player.HasNext;
     public bool HasPrevious => _player.HasPrevious;
     public string? StreamDescription => _player.StreamDescription;
@@ -220,6 +242,7 @@ public sealed partial class PlayerViewModel : ObservableObject
         OnPropertyChanged(nameof(UpNextSummary));
         OnPropertyChanged(nameof(UpNextPreview));
         OnPropertyChanged(nameof(HasUpNext));
+        OnPropertyChanged(nameof(CanClearUpNext));
         OnPropertyChanged(nameof(HasHistory));
         OnPropertyChanged(nameof(IsShuffled));
         OnPropertyChanged(nameof(ShuffleLabel));
@@ -232,6 +255,8 @@ public sealed partial class PlayerViewModel : ObservableObject
             case nameof(PlayerService.CurrentTrack):
                 OnPropertyChanged(nameof(Track));
                 OnPropertyChanged(nameof(HasTrack));
+                OnPropertyChanged(nameof(CanSeek));
+                OnPropertyChanged(nameof(ShowTime));
                 OnPropertyChanged(nameof(Title));
                 OnPropertyChanged(nameof(Artist));
                 OnPropertyChanged(nameof(Album));
@@ -239,15 +264,21 @@ public sealed partial class PlayerViewModel : ObservableObject
                 OnPropertyChanged(nameof(ArtworkPath));
                 OnPropertyChanged(nameof(BackdropPath));
                 OnPropertyChanged(nameof(CurrentRating));
+                OnFeaturedChanged();
                 RebuildQueue();
+                break;
+            case nameof(PlayerService.LiveBlock):
+                OnFeaturedChanged();
                 break;
             case nameof(PlayerService.IsPlaying):
                 OnPropertyChanged(nameof(IsPlaying));
                 OnPropertyChanged(nameof(PlayPauseIcon));
                 OnPropertyChanged(nameof(PlayPauseLabel));
+                OnPropertyChanged(nameof(LiveLabel));
                 break;
             case nameof(PlayerService.IsBuffering):
                 OnPropertyChanged(nameof(IsBuffering));
+                OnPropertyChanged(nameof(LiveLabel));
                 break;
             case nameof(PlayerService.Position):
                 if (!_isSeeking)
@@ -281,6 +312,16 @@ public sealed partial class PlayerViewModel : ObservableObject
             case nameof(PlayerService.HasPrevious):
                 OnPropertyChanged(nameof(HasNext));
                 OnPropertyChanged(nameof(HasPrevious));
+                break;
+            case nameof(PlayerService.LiveStation):
+                OnPropertyChanged(nameof(PlayPauseIcon));
+                OnPropertyChanged(nameof(PlayPauseLabel));
+                OnPropertyChanged(nameof(IsLive));
+                OnPropertyChanged(nameof(CanSeek));
+                OnPropertyChanged(nameof(LiveLabel));
+                OnPropertyChanged(nameof(ShowTime));
+                OnPropertyChanged(nameof(CanClearUpNext));
+                OnFeaturedChanged();
                 break;
             case nameof(PlayerService.StreamDescription):
                 OnPropertyChanged(nameof(StreamDescription));

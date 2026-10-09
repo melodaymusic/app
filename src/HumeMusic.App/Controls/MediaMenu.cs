@@ -26,6 +26,23 @@ public static class MediaMenu
             return mi;
         }
 
+        // The title, summary, cover, backdrop and logo are edited together, as Plex has them, and kept on the Plex server.
+        void AddEditItems(MediaItem target) => Add("Edit Details…", "Pencil", () => _ = Views.ItemDetailsDialog.ShowAsync(target));
+
+        // Mute: keep a song or an artist out of what Meloday makes, for the length set in Settings.
+        void AddMuteItems(Track? song, string? artistKey, string? artistName)
+        {
+            var mutes = App.Services.GetRequiredService<MuteService>();
+            if (song is not null)
+            {
+                if (mutes.SongMute(song) is { } muted) Add("Unmute Song", "BellOff", () => mutes.Unmute(muted));
+                else Add($"Mute Song for {mutes.DefaultText}", "BellOff", () => _ = mutes.MuteSongAsync(song));
+            }
+            if (artistKey is null || artistName is null) return;
+            if (mutes.ArtistMute(artistKey) is { } artistMuted) Add($"Unmute {artistName}", "BellOff", () => mutes.Unmute(artistMuted));
+            else Add($"Mute {artistName} for {mutes.DefaultText}", "BellOff", () => _ = mutes.MuteArtistAsync(artistKey, artistName));
+        }
+
         if (item is Track track && contextTracks is { Count: > 0 } && contextIndex >= 0)
             Add("Play", "Play", () => _ = player.PlayTracksAsync(contextTracks, contextIndex));
         else
@@ -88,11 +105,24 @@ public static class MediaMenu
                 Add("Song Info", "Info", () => _ = Views.SongInfoDialog.ShowAsync(t));
                 if (t.AlbumRatingKey is not null) Add("Go to Album", "Disc3", () => actions.OpenAlbum(t));
                 if (t.ArtistRatingKey is not null) Add("Go to Artist", "MicVocal", () => actions.OpenArtist(t.ArtistRatingKey, t.ArtistTitle, t.ArtistThumb));
+                Add("Time Lyrics…", "Timer", () => actions.OpenLyricStudio(t));
+                menu.Items.Add(new MenuFlyoutSeparator());
+                AddMuteItems(t, t.ArtistRatingKey, t.ArtistTitle ?? t.DisplayArtist);
                 break;
             case Album a:
                 menu.Items.Add(new MenuFlyoutSeparator());
                 Add("Open Album", "Disc3", () => actions.Open(a));
                 if (a.ArtistRatingKey is not null) Add("Go to Artist", "MicVocal", () => actions.OpenArtist(a.ArtistRatingKey, a.ArtistTitle, a.ArtistThumb));
+                AddEditItems(a);
+                break;
+            case Artist artist:
+                menu.Items.Add(new MenuFlyoutSeparator());
+                AddEditItems(artist);
+                AddMuteItems(null, artist.RatingKey, artist.Title);
+                break;
+            case MusicCollection collection:
+                menu.Items.Add(new MenuFlyoutSeparator());
+                AddEditItems(collection);
                 break;
             case Station { StationKind: StationKind.Meloday }:
             {
@@ -105,7 +135,7 @@ public static class MediaMenu
             }
             case Playlist p:
                 menu.Items.Add(new MenuFlyoutSeparator());
-                Add("Edit Details\u2026", "Pencil", () => _ = Views.PlaylistDialogs.EditAsync(p));
+                AddEditItems(p);
                 if (p.IsSmart) Add("Edit Rules\u2026", "SlidersHorizontal", () => _ = Views.SmartPlaylistDialog.EditAsync(p));
                 Danger(Add("Delete Playlist\u2026", "Trash2", () => _ = Views.PlaylistDialogs.DeleteAsync(p)));
                 break;

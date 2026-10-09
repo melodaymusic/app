@@ -39,6 +39,7 @@ public sealed partial class ShellView : UserControl
     private readonly List<NavItem> _items =
     [
         new() { Label = "Home", Icon = "House", Page = typeof(HomePage) },
+        new() { Label = "Made for You", Icon = "Sparkles", Page = typeof(MadeForYouPage) },
         new() { Label = "Browse", Icon = "Tags", Page = typeof(BrowsePage) },
         new() { Label = "Radio", Icon = "Radio", Page = typeof(RadioPage) },
     ];
@@ -49,6 +50,7 @@ public sealed partial class ShellView : UserControl
         new() { Label = "Tracks", Icon = "Music", Page = typeof(TracksPage) },
         new() { Label = "Playlists", Icon = "ListMusic", Page = typeof(PlaylistsPage) },
         new() { Label = "Collections", Icon = "Layers", Page = typeof(CollectionsPage) },
+        new() { Label = "Folders", Icon = "Folder", Page = typeof(FoldersPage) },
         new() { Label = "Downloads", Icon = "CircleArrowDown", Page = typeof(DownloadsPage) },
     ];
     private readonly List<NavItem> _footer =
@@ -67,6 +69,15 @@ public sealed partial class ShellView : UserControl
         _panels = App.Services.GetRequiredService<PanelService>();
         InitializeComponent();
         _panels.PropertyChanged += (_, _) => ApplyQueue();
+        // The full-screen stage is the picture on the window's own backdrop: the interface is out of the way (and not drawn) while it is on.
+        var stage = App.Services.GetRequiredService<StageService>();
+        stage.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(() =>
+        {
+            var shown = stage.IsOn ? Visibility.Collapsed : Visibility.Visible;
+            RailGlass.Visibility = shown;
+            RailScroll.Visibility = shown;
+            ContentHost.Visibility = shown;
+        });
 
         NavList.ItemsSource = _items;
         LibraryList.ItemsSource = _library;
@@ -450,6 +461,8 @@ public sealed partial class ShellView : UserControl
         Add(VirtualKey.M, VirtualKeyModifiers.Control, () => _player.ToggleMuteCommand.Execute(null));
         Add(VirtualKey.Q, VirtualKeyModifiers.Control, ToggleQueue);
         Add(VirtualKey.L, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => _panels.Toggle(SidePanel.Lyrics));
+        // F11: the full-screen stage (the visualizer, bars if none is chosen).
+        Add(VirtualKey.F11, VirtualKeyModifiers.None, () => App.Services.GetRequiredService<StageService>().Toggle());
         Add(VirtualKey.M, VirtualKeyModifiers.Control | VirtualKeyModifiers.Shift, () => App.Services.GetRequiredService<MiniPlayerService>().Toggle());
         Add(VirtualKey.F, VirtualKeyModifiers.Control, OpenSearch);
         Add(VirtualKey.L, VirtualKeyModifiers.Control, () => _navigation.Navigate(typeof(NowPlayingPage)));
@@ -459,6 +472,13 @@ public sealed partial class ShellView : UserControl
 
     private void OnPreviewKeyDown(object sender, KeyRoutedEventArgs e)
     {
+        // Esc leaves the full-screen stage, wherever the focus is.
+        if (e.Key == VirtualKey.Escape && App.Services.GetRequiredService<StageService>() is { IsOn: true } stage)
+        {
+            stage.Exit();
+            e.Handled = true;
+            return;
+        }
         if (e.Key == VirtualKey.Escape && _queueOpen)
         {
             SetQueueOpen(false);

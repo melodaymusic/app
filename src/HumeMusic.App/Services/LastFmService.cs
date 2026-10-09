@@ -5,6 +5,7 @@ using HumeMusic.Core;
 using HumeMusic.Core.LastFm;
 using HumeMusic.Core.Models;
 using HumeMusic.Core.Security;
+using HumeMusic.Core.Settings;
 using Microsoft.Extensions.Logging;
 
 namespace HumeMusic.Services;
@@ -18,6 +19,7 @@ namespace HumeMusic.Services;
 public sealed partial class LastFmService : ObservableObject
 {
     private readonly ISecretStore _store;
+    private readonly SettingsStore _settings;
     private readonly LastFmClient _client;
     private readonly PlayerService _player;
     private readonly ILogger<LastFmService> _log;
@@ -32,9 +34,10 @@ public sealed partial class LastFmService : ObservableObject
     private TimeSpan _lastPosition;
     private bool _scrobbled;
 
-    public LastFmService(ISecretStore store, HttpClient http, PlayerService player, ILogger<LastFmService> log)
+    public LastFmService(ISecretStore store, SettingsStore settings, HttpClient http, PlayerService player, ILogger<LastFmService> log)
     {
         _store = store;
+        _settings = settings;
         _client = new LastFmClient(http);
         _player = player;
         _log = log;
@@ -45,6 +48,64 @@ public sealed partial class LastFmService : ObservableObject
 
     public bool IsConnected => _account?.IsConnected == true;
     public string? UserName => _account?.UserName;
+
+    /// <summary>Whether what is played is sent to Last.fm: connected, and the listener has it on (a connection from before the choice existed is on).</summary>
+    public bool ScrobblingOn => IsConnected && (_settings.Current.LastFmScrobble ?? true);
+
+    /// <summary>Whether Last.fm's chart is shown on Home: connected, and the listener has it on.</summary>
+    public bool TrendingOn => IsConnected && _settings.Current.LastFmTrending;
+
+    /// <summary>Turns scrobbling on or off. Turning it off also drops what was waiting to be sent: nothing leaves after the listener said no.</summary>
+    public void SetScrobbling(bool on)
+    {
+        _settings.Current.LastFmScrobble = on;
+        _settings.Save();
+        if (!on)
+        {
+            _track = null;
+            _pending.Clear();
+            SavePending();
+        }
+        OnPropertyChanged(nameof(ScrobblingOn));
+    }
+
+    public void SetTrending(bool on)
+    {
+        _settings.Current.LastFmTrending = on;
+        _settings.Save();
+        if (!on) _chart = null;
+        OnPropertyChanged(nameof(TrendingOn));
+        TrendingChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Raised when the trending choice changes (Home shows or drops its row).</summary>
+    public event EventHandler? TrendingChanged;
+
+    // ------------------------------------------------------------------ the chart
+
+    private static readonly TimeSpan ChartLife = TimeSpan.FromHours(6);
+    private (DateTimeOffset At, IReadOnlyList<ChartTrack> Tracks)? _chart;
+
+    /// <summary>
+    /// Last.fm's chart of what the world is listening to now (kept six hours), or null when trending is off or Last.fm
+    /// can't be reached. Reading the chart sends nothing about the listener.
+    /// </summary>
+    public async Task<(DateTimeOffset At, IReadOnlyList<ChartTrack> Tracks)?> ChartAsync(CancellationToken ct = default)
+    {
+        if (!TrendingOn || _account is null) return null;
+        if (_chart is { } kept && DateTimeOffset.UtcNow - kept.At < ChartLife) return kept;
+        try
+        {
+            var tracks = await _client.GetChartTopTracksAsync(_account, 100, ct).ConfigureAwait(false);
+            _chart = (DateTimeOffset.UtcNow, tracks);
+            return _chart;
+        }
+        catch (Exception ex) when (ex is LastFmException or HttpRequestException or TaskCanceledException)
+        {
+            _log.LogDebug("Last.fm's chart unavailable: {Message}", ex.Message);
+            return _chart;
+        }
+    }
 
     // ------------------------------------------------------------------ connecting
 
@@ -72,6 +133,10 @@ public sealed partial class LastFmService : ObservableObject
             _account.SessionKey = key;
             _account.UserName = name;
             _token = null;
+            // A new connection sends nothing and shows nothing until the listener turns each on.
+            _settings.Current.LastFmScrobble = false;
+            _settings.Current.LastFmTrending = false;
+            _settings.Save();
             Save();
             OnPropertyChanged(nameof(IsConnected));
             OnPropertyChanged(nameof(UserName));
@@ -115,7 +180,7 @@ public sealed partial class LastFmService : ObservableObject
 
     private void OnPlayerChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (!IsConnected) return;
+        if (!ScrobblingOn) return;
         switch (e.PropertyName)
         {
             case nameof(PlayerService.CurrentTrack):
@@ -173,7 +238,7 @@ public sealed partial class LastFmService : ObservableObject
         if (Interlocked.Exchange(ref _flushing, 1) == 1) return;
         try
         {
-            while (_pending.Count > 0 && IsConnected)
+            while (_pending.Count > 0 && ScrobblingOn)
             {
                 var batch = _pending.Take(50).ToList();
                 await _client.ScrobbleAsync(_account!, batch);

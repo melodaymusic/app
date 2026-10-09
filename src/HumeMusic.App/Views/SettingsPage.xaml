@@ -10,7 +10,7 @@
     Background="Transparent">
 
     <ScrollViewer x:Name="SettingsScroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" AutomationProperties.AutomationId="PageScroller">
-        <StackPanel Padding="{StaticResource HumePagePadding}" Spacing="32" MaxWidth="980" HorizontalAlignment="Left">
+        <StackPanel Padding="{StaticResource HumePagePadding}" Spacing="32">
             <controls:PageHeader Title="Settings" />
 
             <!-- One section of settings at a time. -->
@@ -396,7 +396,7 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="4">
                                 <TextBlock Text="Last.fm" Style="{StaticResource HumeBodyText}" />
                                 <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords">
-                                    <Run Text="Scrobble what you play to Last.fm, with your own Last.fm API account." />
+                                    <Run Text="Connect your own Last.fm API account to scrobble what you play and to see what's trending. Each is its own switch." />
                                     <Hyperlink NavigateUri="https://www.last.fm/api/account/create">Create one</Hyperlink>
                                 </TextBlock>
                                 <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords"
@@ -408,6 +408,34 @@
                                 <TextBlock Text="{x:Bind ViewModel.LastFmUser, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" VerticalAlignment="Center" />
                                 <Button Style="{StaticResource HumeSecondaryButtonStyle}" Content="Disconnect" Command="{x:Bind ViewModel.DisconnectLastFmCommand}"
                                         AutomationProperties.AutomationId="DisconnectLastFm" />
+                            </StackPanel>
+                            <!-- Connected: what Last.fm may do, each its own switch and off until turned on. -->
+                            <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Spacing="12" Margin="0,12,0,0"
+                                        helpers:Anim.Appear="True" Visibility="{x:Bind ViewModel.LastFmConnected, Mode=OneWay}">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Scrobble what I play" Style="{StaticResource HumeBodyText}" />
+                                        <TextBlock Text="Send each song to Last.fm once you've played half of it. Nothing is sent while this is off." Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.LastFmScrobble, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
+                                                  AutomationProperties.Name="Scrobble what I play" AutomationProperties.AutomationId="LastFmScrobbleToggle" />
+                                </Grid>
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock Text="Show what's trending" Style="{StaticResource HumeBodyText}" />
+                                        <TextBlock Text="Show the songs on Last.fm's chart that are in your library on Home. Only the chart is read; nothing about you is sent." Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" />
+                                    </StackPanel>
+                                    <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.LastFmTrending, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
+                                                  AutomationProperties.Name="Show what's trending" AutomationProperties.AutomationId="LastFmTrendingToggle" />
+                                </Grid>
                             </StackPanel>
                             <StackPanel Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" Spacing="8" Margin="0,8,0,0"
                                         helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.CollapsedIf(ViewModel.LastFmConnected), Mode=OneWay}">
@@ -484,6 +512,21 @@
                             </StackPanel>
                             <ToggleSwitch Grid.Column="2" IsOn="{x:Bind ViewModel.SoundCheck, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
                                           AutomationProperties.Name="Sound Check" AutomationProperties.AutomationId="SoundCheckToggle" />
+                        </Grid>
+                        <!-- Live radio feedback: songs taken off a station with "not for this station". -->
+                        <Grid Style="{StaticResource HumeGroupRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <controls:LucideIcon Icon="ThumbsDown" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Live Station Feedback" Style="{StaticResource HumeBodyText}" />
+                                <TextBlock Text="{x:Bind ViewModel.FeedbackSummary, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" />
+                            </StackPanel>
+                            <Button Grid.Column="2" Style="{StaticResource HumeSecondaryButtonStyle}" Content="Reset" Command="{x:Bind ViewModel.ResetFeedbackCommand}" VerticalAlignment="Center"
+                                    AutomationProperties.AutomationId="ResetFeedbackButton" />
                         </Grid>
                         <!-- Remote control: Plex apps on this network can find and control this player. -->
                         <Grid Style="{StaticResource HumeGroupRowStyle}">
@@ -642,6 +685,138 @@
                             <ToggleSwitch Grid.Column="2" IsOn="{x:Bind ViewModel.MelodayPlexPlaylist, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
                                           AutomationProperties.Name="Keep Meloday as a playlist on Plex" AutomationProperties.AutomationId="MelodayPlexToggle" />
                         </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Dupes: songs said to be the same song; the one that plays stands in for the other in every Meloday. -->
+            <StackPanel x:Name="DupesGroup" Style="{StaticResource HumeGroupStyle}">
+                <TextBlock Text="Dupes" Style="{StaticResource HumeGroupHeaderText}" />
+                <Border Style="{StaticResource HumeGroupListStyle}">
+                    <StackPanel Style="{StaticResource HumeGroupRowsStyle}">
+                        <Grid Style="{StaticResource HumeGroupRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <controls:LucideIcon Icon="Merge" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Songs that are the same song" Style="{StaticResource HumeBodyText}" />
+                                <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords"
+                                           Text="{x:Bind ViewModel.DupesSummary, Mode=OneWay}" AutomationProperties.AutomationId="DupesSummary" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" Margin="16,4,16,12"
+                                   Visibility="{x:Bind helpers:Format.CollapsedIf(ViewModel.HasDupes), Mode=OneWay}"
+                                   Text="On a Meloday, press the merge button on a song's row when it is the same song as another, and choose which one plays. It then appears here." />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Dupes}" AutomationProperties.AutomationId="DupeList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:DupeRow">
+                                    <Grid Style="{StaticResource HumeGroupRowStyle}" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <!-- The song that plays, and (dimmer) the one it stands in for. -->
+                                        <StackPanel Orientation="Horizontal" Spacing="-14" VerticalAlignment="Center">
+                                            <controls:ArtworkImage Width="48" Height="48" DecodeSize="96" SourcePath="{x:Bind KeeperThumb}"
+                                                                   ArtworkCornerRadius="{StaticResource HumeRadiusThumb}" PlaceholderIcon="Music" Canvas.ZIndex="1" />
+                                            <controls:ArtworkImage Width="48" Height="48" DecodeSize="96" SourcePath="{x:Bind DupeThumb}" Opacity="0.55"
+                                                                   ArtworkCornerRadius="{StaticResource HumeRadiusThumb}" PlaceholderIcon="Music" />
+                                        </StackPanel>
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Style="{StaticResource HumeBodyStrongText}" TextTrimming="CharacterEllipsis">
+                                                <Run Text="{x:Bind KeeperTitle}" /><Run Text=" plays" Foreground="{StaticResource HumeTextSecondaryBrush}" />
+                                            </TextBlock>
+                                            <TextBlock Text="{x:Bind KeeperDetails}" Style="{StaticResource HumeSecondaryText}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Style="{StaticResource HumeSecondaryText}" TextTrimming="CharacterEllipsis">
+                                                <Run Text="in place of " /><Run Text="{x:Bind DupeTitle}" /><Run Text=" · " /><Run Text="{x:Bind DupeDetails}" />
+                                            </TextBlock>
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Style="{StaticResource HumeSecondaryButtonStyle}" Content="Unmerge" VerticalAlignment="Center"
+                                                Click="OnUnmerge"
+                                                AutomationProperties.Name="{x:Bind Unmerge}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <!-- Muting: songs and artists kept out of Meloday for a while (without rating them down), and for how long. -->
+            <StackPanel x:Name="MutingGroup" Style="{StaticResource HumeGroupStyle}">
+                <TextBlock Text="Muting" Style="{StaticResource HumeGroupHeaderText}" />
+                <Border Style="{StaticResource HumeGroupListStyle}">
+                    <StackPanel Style="{StaticResource HumeGroupRowsStyle}">
+                        <Grid Style="{StaticResource HumeGroupRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <controls:LucideIcon Icon="BellOff" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="How long to mute" Style="{StaticResource HumeBodyText}" />
+                                <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords"
+                                           Text="A muted song or artist stays out of Meloday, mixes, live stations and radios for this long, then comes back. Songs you choose yourself still play."
+                                           AutomationProperties.AutomationId="MuteLengthNote" />
+                            </StackPanel>
+                            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+                                <ComboBox MinWidth="160" VerticalAlignment="Center" ItemsSource="{x:Bind ViewModel.MuteLengthOptions}"
+                                          SelectedIndex="{x:Bind ViewModel.MuteLengthIndex, Mode=TwoWay}"
+                                          AutomationProperties.Name="How long to mute" AutomationProperties.AutomationId="MuteLength" />
+                                <NumberBox Width="120" VerticalAlignment="Center" Minimum="1" Maximum="365" SmallChange="1" LargeChange="7"
+                                           SpinButtonPlacementMode="Compact" Value="{x:Bind ViewModel.MuteCustomDays, Mode=TwoWay}"
+                                           helpers:Anim.Appear="True" Visibility="{x:Bind ViewModel.IsCustomMute, Mode=OneWay}"
+                                           AutomationProperties.Name="Days to mute" AutomationProperties.AutomationId="MuteCustomDays" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" Margin="16,0,16,12"
+                                   Text="{x:Bind ViewModel.MuteLengthSummary, Mode=OneWay}" AutomationProperties.AutomationId="MuteLengthSummary" />
+                    </StackPanel>
+                </Border>
+
+                <TextBlock Text="Muted now" Style="{StaticResource HumeGroupHeaderText}" Margin="0,16,0,0" />
+                <Border Style="{StaticResource HumeGroupListStyle}">
+                    <StackPanel Style="{StaticResource HumeGroupRowsStyle}">
+                        <Grid Style="{StaticResource HumeGroupRowStyle}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <controls:LucideIcon Icon="BellOff" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="Songs and artists kept out of Meloday" Style="{StaticResource HumeBodyText}" />
+                                <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords"
+                                           Text="{x:Bind ViewModel.MutedSummary, Mode=OneWay}" AutomationProperties.AutomationId="MutedSummary" />
+                            </StackPanel>
+                        </Grid>
+                        <TextBlock Style="{StaticResource HumeSecondaryText}" TextWrapping="WrapWholeWords" Margin="16,4,16,12"
+                                   Visibility="{x:Bind helpers:Format.CollapsedIf(ViewModel.HasMuted), Mode=OneWay}"
+                                   Text="On Now Playing, press Mute to keep the song that is playing, or its artist, out of Meloday for a while. It then appears here, until its time is up or you unmute it." />
+                        <ItemsControl ItemsSource="{x:Bind ViewModel.Muted}" AutomationProperties.AutomationId="MutedList">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:MuteRow">
+                                    <Grid Style="{StaticResource HumeGroupRowStyle}" ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <controls:LucideIcon Icon="{x:Bind Icon}" VerticalAlignment="Center" />
+                                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                            <TextBlock Text="{x:Bind Title}" Style="{StaticResource HumeBodyStrongText}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{x:Bind Kind}" Style="{StaticResource HumeSecondaryText}" TextTrimming="CharacterEllipsis" />
+                                            <TextBlock Text="{x:Bind Remaining}" Style="{StaticResource HumeSecondaryText}" Foreground="{ThemeResource HumeTextTertiaryBrush}" />
+                                        </StackPanel>
+                                        <Button Grid.Column="2" Style="{StaticResource HumeSecondaryButtonStyle}" Content="Unmute" VerticalAlignment="Center"
+                                                Click="OnUnmute" AutomationProperties.Name="{x:Bind Unmute}" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
                     </StackPanel>
                 </Border>
             </StackPanel>

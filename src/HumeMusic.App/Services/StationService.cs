@@ -1,6 +1,7 @@
 using HumeMusic.Core.Mixes;
 using HumeMusic.Core.Models;
 using HumeMusic.Core.Plex;
+using HumeMusic.Core.Radio;
 using HumeMusic.Core.Services;
 using Microsoft.Extensions.Logging;
 
@@ -30,9 +31,10 @@ public sealed record StationPicks(IReadOnlyList<Station> Genres, IReadOnlyList<S
 }
 
 /// <summary>
-/// Plex's music stations (Library Radio, Deep Cuts, Time Travel, Random Album, and every genre,
-/// style, mood and decade's radio), a Plex Pass feature: without Plex Pass (or where Plex has none)
-/// Meloday's own stand in (see <see cref="LocalRadio"/>). Also
+/// The live stations (Headliners, Hits, Club and Chill, made by Meloday from the library, then Library
+/// Radio and Deep Cuts, which Plex Pass serves from Plex and Meloday otherwise makes), and Plex's
+/// groups of tag stations (every genre, style, mood and decade's radio, a Plex Pass feature: without
+/// it, or where Plex has none, Meloday's own stand in, see <see cref="LocalRadio"/>). Also
 /// the listener's top four of each kind of tag station, from what they play most, each led by the
 /// artists they play most in it. Meloday's two mix builders need no Plex Pass.
 /// </summary>
@@ -47,12 +49,12 @@ public sealed class StationService
     [
         new Station
         {
-            RatingKey = "builder:artists", Title = "Artist Mix Builder", StationKind = StationKind.ArtistMixBuilder,
+            RatingKey = "builder:artists", Title = "Artist Radio Builder", StationKind = StationKind.ArtistMixBuilder,
             Summary = "Pick up to ten artists and hear them together.",
         },
         new Station
         {
-            RatingKey = "builder:albums", Title = "Album Mix Builder", StationKind = StationKind.AlbumMixBuilder,
+            RatingKey = "builder:albums", Title = "Album Radio Builder", StationKind = StationKind.AlbumMixBuilder,
             Summary = "Pick up to ten albums and hear them together.",
         },
     ];
@@ -103,45 +105,62 @@ public sealed class StationService
         _directories.Clear();
     }
 
-    /// <summary>Meloday, then Plex's stations (Plex Pass) other than Random Album, and Plex's station groups.</summary>
+    /// <summary>
+    /// The live stations: Meloday's own that the library can fill (One, Hits, Club, Chill), then Library Radio and
+    /// Deep Cuts (Plex's with Plex Pass), and Plex's station groups. Meloday is a playlist, not a station: it lives
+    /// on Made for You.
+    /// </summary>
     private async Task<StationCatalog> LoadCatalogAsync()
     {
         if (_session.Client is not { } client || _session.Section is not { } section) return StationCatalog.Empty;
-        IReadOnlyList<Station> meloday = [MelodayService.Station];
-        if (!_pass.IsAvailable) return Local(meloday);
+        var available = await AvailableAsync(client, section.Key).ConfigureAwait(false);
+        var ours = StationBrand.Ours.Where(b => available.Contains(b.Kind)).Select(b => b.ToStation()).ToList();
+        if (!_pass.IsAvailable) return Local(ours);
         try
         {
             var (stations, directories) = await client.GetStationsAsync(section.Key).ConfigureAwait(false);
             // Plex offered none (its stations need analysis it hasn't done): Meloday's own stand in.
-            if (stations.Count == 0 && directories.Count == 0) return Local(meloday);
-            return new StationCatalog(meloday.Concat(stations.Where(s => s.StationKind != StationKind.RandomAlbum).Select(Describe)).ToList(), directories);
+            if (stations.Count == 0 && directories.Count == 0) return Local(ours);
+            // Plex's Time Travel and Random Album give way to Hits and the album-based radios.
+            var plex = stations.Where(s => s.StationKind is StationKind.Library or StationKind.DeepCuts).Select(Describe);
+            return new StationCatalog(ours.Concat(plex).ToList(), directories);
         }
         catch (PlexException ex)
         {
             _log.LogInformation("Stations unavailable: {Message}", ex.Message);
-            return new StationCatalog(meloday, []);
+            return new StationCatalog(ours, []);
         }
     }
 
     private const string LocalDirectoryPrefix = "local:";
 
+    /// <summary>The live stations this library can fill (all of them when it can't be asked).</summary>
+    private async Task<IReadOnlySet<StationKind>> AvailableAsync(PlexServerClient client, string sectionKey)
+    {
+        try
+        {
+            var genres = client.GetTagsAsync(sectionKey, TagKind.Genre, PlexTypes.Track);
+            var moods = client.GetTagsAsync(sectionKey, TagKind.Mood, PlexTypes.Artist);
+            var decades = client.GetTagsAsync(sectionKey, TagKind.Decade, PlexTypes.Album);
+            await Task.WhenAll(genres, moods, decades).ConfigureAwait(false);
+            return StationVibes.Available(genres.Result.Select(t => t.Title), moods.Result.Select(t => t.Title), decades.Result.Select(t => t.FilterValue));
+        }
+        catch (PlexException ex)
+        {
+            _log.LogInformation("The library's genres couldn't be read for the live stations: {Message}", ex.Message);
+            return StationVibes.Everything;
+        }
+    }
+
     /// <summary>
-    /// Meloday's own stations, for when Plex has none: Library Radio and Deep Cuts, and every genre,
+    /// Meloday's own stations, for when Plex has none: Library Radio and Deep Cuts after the live four, and every genre,
     /// style, mood and decade to browse, all made from the library by <see cref="LocalRadio"/>.
     /// </summary>
-    private static StationCatalog Local(IReadOnlyList<Station> meloday) => new(
-        meloday.Concat(
+    private static StationCatalog Local(IReadOnlyList<Station> ours) => new(
+        ours.Concat(
         [
-            new Station
-            {
-                RatingKey = "station:local:library", Title = "Library Radio", StationKind = StationKind.Library, IsLocal = true,
-                Summary = "Your whole library as one endless station, leaning to what you play and rate well.",
-            },
-            new Station
-            {
-                RatingKey = "station:local:deepcuts", Title = "Deep Cuts Radio", StationKind = StationKind.DeepCuts, IsLocal = true,
-                Summary = "The songs you rarely reach for, from artists you love.",
-            },
+            StationBrand.For(StationKind.Library)!.ToStation(),
+            StationBrand.For(StationKind.DeepCuts)!.ToStation(),
         ]).ToList(),
         [
             new StationDirectory("Genre Radio", StationKind.Genre, LocalDirectoryPrefix + "genre"),
@@ -162,7 +181,6 @@ public sealed class StationService
         {
             StationKind.Library => "Your whole library as one endless station.",
             StationKind.DeepCuts => "The songs you rarely reach for, from artists you love.",
-            StationKind.TimeTravel => "A journey through your library, era by era.",
             _ => null,
         },
     };

@@ -246,6 +246,31 @@ public sealed class PlaybackQueue
         OnChanged();
     }
 
+    /// <summary>
+    /// Puts the upcoming entries in the order of <paramref name="ordered"/> (the same songs, arranged by a curator),
+    /// in one change. History and the current entry stay where they are; any entry the list doesn't name keeps
+    /// to the end, in its place, and duplicate songs stay distinct entries.
+    /// </summary>
+    public void ReorderUpNext(IReadOnlyList<Track> ordered)
+    {
+        var first = CurrentIndex + 1;
+        if (first < 0 || _items.Count - first < 2) return;
+        var remaining = _items.Skip(first).ToList();
+        var arranged = new List<QueueEntry>(remaining.Count);
+        foreach (var track in ordered)
+        {
+            var match = remaining.FindIndex(e => ReferenceEquals(e.Track, track) || e.Track.RatingKey == track.RatingKey);
+            if (match < 0) continue;
+            arranged.Add(remaining[match]);
+            remaining.RemoveAt(match);
+        }
+        arranged.AddRange(remaining);
+        if (arranged.SequenceEqual(_items.Skip(first))) return;
+        _items.RemoveRange(first, _items.Count - first);
+        _items.AddRange(arranged);
+        OnChanged();
+    }
+
     /// <summary>Removes upcoming entries only, keeping history and the current entry.</summary>
     public void ClearUpNext()
     {

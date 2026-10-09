@@ -28,7 +28,7 @@
         </controls:DetailHeader>
 
         <ListView x:Name="TrackList" Grid.Row="1" ItemsSource="{x:Bind ViewModel.Tracks}" Padding="{StaticResource HumeListPadding}"
-                  SelectionMode="Extended" controls:TrackListBehavior.IsEnabled="True"
+                  SelectionMode="Extended" controls:TrackListBehavior.IsEnabled="True" controls:TrackListBehavior.DupeCommand="{x:Bind MarkDupeCommand}"
                   ItemContainerStyle="{StaticResource HumeTrackItemStyle}"
                   AutomationProperties.Name="Meloday tracks" AutomationProperties.AutomationId="MelodayTrackList">
             <ListView.ItemTemplate>

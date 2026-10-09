@@ -34,6 +34,8 @@ public abstract class MediaItem
     public string Title { get; init; } = string.Empty;
     public string? Thumb { get; init; }
     public string? Art { get; init; }
+    /// <summary>The item's logo on the Plex server (a transparent picture of its name, as Plex keeps for the item), when it has one.</summary>
+    public string? Logo { get; init; }
     /// <summary>Artwork colours for ambient page tinting, when Plex provides them.</summary>
     public ArtworkPalette? Palette { get; init; }
     public abstract MediaKind Kind { get; }
@@ -328,6 +330,7 @@ public enum StationKind
 {
     Library,
     DeepCuts,
+    /// <summary>Plex's Time Travel: no longer offered (Hits stands in for it); kept so what was pinned still reads.</summary>
     TimeTravel,
     RandomAlbum,
     Genre,
@@ -338,6 +341,16 @@ public enum StationKind
     AlbumMixBuilder,
     /// <summary>Meloday: a mix for this part of the day, made from what the listener plays at this time.</summary>
     Meloday,
+    /// <summary>Your Day: no longer offered (Headliners stands in for it); kept so what was pinned still reads.</summary>
+    YourDay,
+    /// <summary>Headliners: live, the biggest songs of the library an artist at a time.</summary>
+    Flagship,
+    /// <summary>Hits: live, the songs that defined the '80s, '90s and 2000s.</summary>
+    Hits,
+    /// <summary>Club: live dance, electronic and club music.</summary>
+    Club,
+    /// <summary>Chill: live ambient, downtempo and gentle electronic.</summary>
+    Chill,
 }
 
 /// <summary>
@@ -362,7 +375,12 @@ public sealed class Station : MediaItem
     public bool NeedsPlexPass => Key is not null;
     /// <summary>Made by Meloday from the library (its own radio) rather than served by Plex.</summary>
     public bool IsLocal { get; init; }
-    public override string Subtitle => IsBuilder ? "Mix builder" : "Radio";
+    /// <summary>
+    /// A live station: always on, as if it had been playing all along. Tuning in joins it in the middle of
+    /// a song and where it has got to by now, instead of starting a fresh radio from its first song.
+    /// </summary>
+    public bool IsLive => StationKind is StationKind.Library or StationKind.DeepCuts or StationKind.Flagship or StationKind.Hits or StationKind.Club or StationKind.Chill;
+    public override string Subtitle => IsBuilder ? "Radio builder" : IsLive ? "Live" : "Radio";
 }
 
 /// <summary>A group of stations to choose from (Genre Radio, Style Radio, Mood Radio, Decade Radio).</summary>
@@ -382,8 +400,10 @@ public sealed record ArtworkOption(string Key, string? Thumb, bool Selected, str
 
 public enum ArtworkKind
 {
-    /// <summary>The artist's photo (Plex's poster).</summary>
+    /// <summary>The cover: an artist's photo, an album's or playlist's picture (Plex's poster).</summary>
     Poster,
     /// <summary>The wide backdrop (Plex's art).</summary>
     Backdrop,
+    /// <summary>The logo (Plex's clear logo): a transparent picture of the item's name.</summary>
+    Logo,
 }

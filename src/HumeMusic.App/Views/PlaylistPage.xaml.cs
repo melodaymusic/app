@@ -28,7 +28,7 @@ public sealed partial class PlaylistPage : Page
 
     private void OnViewModelChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(PlaylistViewModel.Playlist)) UpdateWash();
+        if (e.PropertyName is nameof(PlaylistViewModel.Playlist) or nameof(PlaylistViewModel.Backdrop)) UpdateWash();
     }
 
     private static DetailCache Cache => App.Services.GetRequiredService<DetailCache>();

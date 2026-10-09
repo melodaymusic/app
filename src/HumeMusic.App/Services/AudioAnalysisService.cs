@@ -45,9 +45,14 @@ public sealed class AudioAnalysisService
     /// Returns an opening analysis only when AutoMix has already made or is making it. Recommendation
     /// generation must never trigger a wave of audio downloads or analysis by itself.
     /// </summary>
-    public async Task<AudioAnalysis?> CachedHeadAsync(Track track)
+    public Task<AudioAnalysis?> CachedHeadAsync(Track track) => CachedAsync(track, head: true);
+
+    /// <summary>The ending's analysis, only if it has been made already (see <see cref="CachedHeadAsync"/>).</summary>
+    public Task<AudioAnalysis?> CachedTailAsync(Track track) => CachedAsync(track, head: false);
+
+    private async Task<AudioAnalysis?> CachedAsync(Track track, bool head)
     {
-        var key = Key(track, head: true);
+        var key = Key(track, head);
         if (_results.TryGetValue(key, out var active)) return await active.ConfigureAwait(false);
         try
         {

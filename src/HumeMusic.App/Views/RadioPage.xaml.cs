@@ -5,7 +5,7 @@ using Microsoft.UI.Xaml.Navigation;
 
 namespace HumeMusic.Views;
 
-/// <summary>Radio: Plex's stations and Meloday's mix builders (see <see cref="RadioViewModel"/>).</summary>
+/// <summary>Radio: Plex's stations and Meloday's radio builders (see <see cref="RadioViewModel"/>).</summary>
 public sealed partial class RadioPage : Page
 {
     public RadioPage()

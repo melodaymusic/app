@@ -26,6 +26,8 @@ public sealed partial class SettingsPage : Page
         new("plex", "Plex", "Server"),
         new("playback", "Playback", "AudioWaveform"),
         new("meloday", "Meloday", "Sparkles"),
+        new("dupes", "Dupes", "Merge"),
+        new("muting", "Muting", "BellOff"),
         new("artists", "Artists", "MicVocal"),
         new("about", "About", "Info"),
     ];
@@ -58,6 +60,8 @@ public sealed partial class SettingsPage : Page
         Show(LibraryGroup, "plex");
         Show(PlaybackGroup, "playback");
         Show(MelodayGroup, "meloday");
+        Show(DupesGroup, "dupes");
+        Show(MutingGroup, "muting");
         Show(ArtistGroup, "artists");
         Show(AboutGroup, "about");
         if (resetScroll) SettingsScroller.ChangeView(null, 0, null, disableAnimation: true);
@@ -146,6 +150,16 @@ public sealed partial class SettingsPage : Page
     }
 
     // A drag reorder has already moved the item in the list; save the new order.
+    private void OnUnmute(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ViewModels.MuteRow row) ViewModel.UnmuteCommand.Execute(row);
+    }
+
+    private void OnUnmerge(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.DataContext is ViewModels.DupeRow row) ViewModel.UnmergeCommand.Execute(row);
+    }
+
     private void OnSectionsReordered(ListViewBase sender, DragItemsCompletedEventArgs args) => Layout.SaveOrder();
 
     private void OnResetHome(object sender, RoutedEventArgs e) => Layout.Reset();
@@ -154,5 +168,7 @@ public sealed partial class SettingsPage : Page
     {
         base.OnNavigatedTo(e);
         ViewModel.Refresh();
+        // Opened from elsewhere at a section (the Now Playing mute menu's "Muted Music").
+        if (e.Parameter is string key && Sections.FirstOrDefault(tab => tab.Key == key) is { } section) SectionTabs.SelectedItem = section;
     }
 }

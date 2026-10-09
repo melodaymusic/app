@@ -77,13 +77,62 @@ public class BeatMixTests
     public void An_instrumental_ending_into_a_matching_opening_shares_eight_bars()
     {
         // A cold ending (the loudness plan alone would allow only a moment), but the singing is over
-        // 20 s before the end and the next song sings 12 s in: plenty of instrumental to share.
+        // 12 s before the end and the next song sings 8 s in: 8 bars of instrumental to share, no more.
         var outgoing = WithEnergy(Steady(124, 140, 200, key: 0), -3);
         var incoming = WithEnergy(Steady(124, 0, 45, key: 7), -4);
         var plan = BeatMix.Plan(Loudness(196, 1), outgoing, incoming,
-            new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)))!;
+            new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(184)), new VocalSpan(TimeSpan.FromSeconds(8), TimeSpan.FromSeconds(150)))!;
         Assert.Equal(8, plan.Bars);
         Assert.NotNull(plan.BassSwap);
+    }
+
+    [Fact]
+    public void A_perfect_fit_with_room_for_it_blends_sixteen_bars_with_both_songs_full_through_the_middle()
+    {
+        // The same key, the same tempo to a per cent, the same energy at the join, and the singing is over
+        // 20 s before the end while the next song sings 12 s in: 32 s of instrumental, so sixteen bars (31 s).
+        var outgoing = WithEnergy(Steady(124, 140, 200, key: 0), -3);
+        var incoming = WithEnergy(Steady(124, 0, 45, key: 0), -4);
+        var plan = BeatMix.Plan(Loudness(196, 1), outgoing, incoming,
+            new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)))!;
+        Assert.Equal(16, plan.Bars);
+        Assert.Contains("perfect fit", plan.Summary);
+        // The bass changes hands halfway; the next song is up by bar six and the outgoing one stays until bar ten.
+        Assert.Equal(plan.Shape.Overlap.TotalSeconds / 2, plan.BassSwap!.Value.TotalSeconds, 3);
+        Assert.Equal(plan.Shape.Overlap.TotalSeconds * 6 / 16, plan.Shape.InFade.TotalSeconds, 3);
+        Assert.Equal(plan.Shape.Overlap.TotalSeconds * 10 / 16, plan.Shape.OutFadeStart.TotalSeconds, 3);
+        var (outgoingGain, incomingGain) = plan.Shape.Gains(plan.Shape.Overlap / 2);
+        Assert.Equal(1, outgoingGain, 6);
+        Assert.Equal(1, incomingGain, 6);
+        Assert.Equal(0, plan.Shape.Gains(plan.Shape.Overlap).Outgoing, 6);
+    }
+
+    [Fact]
+    public void Only_a_close_tempo_and_a_close_energy_make_a_perfect_fit()
+    {
+        var steady = WithEnergy(Steady(124, 140, 200, key: 0), -3);
+        var vocals = (Out: new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), In: new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)));
+        // 5% off in tempo: heard, so eight bars at most.
+        var fast = BeatMix.Plan(Loudness(196, 1), steady, WithEnergy(Steady(130.2, 0, 45, key: 0), -4), vocals.Out, vocals.In)!;
+        Assert.True(fast.Bars <= 8);
+        // The key a fifth away is fine for eight, but not sixteen? (a fifth apart is a perfect fit for keys: tempo and energy decide).
+        Assert.True(BeatMix.Fit(0.9, 1.0, 0.8));
+        Assert.False(BeatMix.Fit(0.6, 1.0, 0.8));
+        Assert.False(BeatMix.Fit(1.0, 1.05, 0.8));
+        Assert.False(BeatMix.Fit(1.0, 1.0, 0.4));
+        // Energy nobody measured is no evidence.
+        Assert.False(BeatMix.Fit(1.0, 1.0, null));
+    }
+
+    [Fact]
+    public void A_long_blend_never_outruns_the_next_songs_analysis_or_eats_a_short_song()
+    {
+        // 70 bpm: a bar is 3.4 s, so sixteen bars are 55 s; the next song was only analysed for 45 s.
+        var outgoing = WithEnergy(Steady(70, 110, 200, key: 0), -3);
+        var incoming = WithEnergy(Steady(70, 0, 45, key: 0), -4);
+        var plan = BeatMix.Plan(Loudness(196, 25), outgoing, incoming)!;
+        Assert.True(plan.Bars <= 8);
+        Assert.True(plan.Bars * 4 * 60 / 70.0 < 45);
     }
 
     [Fact]

@@ -32,6 +32,28 @@ public class MelodayTests
         Assert.All(map, kv => Assert.True(kv.Value.Count > 0 && kv.Value.All(d => !string.IsNullOrWhiteSpace(d)), kv.Key));
     }
 
+    private static Dictionary<string, string[]> Bundled(string name) =>
+        new(System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string[]>>(File.ReadAllText(MapFile(name)))!, StringComparer.OrdinalIgnoreCase);
+
+    [Fact]
+    public void A_Meloday_is_named_from_the_bundled_mood_and_era_maps()
+    {
+        var moods = Bundled("moodmap.json");
+        var eras = Bundled("eramap.json");
+        var now = new DateTime(2026, 9, 28, 21, 0, 0);
+        var period = MelodayPeriods.At(now);
+        // Songs from the 2010s with the mood Dreamy: nearly all one decade, so the title takes an era nickname too.
+        var tags = new AlbumTags(new HashSet<string> { "Pop" }, new HashSet<string> { "dreamy" }, 2013);
+        var tracks = Enumerable.Range(0, 10).Select(i => T($"{i}", $"Song {i}", "Artist")).ToList();
+        for (var seed = 0; seed < 40; seed++)
+        {
+            var name = MelodayNaming.Name(period, tracks, _ => tags, moods, eras, new Random(seed), now, "David");
+            Assert.Contains(name.Descriptor, moods["Dreamy"]);
+            Assert.Contains(name.EraLabel, eras["2010s"]);
+            Assert.True(name.Title.Contains(name.EraLabel!) || name.Title.Contains(name.Descriptor), name.Title);
+        }
+    }
+
     [Fact]
     public void Bundled_era_map_has_nicknames_for_each_decade()
     {

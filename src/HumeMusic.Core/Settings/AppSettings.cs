@@ -71,6 +71,9 @@ public sealed class AppSettings
     /// <summary>The sidebar's Pinned section is expanded.</summary>
     public bool SidebarPinnedExpanded { get; set; } = true;
 
+    /// <summary>How each library page is shown, by page ("artists", "albums", "playlists", "collections"): "grid" or "list" (a page not here is a grid).</summary>
+    public Dictionary<string, string> LibraryLayouts { get; set; } = [];
+
     /// <summary>The section of Settings last open ("general", "home", "plex", "playback", "meloday", "artists", "about").</summary>
     public string SettingsTab { get; set; } = "general";
     /// <summary>Show the "Jump back in" feature at the top of Home.</summary>
@@ -84,6 +87,10 @@ public sealed class AppSettings
     public int ArtistRankLimit { get; set; } = 100;
     /// <summary>Artist logos in their own colours, or painted by Colour Drop in the page's colour.</summary>
     public LogoColours LogoColours { get; set; } = LogoColours.ColourDrop;
+    /// <summary>How long a mute lasts unless the listener says otherwise: a week, a month, or <see cref="MuteCustomDays"/>.</summary>
+    public Mutes.MuteLength MuteLength { get; set; } = Mutes.MuteLength.Week;
+    /// <summary>The length of a custom mute, in days.</summary>
+    public int MuteCustomDays { get; set; } = 14;
     /// <summary>Meloday names each mix with OpenAI (with the listener's own key) rather than its own wording.</summary>
     public bool MelodayAiTitles { get; set; }
     /// <summary>Words Meloday's AI titles never use.</summary>
@@ -92,6 +99,17 @@ public sealed class AppSettings
     public List<string> MelodaySkipGenres { get; set; } = [.. Meloday.MelodayCurator.DefaultSkippedGenres];
     /// <summary>Also keep the current Meloday as a playlist on the Plex server, replaced with each new mix.</summary>
     public bool MelodayPlexPlaylist { get; set; }
+    /// <summary>The guest curator arranging what plays next (never on live radio).</summary>
+    public Playback.Curator Curator { get; set; } = Playback.Curator.None;
+    /// <summary>
+    /// Scrobble what is played to Last.fm (once connected). Null is a connection made before this choice existed: it
+    /// scrobbles, as it always has; a connection made since starts with it off until the listener turns it on.
+    /// </summary>
+    public bool? LastFmScrobble { get; set; }
+    /// <summary>Show what is trending on Last.fm (the chart's songs that are in the library) on Home.</summary>
+    public bool LastFmTrending { get; set; }
+    /// <summary>The picture Now Playing draws from the music (off until chosen).</summary>
+    public Playback.VisualizerStyle Visualizer { get; set; } = Playback.VisualizerStyle.Off;
     /// <summary>Moving artwork, animations and transitions; off, the app keeps still.</summary>
     public bool Motion { get; set; } = true;
 

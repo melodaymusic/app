@@ -66,6 +66,8 @@ public sealed class LyricLineDto
 public sealed class LyricSpanDto
 {
     public string? Text { get; set; }
+    /// <summary>When the span is sung (milliseconds into the song), if the lyrics are timed word by word.</summary>
+    public long? StartOffset { get; set; }
 }
 
 /// <summary>One point of a stream's loudness envelope (/library/streams/{id}/levels).</summary>

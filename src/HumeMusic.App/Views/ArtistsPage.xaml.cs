@@ -1,3 +1,4 @@
+using HumeMusic.Helpers;
 using HumeMusic.Core.Models;
 using HumeMusic.Services;
 using HumeMusic.ViewModels;
@@ -13,6 +14,7 @@ public sealed partial class ArtistsPage : Page
     {
         ViewModel = App.Services.GetRequiredService<ArtistsViewModel>();
         InitializeComponent();
+        LibraryLayout.Attach(Layout, Grid, ItemList);
     }
 
     public ArtistsViewModel ViewModel { get; }

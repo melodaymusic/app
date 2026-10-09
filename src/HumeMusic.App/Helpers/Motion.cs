@@ -29,6 +29,8 @@ public static class Motion
     public const double Emphasized = 320;
     /// <summary>Ambient colour behind the page crossfading between artworks.</summary>
     public const double Ambient = 700;
+    /// <summary>A change the listener made and should watch happen, such as two rows becoming one.</summary>
+    public const double Deliberate = 640;
 
     /// <summary>The window is the one in use (not in the background or minimised).</summary>
     public static bool IsWindowActive { get; private set; } = true;

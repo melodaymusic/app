@@ -48,9 +48,9 @@
                                     ToolTipService.ToolTip="Sonic Radio" AutomationProperties.Name="Sonic Radio">
                                 <controls:LucideIcon Icon="Radio" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
                             </Button>
-                            <!-- The artist's images: photo, backdrop and logo. -->
+                            <!-- The artist's details and images: title, summary, photo, backdrop and logo. -->
                             <Button x:Name="EditImagesButton" Style="{StaticResource HumeGlassRoundButtonStyle}" Click="OnEditImages"
-                                    ToolTipService.ToolTip="Change photo, backdrop or logo" AutomationProperties.Name="Change artist images"
+                                    ToolTipService.ToolTip="Edit details" AutomationProperties.Name="Edit artist details"
                                     AutomationProperties.AutomationId="EditArtistImagesButton">
                                 <controls:LucideIcon Icon="Pencil" Width="{StaticResource HumeIconM}" Height="{StaticResource HumeIconM}" />
                             </Button>

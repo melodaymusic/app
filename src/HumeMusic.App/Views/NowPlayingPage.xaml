@@ -25,7 +25,27 @@
                                        ArtworkCornerRadius="{StaticResource HumeRadiusLargeArtwork}" PlaceholderIcon="Music"
                                        SourcePath="{x:Bind Player.ArtworkPath, Mode=OneWay}" VerticalAlignment="Center" />
 
+                <!-- The visualizer stands in the artwork's place, the same size, when one is chosen (the button beside the rating). -->
+                <controls:VisualizerView x:Name="Visualizer" CornerRadius="{StaticResource HumeRadiusLargeArtwork}" VerticalAlignment="Center" Visibility="Collapsed" />
+
                 <StackPanel x:Name="Info" Grid.Column="1" Width="460" VerticalAlignment="Center" Spacing="4">
+                    <!-- Live radio says so; Headliners also features the artist whose block is on. -->
+                    <TextBlock Text="{x:Bind Player.LiveLabel, Mode=OneWay}" Style="{StaticResource HumeOverlineText}" Foreground="{ThemeResource HumeAccentTextBrush}"
+                               Visibility="{x:Bind Player.IsLive, Mode=OneWay}" AutomationProperties.AutomationId="NowPlayingLive" />
+                    <Grid ColumnSpacing="14" Margin="0,4,0,12" Visibility="{x:Bind Player.HasFeatured, Mode=OneWay}"
+                          helpers:Anim.Appear="True" AutomationProperties.AutomationId="FeaturedArtist">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <controls:ArtworkImage Width="64" Height="64" DecodeSize="128" ArtworkCornerRadius="32" PlaceholderIcon="MicVocal"
+                                               SourcePath="{x:Bind Player.FeaturedArtistThumb, Mode=OneWay}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                            <TextBlock Text="FEATURED ARTIST" Style="{StaticResource HumeOverlineText}" Foreground="{ThemeResource HumeTextTertiaryBrush}" />
+                            <TextBlock Text="{x:Bind Player.FeaturedArtist, Mode=OneWay}" Style="{StaticResource HumeTitleText}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind Player.FeaturedProgress, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" />
+                        </StackPanel>
+                    </Grid>
                     <TextBlock x:Name="TitleText" Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource HumeHeroText}" FontSize="{StaticResource HumeFontFeature}" LineHeight="{StaticResource HumeLineFeature}"
                                IsTextSelectionEnabled="True" AutomationProperties.AutomationId="NowPlayingPageTitle" />
                     <HyperlinkButton Command="{x:Bind Player.OpenArtistCommand}" Style="{StaticResource HumeFeatureSubtitleLinkStyle}">
@@ -39,10 +59,19 @@
                     <StackPanel Margin="0,24,0,0" Spacing="0">
                         <Slider x:Name="Progress" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False"
                                 Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}" Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
-                                IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}" AutomationProperties.Name="Playback position" />
-                        <Grid>
+                                IsEnabled="{x:Bind Player.CanSeek, Mode=OneWay}" AutomationProperties.Name="Playback position" />
+                        <!-- The times, and what the stream is (format and bitrate) between them, where there is room for all of it. -->
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
                             <TextBlock Text="{x:Bind Player.PositionText, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" Typography.NumeralAlignment="Tabular" />
-                            <TextBlock Text="{x:Bind Player.RemainingText, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" Typography.NumeralAlignment="Tabular" HorizontalAlignment="Right" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind Player.StreamDescription, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}"
+                                       Foreground="{ThemeResource HumeTextTertiaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis"
+                                       AutomationProperties.AutomationId="StreamDescription" />
+                            <TextBlock Grid.Column="2" Text="{x:Bind Player.RemainingText, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}" Typography.NumeralAlignment="Tabular" />
                         </Grid>
                     </StackPanel>
 
@@ -96,30 +125,42 @@
                                 Value="{x:Bind Player.Volume, Mode=TwoWay}" AutomationProperties.Name="Volume" />
                     </Grid>
 
-                    <!-- Secondary actions and stream details -->
-                    <Grid Margin="0,8,0,0" ColumnSpacing="4">
+                    <!-- The rating, and Mute: keeping this song or its artist out of Meloday for a while. -->
+                    <Grid Margin="0,8,0,0" ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
-                            <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
                         <controls:StarRating Item="{x:Bind Player.Track, Mode=OneWay}" StarSize="{StaticResource HumeStarL}" VerticalAlignment="Center"
                                              AutomationProperties.Name="Track rating" />
-                        <TextBlock Grid.Column="1" Text="{x:Bind Player.StreamDescription, Mode=OneWay}" Style="{StaticResource HumeSecondaryText}"
-                                   Foreground="{ThemeResource HumeTextTertiaryBrush}" VerticalAlignment="Center" Margin="12,0" />
-                        <ToggleButton x:Name="LyricsToggle" Grid.Column="3" Style="{StaticResource HumeIconToggleStyle}" Tag="SidePanelToggle" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}"
-                                      Click="OnLyricsClick" ToolTipService.ToolTip="Lyrics" AutomationProperties.Name="Lyrics">
-                            <controls:LucideIcon Icon="MessageSquareQuote" Width="{StaticResource HumeIconL}" Height="{StaticResource HumeIconL}" />
-                        </ToggleButton>
-                        <controls:SleepTimerButton Grid.Column="4" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
-                        <controls:CastButton Grid.Column="5" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
-                        <Button Grid.Column="2" Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" Command="{x:Bind Player.SonicRadioCommand}"
-                                ToolTipService.ToolTip="Sonic radio from this track" AutomationProperties.Name="Sonic Radio">
-                            <controls:LucideIcon Icon="Radio" Width="{StaticResource HumeIconL}" Height="{StaticResource HumeIconL}" />
-                        </Button>
+                        <controls:MuteButton Grid.Column="2" VerticalAlignment="Center" />
+                    </Grid>
+
+                    <!-- What can be done with this song and the music around it: on the left what it is shown as and what plays from it, on the right the side panel, the sleep timer and where it plays. -->
+                    <Grid Margin="0,4,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Orientation="Horizontal" Spacing="4">
+                            <controls:VisualizerButton Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
+                            <controls:CuratorButton Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
+                            <controls:StationFeedbackButton Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
+                            <Button Style="{StaticResource HumeIconButtonStyle}" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" Command="{x:Bind Player.SonicRadioCommand}"
+                                    ToolTipService.ToolTip="Sonic radio from this track" AutomationProperties.Name="Sonic Radio">
+                                <controls:LucideIcon Icon="Radio" Width="{StaticResource HumeIconL}" Height="{StaticResource HumeIconL}" />
+                            </Button>
+                        </StackPanel>
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+                            <ToggleButton x:Name="LyricsToggle" Style="{StaticResource HumeIconToggleStyle}" Tag="SidePanelToggle" Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}"
+                                          Click="OnLyricsClick" ToolTipService.ToolTip="Lyrics" AutomationProperties.Name="Lyrics">
+                                <controls:LucideIcon Icon="MessageSquareQuote" Width="{StaticResource HumeIconL}" Height="{StaticResource HumeIconL}" />
+                            </ToggleButton>
+                            <controls:SleepTimerButton Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
+                            <controls:CastButton Width="{StaticResource HumeButtonM}" Height="{StaticResource HumeButtonM}" IconSize="{StaticResource HumeIconL}" />
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
 

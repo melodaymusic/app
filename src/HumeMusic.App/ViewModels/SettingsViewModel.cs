@@ -31,13 +31,20 @@ public sealed partial class SettingsViewModel : ObservableObject
     private readonly NotificationService _notifications;
     private readonly ArtistLogoService _logos;
     private readonly MelodayService _meloday;
+    private readonly Core.Radio.StationFeedbackStore _feedback;
+    private readonly Core.Meloday.DupeStore _dupes;
+    private readonly MuteService _mutes;
     private readonly ILogger _log;
     private readonly DispatcherQueue _dispatcher;
     private bool _loading;
 
     public SettingsViewModel(PlexSession session, SettingsStore settings, ArtworkCache artwork, ResponseCache responses,
-        NotificationService notifications, ArtistLogoService logos, MelodayService meloday, ILogger<SettingsViewModel> log)
+        NotificationService notifications, ArtistLogoService logos, MelodayService meloday, Core.Radio.StationFeedbackStore feedback,
+        Core.Meloday.DupeStore dupes, MuteService mutes, ILogger<SettingsViewModel> log)
     {
+        _dupes = dupes;
+        _mutes = mutes;
+        _feedback = feedback;
         _logos = logos;
         _meloday = meloday;
         _session = session;
@@ -48,6 +55,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         _log = log;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
         _session.StateChanged += (_, _) => _dispatcher.TryEnqueue(Refresh);
+        _dupes.Changed += (_, _) => _dispatcher.TryEnqueue(RefreshDupes);
+        _mutes.Changed += (_, _) => _dispatcher.TryEnqueue(RefreshMuted);
     }
 
     public ObservableCollection<PlexServer> Servers { get; } = [];
@@ -95,7 +104,31 @@ public sealed partial class SettingsViewModel : ObservableObject
     private bool _lastFmAwaitingApproval;
 
     public bool LastFmConnected => LastFm.IsConnected;
-    public string LastFmUser => LastFm.UserName is { Length: > 0 } name ? $"Scrobbling as {name}" : "Connected";
+    public string LastFmUser => LastFm.UserName is { Length: > 0 } name ? $"Connected as {name}" : "Connected";
+
+    /// <summary>Send what is played to Last.fm (off until turned on).</summary>
+    public bool LastFmScrobble
+    {
+        get => LastFm.ScrobblingOn;
+        set
+        {
+            if (value == LastFm.ScrobblingOn) return;
+            LastFm.SetScrobbling(value);
+            OnPropertyChanged();
+        }
+    }
+
+    /// <summary>Show Last.fm's chart (the songs of it in the library) on Home (off until turned on).</summary>
+    public bool LastFmTrending
+    {
+        get => LastFm.TrendingOn;
+        set
+        {
+            if (value == LastFm.TrendingOn) return;
+            LastFm.SetTrending(value);
+            OnPropertyChanged();
+        }
+    }
     public string LastFmButtonText => _lastFmAwaitingApproval ? "I've Approved It" : "Connect";
     [ObservableProperty] public partial string? LastFmStatus { get; private set; }
 
@@ -131,6 +164,8 @@ public sealed partial class SettingsViewModel : ObservableObject
             OnPropertyChanged(nameof(LastFmButtonText));
             OnPropertyChanged(nameof(LastFmConnected));
             OnPropertyChanged(nameof(LastFmUser));
+            OnPropertyChanged(nameof(LastFmScrobble));
+            OnPropertyChanged(nameof(LastFmTrending));
             return true;
         }
         catch (Exception ex) when (ex is Core.LastFm.LastFmException or HttpRequestException or TaskCanceledException)
@@ -147,6 +182,8 @@ public sealed partial class SettingsViewModel : ObservableObject
     {
         LastFm.Disconnect();
         OnPropertyChanged(nameof(LastFmConnected));
+        OnPropertyChanged(nameof(LastFmScrobble));
+        OnPropertyChanged(nameof(LastFmTrending));
     }
 
     // ------------------------------------------------------------------ keeping in step with the library
@@ -438,6 +475,11 @@ public sealed partial class SettingsViewModel : ObservableObject
         RemoteControl = c.RemoteControl;
         TrackNotifications = c.TrackNotifications;
         LyricsFallback = c.LyricsFallback;
+        RefreshFeedback();
+        RefreshDupes();
+        MuteLengthIndex = (int)c.MuteLength;
+        MuteCustomDays = c.MuteCustomDays;
+        RefreshMuted();
         CrossfadeSeconds = c.CrossfadeSeconds;
         ThemeIndex = (int)c.Theme;
         MotionEnabled = c.Motion;
@@ -581,6 +623,100 @@ public sealed partial class SettingsViewModel : ObservableObject
         Helpers.Motion.Set(value);
     }
 
+    /// <summary>How many songs have been taken off live stations ("not for this station").</summary>
+    [ObservableProperty] public partial string FeedbackSummary { get; private set; } = string.Empty;
+
+    private void RefreshFeedback()
+    {
+        var count = _feedback.Count;
+        FeedbackSummary = count == 0 ? "No songs taken off live stations yet" : count == 1 ? "1 song taken off a live station" : $"{count} songs taken off live stations";
+    }
+
+    // ------------------------------------------------------------------ muting
+
+    public IReadOnlyList<string> MuteLengthOptions { get; } = ["1 week", "1 month", "Custom"];
+
+    /// <summary>0: a week; 1: a month; 2: <see cref="MuteCustomDays"/> days.</summary>
+    [ObservableProperty] public partial int MuteLengthIndex { get; set; }
+    [ObservableProperty] public partial double MuteCustomDays { get; set; } = 14;
+    public bool IsCustomMute => MuteLengthIndex == (int)Core.Mutes.MuteLength.Custom;
+
+    partial void OnMuteLengthIndexChanged(int value)
+    {
+        OnPropertyChanged(nameof(IsCustomMute));
+        OnPropertyChanged(nameof(MuteLengthSummary));
+        SaveMuteLength();
+    }
+
+    partial void OnMuteCustomDaysChanged(double value) => SaveMuteLength();
+
+    private void SaveMuteLength()
+    {
+        if (_loading || MuteLengthIndex < 0) return;
+        _settings.Current.MuteLength = (Core.Mutes.MuteLength)MuteLengthIndex;
+        // A cleared box (NaN) leaves the number as it was.
+        if (!double.IsNaN(MuteCustomDays)) _settings.Current.MuteCustomDays = (int)Math.Clamp(Math.Round(MuteCustomDays), Core.Mutes.MuteLengths.Shortest, Core.Mutes.MuteLengths.Longest);
+        _settings.Save();
+        OnPropertyChanged(nameof(MuteLengthSummary));
+    }
+
+    /// <summary>Where another length can be chosen, and what a custom one comes to.</summary>
+    public string MuteLengthSummary => IsCustomMute
+        ? $"A mute lasts {_mutes.DefaultText}. The Mute menu on Now Playing has Another Length for just once."
+        : "The Mute menu on Now Playing has Another Length, for a different time just once.";
+
+    /// <summary>The songs and artists muted now, ending soonest first (Settings, Muting).</summary>
+    public ObservableCollection<MuteRow> Muted { get; } = [];
+
+    [ObservableProperty] public partial bool HasMuted { get; private set; }
+    [ObservableProperty] public partial string MutedSummary { get; private set; } = string.Empty;
+
+    private void RefreshMuted()
+    {
+        Muted.Clear();
+        var now = DateTimeOffset.UtcNow;
+        foreach (var entry in _mutes.Active()) Muted.Add(new MuteRow(entry, now));
+        HasMuted = Muted.Count > 0;
+        MutedSummary = Muted.Count == 0 ? "Nothing is muted" : Muted.Count == 1 ? "1 muted" : $"{Muted.Count} muted";
+        OnPropertyChanged(nameof(MuteLengthSummary));
+    }
+
+    /// <summary>Lets a song or artist back into what Meloday makes.</summary>
+    [RelayCommand]
+    private void Unmute(MuteRow? row)
+    {
+        if (row is not null) _mutes.Unmute(row.Entry);
+    }
+
+    /// <summary>The songs said to be the same song, on the connected server, newest first (Settings, Dupes).</summary>
+    public ObservableCollection<DupeRow> Dupes { get; } = [];
+
+    [ObservableProperty] public partial bool HasDupes { get; private set; }
+    [ObservableProperty] public partial string DupesSummary { get; private set; } = string.Empty;
+
+    private void RefreshDupes()
+    {
+        Dupes.Clear();
+        if (_session.Server is { } server)
+            foreach (var pair in _dupes.For(server.MachineIdentifier)) Dupes.Add(new DupeRow(pair));
+        HasDupes = Dupes.Count > 0;
+        DupesSummary = Dupes.Count == 0 ? "No dupes yet" : Dupes.Count == 1 ? "1 pair" : $"{Dupes.Count} pairs";
+    }
+
+    /// <summary>Undoes a pair: both songs are songs of their own again (the Meloday on screen is left as it is).</summary>
+    [RelayCommand]
+    private void Unmerge(DupeRow? row)
+    {
+        if (row is not null) _dupes.Remove(row.Pair.Server, row.Pair.Dupe.Key);
+    }
+
+    [RelayCommand]
+    private void ResetFeedback()
+    {
+        _feedback.Clear();
+        RefreshFeedback();
+    }
+
     [RelayCommand]
     private async Task ReconnectAsync()
     {
@@ -624,4 +760,31 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     [RelayCommand]
     private async Task SignOutAsync() => await _session.SignOutAsync();
+}
+
+/// <summary>One muted song or artist on Settings' Muting tab.</summary>
+public sealed class MuteRow(Core.Mutes.MuteEntry entry, DateTimeOffset now)
+{
+    public Core.Mutes.MuteEntry Entry { get; } = entry;
+    public string Icon => Entry.Kind == Core.Mutes.MuteKind.Artist ? "MicVocal" : "Music";
+    public string Title => Entry.Title;
+    public string Kind => Entry.Kind == Core.Mutes.MuteKind.Artist ? "Artist" : string.IsNullOrEmpty(Entry.Detail) ? "Song" : $"Song · {Entry.Detail}";
+    public string Remaining => $"{Core.Mutes.MuteLengths.Remaining(Entry.Until, now)} · until {Entry.Until.LocalDateTime:MMM d}";
+    public string Unmute => $"Unmute {Entry.Title}";
+}
+
+/// <summary>One pair on Settings' Dupes tab: the song that plays and the song it stands in for.</summary>
+public sealed class DupeRow(Core.Meloday.DupePair pair)
+{
+    public Core.Meloday.DupePair Pair { get; } = pair;
+    public string? KeeperThumb => Pair.Keeper.Thumb;
+    public string? DupeThumb => Pair.Dupe.Thumb;
+    public string KeeperTitle => Pair.Keeper.Title;
+    public string DupeTitle => Pair.Dupe.Title;
+    public string KeeperDetails => Details(Pair.Keeper);
+    public string DupeDetails => Details(Pair.Dupe);
+    public string Unmerge => $"Unmerge {Pair.Dupe.Title} from {Pair.Keeper.Title}";
+
+    private static string Details(Core.Meloday.DupeSide side) =>
+        string.IsNullOrEmpty(side.Album) ? side.Artist : $"{side.Artist} · {side.Album}";
 }

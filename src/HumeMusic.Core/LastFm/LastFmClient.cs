@@ -18,6 +18,9 @@ public sealed class LastFmAccount
 /// <summary>A song to report to Last.fm.</summary>
 public sealed record Scrobble(string Artist, string Title, string? Album, string? AlbumArtist, int? TrackNumber, TimeSpan Duration, DateTimeOffset StartedAt);
 
+/// <summary>A song on Last.fm's chart of what the world is listening to now.</summary>
+public sealed record ChartTrack(string Title, string Artist, int Listeners);
+
 public sealed class LastFmException(string message, int code = 0) : Exception(message)
 {
     /// <summary>Last.fm's error code (9: the session is no longer valid; 11, 16: try again later).</summary>
@@ -56,6 +59,31 @@ public sealed class LastFmClient
         var json = await CallAsync(account, "auth.getSession", [new("token", token)], post: false, ct).ConfigureAwait(false);
         var session = json.GetProperty("session");
         return (session.GetProperty("key").GetString()!, session.GetProperty("name").GetString() ?? string.Empty);
+    }
+
+    /// <summary>Last.fm's chart of the songs most listened to now (chart.getTopTracks), up to <paramref name="limit"/> of them.</summary>
+    public async Task<IReadOnlyList<ChartTrack>> GetChartTopTracksAsync(LastFmAccount account, int limit = 100, CancellationToken ct = default)
+    {
+        var json = await CallAsync(account, "chart.getTopTracks", [new("limit", limit.ToString(System.Globalization.CultureInfo.InvariantCulture))], post: false, ct).ConfigureAwait(false);
+        return ParseChart(json);
+    }
+
+    /// <summary>The songs of a chart.getTopTracks answer (one with no songs, or a single song not in a list, reads too).</summary>
+    public static IReadOnlyList<ChartTrack> ParseChart(JsonElement json)
+    {
+        if (!json.TryGetProperty("tracks", out var tracks) || !tracks.TryGetProperty("track", out var list)) return [];
+        var items = list.ValueKind == JsonValueKind.Array ? list.EnumerateArray().ToList() : [list];
+        var chart = new List<ChartTrack>();
+        foreach (var item in items)
+        {
+            var title = item.TryGetProperty("name", out var n) ? n.GetString() : null;
+            var artist = item.TryGetProperty("artist", out var a) && a.TryGetProperty("name", out var an) ? an.GetString() : null;
+            if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(artist)) continue;
+            var listeners = 0;
+            if (item.TryGetProperty("listeners", out var l)) _ = int.TryParse(l.ValueKind == JsonValueKind.Number ? l.GetRawText() : l.GetString(), out listeners);
+            chart.Add(new ChartTrack(title.Trim(), artist.Trim(), listeners));
+        }
+        return chart;
     }
 
     public Task UpdateNowPlayingAsync(LastFmAccount account, Scrobble song, CancellationToken ct = default)

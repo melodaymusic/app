@@ -28,6 +28,7 @@ public static class PlexMapper
         TitleSort = d.TitleSort,
         Thumb = d.Thumb,
         Art = d.Art,
+        Logo = LogoOf(d),
         Palette = Palette(d),
         Summary = NullIfEmpty(d.Summary),
         Genres = Tags(d.Genre),
@@ -60,6 +61,7 @@ public static class PlexMapper
         Title = CleanTitle(d.Title) ?? "Unknown album",
         Thumb = d.Thumb,
         Art = d.Art,
+        Logo = LogoOf(d),
         Palette = Palette(d),
         ArtistTitle = d.ParentTitle,
         ArtistRatingKey = d.ParentRatingKey,
@@ -134,6 +136,10 @@ public static class PlexMapper
         };
     }
 
+    /// <summary>The item's logo on the server: the picture Plex lists among its images as a clear logo.</summary>
+    public static string? LogoOf(MetadataDto d) =>
+        d.Image?.FirstOrDefault(i => string.Equals(i.Type, "clearLogo", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(i.Url))?.Url;
+
     public static Playlist ToPlaylist(MetadataDto d) => new()
     {
         RatingKey = d.RatingKey ?? string.Empty,
@@ -141,6 +147,7 @@ public static class PlexMapper
         Title = CleanTitle(d.Title) ?? "Untitled playlist",
         Thumb = d.Thumb,
         Art = d.Art,
+        Logo = LogoOf(d),
         Composite = d.Composite,
         Palette = Palette(d),
         Summary = NullIfEmpty(d.Summary),
@@ -173,6 +180,7 @@ public static class PlexMapper
         Title = CleanTitle(d.Title) ?? "Collection",
         Thumb = d.Thumb,
         Art = d.Art,
+        Logo = LogoOf(d),
         Summary = NullIfEmpty(d.Summary),
         ChildCount = d.ChildCount,
         Subtype = d.Subtype,

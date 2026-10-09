@@ -1,7 +1,18 @@
 namespace HumeMusic.Core.Models;
 
-/// <summary>One line of a song's lyrics, with its time when the lyrics are synced.</summary>
-public sealed record LyricLine(TimeSpan? Start, TimeSpan? End, string Text);
+/// <summary>A word of a line, with the time it is sung (only when the lyrics carry timing for each word) and, when the timing says, the time it stops being held.</summary>
+public sealed record LyricWord(TimeSpan Start, string Text)
+{
+    /// <summary>When a word held on a long note ends (the Lyric Studio records it); null for the usual word that is simply sung.</summary>
+    public TimeSpan? End { get; init; }
+}
+
+/// <summary>One line of a song's lyrics, with its time when the lyrics are synced, and its words' times when they have them.</summary>
+public sealed record LyricLine(TimeSpan? Start, TimeSpan? End, string Text)
+{
+    /// <summary>Each word with its own time, when the source gives them (most lyrics are timed by the line only).</summary>
+    public IReadOnlyList<LyricWord>? Words { get; init; }
+}
 
 /// <summary>Where a song's lyrics came from, for crediting them.</summary>
 public enum LyricsSource
@@ -10,6 +21,8 @@ public enum LyricsSource
     Plex,
     /// <summary>LRCLIB (lrclib.net), the open lyrics database.</summary>
     LrcLib,
+    /// <summary>Timed by the listener, in the Lyric Studio.</summary>
+    Custom,
 }
 
 /// <summary>A song's lyrics: synced line by line, or plain text.</summary>

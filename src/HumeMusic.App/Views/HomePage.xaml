@@ -12,17 +12,11 @@
     <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
                   AutomationProperties.AutomationId="PageScroller">
         <StackPanel Padding="{StaticResource HumePagePadding}" Spacing="{StaticResource HumeSectionSpacing}">
-            <!-- The greeting and "Jump back in" (or "Home"), with a direct path into personal recommendations. -->
+            <!-- The greeting and "Jump back in" (or "Home"), and how long the listener has listened today. -->
             <controls:PageHeader Eyebrow="{x:Bind ViewModel.Greeting, Mode=OneWay}" Title="{x:Bind ViewModel.HeaderTitle, Mode=OneWay}">
-                <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Style="{StaticResource HumeSecondaryButtonStyle}" Click="OnMadeForYouClick"
-                            AutomationProperties.AutomationId="MadeForYouButton" AutomationProperties.Name="Made for You">
-                        <controls:IconLabel Icon="Sparkles" Text="Made for You" />
-                    </Button>
-                    <StackPanel HorizontalAlignment="Right" Spacing="2" AutomationProperties.AutomationId="TodaysListening" AutomationProperties.Name="Today's listening">
-                        <TextBlock x:Name="ListeningLabel" Text="Today's listening" Style="{StaticResource HumeOverlineText}" HorizontalAlignment="Right" />
-                        <TextBlock x:Name="ListeningTime" Text="{x:Bind ViewModel.TodayListening, Mode=OneWay}" Style="{StaticResource HumeDisplayText}" HorizontalAlignment="Right" />
-                    </StackPanel>
+                <StackPanel HorizontalAlignment="Right" Spacing="2" AutomationProperties.AutomationId="TodaysListening" AutomationProperties.Name="Today's listening">
+                    <TextBlock x:Name="ListeningLabel" Text="Today's listening" Style="{StaticResource HumeOverlineText}" HorizontalAlignment="Right" />
+                    <TextBlock x:Name="ListeningTime" Text="{x:Bind ViewModel.TodayListening, Mode=OneWay}" Style="{StaticResource HumeDisplayText}" HorizontalAlignment="Right" />
                 </StackPanel>
             </controls:PageHeader>
 
@@ -40,6 +34,7 @@
                 </Grid.RowDefinitions>
                 <Button x:Name="FeaturedArtButton" Style="{StaticResource HumeTileButtonStyle}" Padding="0" CornerRadius="{StaticResource HumeRadiusLargeArtwork}"
                         Click="OnFeaturedClick" AutomationProperties.Name="Open">
+                    <!-- As tall as the four rows of tabs beside it (4 x 56 and three gaps of 8). -->
                     <controls:ArtworkImage x:Name="FeaturedArt" Width="248" Height="248" DecodeSize="320"
                                            ArtworkCornerRadius="{StaticResource HumeRadiusLargeArtwork}"
                                            SourcePath="{x:Bind ViewModel.FeaturedCover, Mode=OneWay}" />
@@ -64,6 +59,7 @@
                         <controls:PinButton Item="{x:Bind ViewModel.Featured, Mode=OneWay}" />
                     </StackPanel>
                 </StackPanel>
+                <!-- The eight played before it: cover and name on a glass tab, two across. -->
                 <ItemsControl x:Name="JumpTiles" Grid.Column="2" MaxWidth="560" HorizontalAlignment="Stretch" VerticalAlignment="Center" IsTabStop="False"
                               ItemsSource="{x:Bind ViewModel.JumpBackIn}" AutomationProperties.Name="Played before">
                     <ItemsControl.ItemsPanel>
@@ -99,6 +95,8 @@
                                     EmptyText="Your music library is empty. Add music to your Plex library and it will appear here."
                                     RetryCommand="{x:Bind ViewModel.LoadCommand}" />
 
+            <!-- A plain stack: Home has a handful of rows, and a virtualizing repeater around rows that
+                 themselves virtualize is a known source of layout cycles. -->
             <ItemsControl ItemsSource="{x:Bind ViewModel.Rows}" IsTabStop="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
