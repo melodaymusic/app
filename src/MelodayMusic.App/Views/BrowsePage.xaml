@@ -1,0 +1,53 @@
+<Page
+    x:Class="MelodayMusic.Views.BrowsePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers"
+    xmlns:local="using:MelodayMusic.Views"
+    xmlns:vm="using:MelodayMusic.ViewModels"
+    xmlns:models="using:MelodayMusic.Core.Models"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <Page.Resources>
+        <DataTemplate x:Key="TagTemplate" x:DataType="models:TagItem">
+            <controls:CardSlot>
+                <controls:TagCard Item="{x:Bind}" />
+            </controls:CardSlot>
+        </DataTemplate>
+        <DataTemplate x:Key="MediaTemplate" x:DataType="models:MediaItem">
+            <controls:CardSlot>
+                <controls:MediaTile Item="{x:Bind}" TileSize="0" />
+            </controls:CardSlot>
+        </DataTemplate>
+        <local:BrowseTemplateSelector x:Key="Selector" TagTemplate="{StaticResource TagTemplate}" MediaTemplate="{StaticResource MediaTemplate}" />
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader Title="Browse" Padding="{StaticResource MelodayPageHeaderPadding}">
+            <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+        </controls:PageHeader>
+
+        <controls:ChipTabs x:Name="Categories" Grid.Row="1" Margin="40,0,40,16" AutomationLabel="Browse categories"
+                           ItemsSource="{x:Bind ViewModel.Categories}" SelectedItem="{x:Bind ViewModel.SelectedCategory, Mode=TwoWay}" />
+
+        <GridView x:Name="ResultsGrid" Grid.Row="2" Padding="{StaticResource MelodayGridPadding}" ItemsSource="{x:Bind ViewModel.Items}"
+                  ItemTemplateSelector="{StaticResource Selector}"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ItemContainerStyle="{StaticResource MelodayTileItemStyle}" controls:ResponsiveGrid.MinItemWidth="190"
+                  AutomationProperties.Name="Browse results" />
+
+        <controls:PageStateView SkeletonKind="Tiles" SkeletonPadding="{StaticResource MelodayGridPadding}" Grid.Row="2" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                                EmptyText="Plex doesn't have any of these for this library yet." EmptyIcon="Tags"
+                                RetryRequested="OnRetry" />
+    </Grid>
+</Page>

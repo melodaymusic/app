@@ -1,0 +1,209 @@
+<UserControl
+    x:Class="MelodayMusic.Views.PlayerBar"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers">
+
+    <Grid x:Name="Pill" controls:QueueDrag.IsTarget="True" MaxWidth="940" Height="{StaticResource MelodayPlayerHeight}" Padding="12,0,12,0" ColumnSpacing="16"
+          CornerRadius="{StaticResource MelodayRadiusGlass}" Background="{ThemeResource MelodayPlayerAcrylicBrush}"
+          BorderBrush="{ThemeResource MelodayHairlineBrush}" BorderThickness="1">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition x:Name="InfoColumn" Width="*" MinWidth="180" />
+            <ColumnDefinition Width="Auto" />
+        </Grid.ColumnDefinitions>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
+            <Button Style="{StaticResource MelodayIconButtonStyle}" Command="{x:Bind Player.PreviousCommand}"
+                    IsEnabled="{x:Bind Player.HasPrevious, Mode=OneWay}"
+                    ToolTipService.ToolTip="Previous (Ctrl+Left)" AutomationProperties.Name="Previous" AutomationProperties.AutomationId="PreviousButton">
+                <controls:LucideIcon Icon="SkipBack" IsFilled="True" />
+            </Button>
+            <Button Style="{StaticResource MelodayPlayButtonStyle}" Width="{StaticResource MelodayButtonL}" Height="{StaticResource MelodayButtonL}" Margin="2,0"
+                    Command="{x:Bind Player.PlayPauseCommand}" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                    ToolTipService.ToolTip="{x:Bind Player.PlayPauseLabel, Mode=OneWay}"
+                    AutomationProperties.Name="{x:Bind Player.PlayPauseLabel, Mode=OneWay}" AutomationProperties.AutomationId="PlayPauseButton">
+                <Grid>
+                    <controls:LucideIcon Icon="{x:Bind Player.PlayPauseIcon, Mode=OneWay}" IsFilled="True" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}"
+                                         Visibility="{x:Bind helpers:Format.CollapsedIf(Player.IsBuffering), Mode=OneWay}" />
+                    <ProgressRing IsActive="{x:Bind Player.IsBuffering, Mode=OneWay}" Width="20" Height="20"
+                                  Foreground="{ThemeResource MelodayOnPlayButtonBrush}" />
+                </Grid>
+            </Button>
+            <Button Style="{StaticResource MelodayIconButtonStyle}" Command="{x:Bind Player.NextCommand}"
+                    IsEnabled="{x:Bind Player.HasNext, Mode=OneWay}"
+                    ToolTipService.ToolTip="Next (Ctrl+Right)" AutomationProperties.Name="Next" AutomationProperties.AutomationId="NextButton">
+                <controls:LucideIcon Icon="SkipForward" IsFilled="True" />
+            </Button>
+            <StackPanel x:Name="ModeButtons" VerticalAlignment="Center" Margin="4,0,0,0">
+                <ToggleButton x:Name="ShuffleToggle" Style="{StaticResource MelodayIconToggleStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                              IsChecked="{x:Bind Player.IsShuffled, Mode=TwoWay}"
+                              ToolTipService.ToolTip="{x:Bind Player.ShuffleLabel, Mode=OneWay}" AutomationProperties.Name="Shuffle"
+                              AutomationProperties.AutomationId="ShuffleButton">
+                    <controls:LucideIcon Icon="Shuffle" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                </ToggleButton>
+                <controls:RepeatToggle Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
+            </StackPanel>
+        </StackPanel>
+
+        <Grid Grid.Column="1" ColumnSpacing="12" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Button x:Name="ArtButton" Style="{StaticResource MelodayTileButtonStyle}" Padding="0" CornerRadius="{StaticResource MelodayRadiusArtwork}"
+                    Click="OnOpenNowPlaying" ToolTipService.ToolTip="Open Now Playing (Ctrl+L)" AutomationProperties.Name="Open Now Playing">
+                <controls:ArtworkImage Width="{StaticResource MelodayArtLcd}" Height="{StaticResource MelodayArtLcd}" DecodeSize="64" ArtworkCornerRadius="{StaticResource MelodayRadiusArtwork}"
+                                       SourcePath="{x:Bind Player.ArtworkPath, Mode=OneWay}" PlaceholderIcon="Music" />
+            </Button>
+            <Grid Grid.Column="1" VerticalAlignment="Center" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                    <HyperlinkButton Style="{StaticResource MelodayLinkButtonStyle}" Click="OnOpenNowPlaying" HorizontalAlignment="Left"
+                                     Foreground="{ThemeResource MelodayTextPrimaryBrush}" FontWeight="SemiBold" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}">
+                        <TextBlock Text="{x:Bind Player.Title, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                   AutomationProperties.AutomationId="NowPlayingTitle" />
+                    </HyperlinkButton>
+                    <TextBlock x:Name="TimeText" helpers:Anim.Appear="True" Grid.Column="1" Style="{StaticResource MelodaySecondaryText}" VerticalAlignment="Center"
+                               Typography.NumeralAlignment="Tabular" Visibility="{x:Bind Player.ShowTime, Mode=OneWay}">
+                        <Run Text="{x:Bind Player.PositionText, Mode=OneWay}" /><Run Text=" / " /><Run Text="{x:Bind Player.DurationText, Mode=OneWay}" />
+                    </TextBlock>
+                    <StackPanel Grid.Column="1" Grid.RowSpan="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center" helpers:Anim.Appear="True"
+                                Visibility="{x:Bind Player.IsLive, Mode=OneWay}" AutomationProperties.AutomationId="LiveBadge">
+                        <Ellipse Width="8" Height="8" Fill="{ThemeResource MelodayAccentTextBrush}" VerticalAlignment="Top" Margin="0,7,0,0" />
+                        <StackPanel x:Name="LiveInfo" Spacing="2" MaxWidth="220" ToolTipService.ToolTip="{x:Bind Player.LiveProgrammeLabel, Mode=OneWay}">
+                            <TextBlock Text="{x:Bind Player.LiveLabel, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" FontWeight="SemiBold"
+                                       Foreground="{ThemeResource MelodayAccentTextBrush}" TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{x:Bind Player.LiveProgrammeLabel, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}"
+                                       FontSize="{StaticResource MelodayFontCaption}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                                       Visibility="{x:Bind Player.HasLiveProgramme, Mode=OneWay}" AutomationProperties.AutomationId="PulseProgramme" />
+                        </StackPanel>
+                    </StackPanel>
+                <HyperlinkButton Grid.Row="1" Style="{StaticResource MelodayLinkButtonStyle}" Command="{x:Bind Player.OpenArtistCommand}"
+                                 HorizontalAlignment="Left" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                    <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" FontSize="{StaticResource MelodayFontCaption}" />
+                </HyperlinkButton>
+                <Slider x:Name="ProgressSlider" Grid.Row="2" Grid.ColumnSpan="2" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False" Margin="0,-4,0,-10"
+                        Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}"
+                        Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
+                        IsEnabled="{x:Bind Player.CanSeek, Mode=OneWay}"
+                        AutomationProperties.Name="Playback position" AutomationProperties.AutomationId="ProgressSlider" />
+            </Grid>
+        </Grid>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
+            <StackPanel x:Name="RatingVolume" VerticalAlignment="Center" Spacing="2">
+                <Viewbox x:Name="RatingBox" helpers:Anim.Appear="True" Stretch="Uniform" HorizontalAlignment="Stretch" Margin="6,0,4,0"
+                         Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
+                    <controls:StarRating x:Name="BarRating" Item="{x:Bind Player.Track, Mode=OneWay}" StarSize="{StaticResource MelodayStarS}" AutomationProperties.Name="Rating" />
+                </Viewbox>
+                <StackPanel x:Name="VolumeRow" Orientation="Horizontal">
+                    <Button x:Name="MuteButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Command="{x:Bind Player.ToggleMuteCommand}"
+                            ToolTipService.ToolTip="Mute (Ctrl+M)" AutomationProperties.Name="Mute">
+                        <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                    </Button>
+                    <Slider x:Name="VolumeSlider" Width="100" Minimum="0" Maximum="100" StepFrequency="1" VerticalAlignment="Center" Margin="2,0,0,0"
+                            Value="{x:Bind Player.Volume, Mode=TwoWay}" AutomationProperties.Name="Volume" AutomationProperties.AutomationId="VolumeSlider" />
+                </StackPanel>
+            </StackPanel>
+            <StackPanel x:Name="Tools" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="VolumeFlyoutButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Visibility="Collapsed"
+                    ToolTipService.ToolTip="Volume" AutomationProperties.Name="Volume">
+                <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                <Button.Flyout>
+                    <Flyout Placement="Top">
+                        <StackPanel Orientation="Horizontal" Spacing="8">
+                            <Button Style="{StaticResource MelodayIconButtonStyle}" Command="{x:Bind Player.ToggleMuteCommand}" AutomationProperties.Name="Mute">
+                                <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                            </Button>
+                            <Slider Width="160" Minimum="0" Maximum="100" StepFrequency="1" VerticalAlignment="Center"
+                                    Value="{x:Bind Player.Volume, Mode=TwoWay}" AutomationProperties.Name="Volume" />
+                        </StackPanel>
+                    </Flyout>
+                </Button.Flyout>
+            </Button>
+                <Button x:Name="MiniPlayerButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                        Click="OnMiniPlayer" ToolTipService.ToolTip="Mini player (Ctrl+Shift+M)" AutomationProperties.Name="Mini player" AutomationProperties.AutomationId="MiniPlayerButton">
+                    <controls:LucideIcon Icon="PictureInPicture2" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                </Button>
+                <controls:CastButton x:Name="CastToggle" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:CuratorButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
+                <controls:StationFeedbackButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
+                <ToggleButton x:Name="LyricsToggle" Style="{StaticResource MelodayIconToggleStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                          Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
+                          ToolTipService.ToolTip="Lyrics (Ctrl+Shift+L)" AutomationProperties.Name="Lyrics" AutomationProperties.AutomationId="LyricsButton">
+                <controls:LucideIcon Icon="MessageSquareQuote" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+            </ToggleButton>
+                <ToggleButton x:Name="QueueToggle" Style="{StaticResource MelodayIconToggleStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                          Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
+                          ToolTipService.ToolTip="Queue (Ctrl+Q)" AutomationProperties.Name="Queue" AutomationProperties.AutomationId="QueueButton">
+                <controls:LucideIcon Icon="ListVideo" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+            </ToggleButton>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup>
+                <VisualState x:Name="WideState" />
+                <VisualState x:Name="MediumState">
+                    <VisualState.Setters>
+                        <Setter Target="LiveInfo.MaxWidth" Value="180" />
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="CompactState">
+                    <VisualState.Setters>
+                        <Setter Target="LiveInfo.MaxWidth" Value="150" />
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="12" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="TightState">
+                    <VisualState.Setters>
+                        <Setter Target="LiveInfo.MaxWidth" Value="130" />
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="12" />
+                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
+                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="NarrowState">
+                    <VisualState.Setters>
+                        <Setter Target="LiveInfo.MaxWidth" Value="110" />
+                        <Setter Target="RatingBox.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
+                        <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
+                        <Setter Target="Tools.Orientation" Value="Vertical" />
+                        <Setter Target="TimeText.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.ColumnSpacing" Value="8" />
+                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
+                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                        <Setter Target="ModeButtons.Visibility" Value="Collapsed" />
+                        <Setter Target="InfoColumn.MinWidth" Value="0" />
+                        <Setter Target="ArtButton.Visibility" Value="Collapsed" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
+    </Grid>
+</UserControl>

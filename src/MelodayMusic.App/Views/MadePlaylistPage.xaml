@@ -1,0 +1,29 @@
+<Page x:Class="MelodayMusic.Views.MadePlaylistPage"
+ xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="using:MelodayMusic.Controls" xmlns:models="using:MelodayMusic.Core.Models" Background="Transparent">
+ <Grid>
+  <Grid.RowDefinitions>
+   <RowDefinition Height="Auto"/>
+   <RowDefinition Height="*"/>
+  </Grid.RowDefinitions>
+  <controls:DetailHeader x:Name="Header" IsReadOnly="True" PlaceholderIcon="ListMusic" ScrollSource="{x:Bind Tracks}" PlayRequested="OnPlay" ShuffleRequested="OnShuffle">
+   <controls:DetailHeader.ExtraActions>
+    <StackPanel Orientation="Horizontal" Spacing="8">
+     <controls:PlexSyncButton x:Name="PlexSync" UpdateDescription="this playlist each Monday, when Meloday makes a new one"/>
+     <controls:PageSearch x:Name="Search" Placeholder="Search this playlist"/>
+    </StackPanel>
+   </controls:DetailHeader.ExtraActions>
+  </controls:DetailHeader>
+  <ListView x:Name="Tracks" Grid.Row="1" Padding="{StaticResource MelodayListPadding}" SelectionMode="Extended"
+    controls:TrackListBehavior.IsEnabled="True" ItemContainerStyle="{StaticResource MelodayTrackItemStyle}"
+    AutomationProperties.AutomationId="MadePlaylistTracks">
+   <ListView.ItemTemplate>
+    <DataTemplate x:DataType="models:Track">
+     <controls:TrackRow Track="{x:Bind}"/>
+    </DataTemplate>
+   </ListView.ItemTemplate>
+  </ListView>
+  <controls:PageStateView x:Name="State" Grid.Row="1" SkeletonKind="Tracks" RetryRequested="OnRetry" EmptyText="This playlist is being made. Check back in a moment."/>
+ </Grid>
+</Page>

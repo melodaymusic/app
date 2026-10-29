@@ -1,101 +1,118 @@
 # Meloday Music
 
-A fast, good-looking desktop music player for your own [Plex](https://www.plex.tv) music library,
-built with C# / .NET 9 and WinUI 3 for Windows 11. It adds **Meloday**, a daylist-style mix that
-changes with the time of day, its own radio and mixing engine, and a design of its own.
+Meloday Music is a Windows desktop player for the music in your own [Plex](https://www.plex.tv) library.
+It's written in C# with .NET 9 and WinUI 3.
 
-> Meloday Music is an independent project. It is not affiliated with or endorsed by Plex, Inc.
+The app is named after Meloday, a playlist that changes through the day, but it's a full player:
+browsing, playlists, radio, mixes, lyrics and a mixing audio engine. Everything it builds comes from
+your own library, and it works without Plex Pass.
 
-## Highlights
+I'm one person working on this in my spare time, and it's the first full app I've released. I
+wanted a Plex music player for Windows that I'd enjoy using every day, so I made the one I wanted.
 
-- **Meloday** — a mix for the part of the day (dawn to late night), named from your listening
-  (mood and era maps in `src/HumeMusic.App/Assets/Meloday`), with its own cover. It can be kept on
-  your Plex server as one playlist that is updated in place.
-- **Made for You** — its own tab: mixes of about 30 songs that Meloday picks from what you play (by
-  artist, genre, mood, time of day and more), each with its own artists on its cover. Radio, by
-  contrast, starts from something you choose and never ends.
-- **Live stations** — Headliners (your biggest artists in blocks of three songs, with new releases, what's trending
-  and genre blocks between them; Now Playing features the artist whose block is on), Hits (the '80s, '90s and 2000s), Club, Chill, Library Radio and Deep Cuts are always
-  on: tune in and you join mid-song, and the station carries on while you're away. Each has its own moving cover. It's live radio, so its songs can't be skipped, sought, restarted or paused: its play button is a stop button, and playing again tunes in to where the station is by then.
-- **Visualizers** — Now Playing can draw the music as it plays, in the artwork's own colours, from the player's real
-  output and light enough to leave running: Bars, Halo, M-Wave (the logo's wave, loose and liquid, with its colour pulsing
-  through on the beat), Sun (the playlist cover's rings, each swelling with its own part of the sound), and two lyric videos
-  (the words set big and arriving as they are sung, in Manrope, over the pictures of the artist, the album and the artists featured on the track in turn, or a lively gradient;
-  lyrics with no timing roll up the picture like credits). They scale themselves to the computer (a smaller or slower
-  picture on a weak one, and 30 frames a second with the energy saver on). Any of
-  them goes full screen (F11): the interface fades away after a few seconds of stillness and only the picture is left.
-- **Dupes** — on a Meloday, press the merge button on a song that is the same song as another and choose which
-  one plays: the two rows animate into one, and from then on the Meloday holds only that one. Pairs are listed
-  (and can be unmerged) in Settings, under Dupes.
-- **Last.fm** — your own Last.fm API account, with a switch for each use, both off until you turn them on: scrobble
-  what you play, and a "Trending on Last.fm" row on Home (the songs of the chart that are in your library).
-- **Guest curators** — for anything but live radio, choose how what plays next is arranged (after Plexamp's
-  guest DJs): Double Up, Twin, Drift, Time Machine, Smooth or Spread, from the player bar's curator button.
-- **Not for this station** — on live radio the curator button becomes a thumbs-down: it takes the song on off that
-  station for good (it stays welcome on the others), and Settings can let everything back on.
-- **Radio without Plex Pass** — stations, artist mixes and "Radio" on songs, albums and artists run on
-  Meloday Music's own algorithm, with skip learning kept on your computer. Plex Pass features are
-  marked in Settings.
-- **Folders, grid or list, playlist search** — the library by folder, library pages as a grid or a list, and a search
-  inside each playlist and a view sorted any way.
-- **Mute for a while** — keep a song or an artist out of Meloday, the mixes, the live stations and the radios for a week,
-  a month or a length of your own (set in Settings), without rating them down; they come back by themselves.
-- **Lyric Studio** — time a song's lyrics yourself by tapping the space bar as each word is sung (or each line), shift a
-  song's lyrics earlier or later, and better-spaced guesses for lyrics timed only by line.
-- **Covers, backdrops and logos from Plex** — playlists, albums, collections and artists show the backdrop and logo
-  their Plex item has, and each can have its cover, backdrop, logo, name and description set from Meloday (saved on
-  your Plex server, so every app shows them).
-- **AutoMix** — an own audio engine (NAudio, WASAPI) with beat-matched blends, up to sixteen bars for a
-  perfect fit and long instrumental transitions, a filter sweep for pairs that merely match and an echo out for
-  those that can't be matched, and an output that rides out UI freezes.
-- **Fast** — answers are cached on disk and shown at once, then refreshed in the background.
-- **Home, pins and browse** — "Jump back in", today's listening time, and pins of almost anything
-  (artists, albums, playlists, stations, mixes, genres, songs) in any order.
+Meloday started as a Python script I wrote and shared under the name trackstacker
+([script](https://github.com/trackstacker/meloday),
+[original post on r/plexamp](https://www.reddit.com/r/plexamp/comments/1icefb3/meloday_a_daylist_for_plex/)).
+This app grew out of it, and its mood and era maps come from that script.
 
-See [CHANGELOG.md](CHANGELOG.md) for the full history and [docs/design-system.md](docs/design-system.md)
-for the tokens and components the UI is built from.
+Meloday Music is an independent project and isn't affiliated with or endorsed by Plex, Inc.
+
+## How it was made
+
+The ideas, the design and the decisions about how each part should work are mine. Most of the code
+was written with AI coding assistants working from my direction, and I test it on my own library as
+it grows. The animated artwork for the Live stations was made by me with AI tools.
+
+The Genre Essentials covers are my recreations of Apple Music's genre artwork, redrawn in Meloday's
+own colour palette.
+
+If you notice something that could be done better, I'd be glad to hear it. Please open an issue,
+and go easy on me, I'm still learning.
+
+## Features
+
+- Meloday, a mix for the current part of the day (dawn through late night), named from your
+  listening and given its own cover. It can be saved to your Plex server as a single playlist that
+  updates in place.
+- Made for You: daily mixes of about 30 songs based on what you play, plus mood, energy and
+  moment playlists and Genre Essentials, refreshed every Monday.
+- Live stations that keep playing while you're away, so tuning in joins mid-song. Meloday Pulse
+  runs a daily schedule of programs, and you can add your own in the Pulse Guide.
+- Radio from any song, album, artist, genre, style, mood or decade.
+- The Meloday Engine, which analyses your songs on your PC to learn how they sound. It powers
+  Sonic Radio, Sonic Adventure and the sound-based playlists. Plex Sonic Analysis can be used
+  instead if you have Plex Pass.
+- AutoMix, an audio engine built on NAudio and WASAPI that beat-matches songs into each other,
+  with filter sweeps or echo-outs for pairs that can't be matched.
+- Synced lyrics from LRCLIB or Plex, and Lyric Studio for timing or adjusting lyrics yourself.
+- Visualizers in Now Playing, including lyric videos and projectM with five MilkDrop presets.
+- Trends: your listening by artist, album, song, time of day and day of the week, with a
+  listening calendar.
+- Optional Last.fm, ListenBrainz and MusicBrainz integration. Each needs your own key or account,
+  and the app works without them.
+- Pins, a configurable Home page, folders, grid and list views, smart playlists and a mini player.
+
+[CHANGELOG.md](CHANGELOG.md) has the full history. The UI's design tokens and components are
+described in [docs/design-system.md](docs/design-system.md), and the recommendation logic in
+[docs/taste-engine.md](docs/taste-engine.md).
+
+## What's not planned
+
+Meloday Music is a personal project I'm sharing, and it's built around what I use: Plex on Windows.
+I'm not planning to add Apple Music, a Docker version or a Mac version. I don't have an Apple
+developer account or the hardware to test them, and I don't know Docker. The code is open source,
+so anyone who wants to take it in those directions is welcome to.
+
+## Requirements
+
+- Windows 10 version 2004 (build 19041) or later, x64
+- A Plex Media Server with a music library
+- To build: the [.NET 9 SDK](https://dotnet.microsoft.com/download)
+- To build the installer: [Inno Setup 6](https://jrsoftware.org/isinfo.php)
 
 ## Building
 
-Requirements: Windows 10 (22621) or newer, the [.NET 9 SDK](https://dotnet.microsoft.com/download),
-and optionally [Inno Setup 6](https://jrsoftware.org/isinfo.php) for the installer.
-
 ```powershell
-dotnet build HumeMusic.sln -c Debug -p:Platform=x64
-dotnet test tests/HumeMusic.Core.Tests
-dotnet run --project src/HumeMusic.App -p:Platform=x64
+dotnet build MelodayMusic.sln -c Debug -p:Platform=x64
+dotnet test MelodayMusic.sln -p:Platform=x64
+dotnet run --project src/MelodayMusic.App -p:Platform=x64
 ```
 
-Release installer (self-contained, per-user), written to `artifacts/final/`:
+The Meloday Engine's audio model isn't stored in the repository. Download it once with:
+
+```powershell
+./tools/engine/download.ps1
+```
+
+To build the per-user installer, written to `artifacts/final/`:
 
 ```powershell
 ./installer/build.ps1
 ```
 
-## Layout
+## Repository layout
 
-| Folder | What it holds |
+| Folder | Contents |
 |---|---|
-| `src/HumeMusic.Core` | Plex client, caching, radio, Meloday logic, pins, settings — no UI |
-| `src/HumeMusic.App` | The WinUI 3 app: views, view models, controls, audio engine, assets |
-| `tests/HumeMusic.Core.Tests` | Unit tests |
-| `tools/HumeMusic.DevCli` | Developer command line for trying the Plex integration |
-| `tools/promo` | Python that renders the promo video (screenshots, motion graphics and an original synthesized soundtrack); see its README |
-| `installer` | Inno Setup script and build script |
-| `docs` | The design system and reference documentation |
+| `src/MelodayMusic.Core` | Plex client, caching, audio analysis, radio, playlists and settings. No UI code. |
+| `src/MelodayMusic.App` | The WinUI 3 app: views, view models, controls, services and assets. |
+| `tests/MelodayMusic.Core.Tests` | Unit tests for the core library. |
+| `tools` | Developer tools. See [tools/README.md](tools/README.md). |
+| `installer` | Inno Setup script and the release build script. |
+| `docs` | Design system, taste engine and security notes. |
 
-## Your data and secrets
+## Privacy
 
-Nothing is hard-coded: you sign in with Plex from the app. The Plex token is stored encrypted with
-Windows DPAPI under `%LOCALAPPDATA%` and is never logged. Do not commit tokens, keys or a `config.yml`
-(it is git-ignored).
+You sign in with your Plex account from inside the app. Tokens and keys are encrypted with Windows
+DPAPI under `%LOCALAPPDATA%\MelodayMusic` and are never written to logs. Listening history used for
+Trends and recommendations stays on your PC. See [docs/security.md](docs/security.md) for details.
 
-## Third-party
+## Third-party software
 
-Manrope (SIL OFL 1.1) and Lucide icons (ISC) ship with the app; notices are in
-`src/HumeMusic.App/Assets/THIRD-PARTY-NOTICES.txt`. `docs/plex` holds reference documentation for
-the Plex API client library it was built against.
+The app ships the Nunito typeface (SIL OFL 1.1), Lucide icons (ISC), projectM (LGPL 2.1) and several
+MIT-licensed libraries. The full list with licences is in
+[src/MelodayMusic.App/Assets/THIRD-PARTY-NOTICES.txt](src/MelodayMusic.App/Assets/THIRD-PARTY-NOTICES.txt).
 
 ## License
 
-No license has been chosen yet; until one is added, all rights are reserved by the author.
+Meloday Music is licensed under the [GNU General Public License v3.0](LICENSE).

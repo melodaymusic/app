@@ -10,7 +10,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont
 W, H, FPS = 1920, 1080, 60
 ROOT = Path(__file__).resolve().parents[2]
 WORK = ROOT / "artifacts" / "promo"
-FONT = ROOT / "src" / "HumeMusic.App" / "Assets" / "Fonts" / "Manrope-Variable.ttf"
+FONT = ROOT / "src" / "MelodayMusic.App" / "Assets" / "Fonts" / "Nunito.ttf"
 
 # The brand wave's colours, left to right (from the app icon).
 BRAND = [(0.0, (235, 30, 85)), (0.28, (150, 70, 255)), (0.55, (45, 215, 190)), (0.8, (150, 205, 40)), (1.0, (250, 195, 25))]
@@ -232,7 +232,7 @@ def _mask_and_ring(w, h, radius, edge):
     mask = rounded_mask((w, h), radius)
     ring = None
     if edge:
-        # A hairline of light round the edge, as a glass window has.
+        # Thin highlight around the edge.
         r = Image.new("L", (w, h), 0)
         ImageDraw.Draw(r).rounded_rectangle((0, 0, w - 1, h - 1), radius, outline=255, width=2)
         ring = ImageChops.multiply(r.point(lambda v: int(v * 0.10)), mask)
@@ -311,7 +311,7 @@ def place(canvas, layer, cx, cy, scale=1.0, rx=0.0, ry=0.0, alpha=1.0, shadow=0.
         a = a.point(lambda v: int(v * alpha))
         moved.putalpha(a)
 
-    # Shadow and glow: made small and blurred, then scaled up (cheap, and soft anyway).
+    # Blur at low resolution and scale up; much cheaper and looks the same.
     if shadow > 0 or (glow is not None and glow_alpha > 0):
         margin = 150
         sw, sh = (bw + 2 * margin) // 4, (bh + 2 * margin) // 4
@@ -366,7 +366,7 @@ def wave(canvas, cx, cy, width, progress=1.0, alpha=1.0, glow=1.0, shine=0.0):
     x, y = int(cx - box.size[0] / 2), int(cy - box.size[1] / 2)
     region = canvas.crop((x, y, x + box.size[0], y + box.size[1]))
     if glow > 0:
-        # The glow is the colour's own, spread wide and faint; the wave then sits over it in full strength.
+        # Faint wide glow first, then the wave on top at full strength.
         g = box.filter(ImageFilter.GaussianBlur(34)).point(lambda v: int(min(255, v * 0.55 * glow)))
         region = ImageChops.add(region, g)
     region.paste(layer, (pad, pad), lmask)

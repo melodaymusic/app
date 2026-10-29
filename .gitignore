@@ -3,22 +3,43 @@ bin/
 obj/
 artifacts/
 publish/
-*.user
-.vs/
-*.suo
 TestResults/
-# Secrets / local runtime data (never commit)
+.vs/
+*.user
+*.suo
+
+# Secrets
 *.token
 *.pfx
 *.pvk
 secrets*.json
 .env
-# The Meloday script's config holds a Plex token and an OpenAI key
 config.yml
 
-# Source font drop (the app ships the copy in src/HumeMusic.App/Assets/Fonts)
+# Downloaded model, restored by tools/engine/download.ps1
+/src/MelodayMusic.App/Assets/Engine/audio.onnx
+
+# Text encoder used offline by tools/engine/vocabulary, never shipped
+/tools/engine/vocabulary/model/
+
+# Genre artwork working files
+/src/MelodayMusic.App/Assets/Genres/generation-prompts.json
+/src/MelodayMusic.App/Assets/Genres/verification.json
+/src/MelodayMusic.App/Assets/Genres/status.json
+/src/MelodayMusic.App/Assets/Genres/README.txt
+/src/MelodayMusic.App/Assets/Genres/palette.json
+
+# Local notes and source material
+.claude/
+AGENTS.md
+/_unused/
+/design/
 /Inter/
 /Manrope/
-
-# Local clean-up quarantine: source art, scripts and secrets that are not part of the app
-/_unused/
+/docs/plex/
+/docs/release-*.md
+/docs/background-radio.md
+/docs/full-ui-pass-*.md
+/docs/meloday-engine-words.md
+/docs/polish-audit.md
+/docs/tv-console-assessment.md

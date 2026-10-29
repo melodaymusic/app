@@ -1,0 +1,1822 @@
+[
+  {
+    "genre": "AACM",
+    "file": "aacm.png"
+  },
+  {
+    "genre": "Acid House",
+    "file": "acid-house.png"
+  },
+  {
+    "genre": "Acid Jazz",
+    "file": "acid-jazz.png"
+  },
+  {
+    "genre": "African Reggae",
+    "file": "african-reggae.png"
+  },
+  {
+    "genre": "Afrikaans",
+    "file": "afrikaans.png"
+  },
+  {
+    "genre": "Afrikaanse Alternatief",
+    "file": "afrikaanse-alternatief.png"
+  },
+  {
+    "genre": "Afrikaanse Duette",
+    "file": "afrikaanse-duette.png"
+  },
+  {
+    "genre": "Afrikaanse Kersfees",
+    "file": "afrikaanse-kersfees.png"
+  },
+  {
+    "genre": "Afrikaanse Sokkie",
+    "file": "afrikaanse-sokkie.png"
+  },
+  {
+    "genre": "Afro House",
+    "file": "afro-house.png"
+  },
+  {
+    "genre": "Afro-Folk",
+    "file": "afro-folk.png"
+  },
+  {
+    "genre": "Afrobeat",
+    "file": "afrobeat.png"
+  },
+  {
+    "genre": "Afrobeats",
+    "file": "afrobeats.png"
+  },
+  {
+    "genre": "Afropop",
+    "file": "afropop.png"
+  },
+  {
+    "genre": "Alt-Country",
+    "file": "alt-country.png"
+  },
+  {
+    "genre": "Alternative Hip-Hop",
+    "file": "alternative-hip-hop.png"
+  },
+  {
+    "genre": "Alté",
+    "file": "alte.png"
+  },
+  {
+    "genre": "Amapiano",
+    "file": "amapiano.png"
+  },
+  {
+    "genre": "Ambient",
+    "file": "ambient.png"
+  },
+  {
+    "genre": "Americana",
+    "file": "americana.png"
+  },
+  {
+    "genre": "Anatolian Rock",
+    "file": "anatolian-rock.png"
+  },
+  {
+    "genre": "Aotearoa New Zealand Hits",
+    "file": "aotearoa-new-zealand-hits.png"
+  },
+  {
+    "genre": "Aotearoa Roots",
+    "file": "aotearoa-roots.png"
+  },
+  {
+    "genre": "Arabesk",
+    "file": "arabesk.png"
+  },
+  {
+    "genre": "Arabic Pop",
+    "file": "arabic-pop.png"
+  },
+  {
+    "genre": "Art Song",
+    "file": "art-song.png"
+  },
+  {
+    "genre": "Asian Underground",
+    "file": "asian-underground.png"
+  },
+  {
+    "genre": "Atlanta Hip-Hop",
+    "file": "atlanta-hip-hop.png"
+  },
+  {
+    "genre": "Aussie Hip-Hop",
+    "file": "aussie-hip-hop.png"
+  },
+  {
+    "genre": "Australian Alt-Rock",
+    "file": "australian-alt-rock.png"
+  },
+  {
+    "genre": "Australian Country",
+    "file": "australian-country.png"
+  },
+  {
+    "genre": "Australian Dance",
+    "file": "australian-dance.png"
+  },
+  {
+    "genre": "Australian Electronic",
+    "file": "australian-electronic.png"
+  },
+  {
+    "genre": "Australian",
+    "file": "australian.png"
+  },
+  {
+    "genre": "Australian Indie",
+    "file": "australian-indie.png"
+  },
+  {
+    "genre": "Australian Kids",
+    "file": "australian-kids.png"
+  },
+  {
+    "genre": "Australian Pop",
+    "file": "australian-pop.png"
+  },
+  {
+    "genre": "Australian Pub Rock",
+    "file": "australian-pub-rock.png"
+  },
+  {
+    "genre": "Australian Rock",
+    "file": "australian-rock.png"
+  },
+  {
+    "genre": "Austropop",
+    "file": "austropop.png"
+  },
+  {
+    "genre": "Avant-Garde Classical",
+    "file": "avant-garde-classical.png"
+  },
+  {
+    "genre": "Avant-Garde Metal",
+    "file": "avant-garde-metal.png"
+  },
+  {
+    "genre": "Axé",
+    "file": "axe.png"
+  },
+  {
+    "genre": "Bachata",
+    "file": "bachata.png"
+  },
+  {
+    "genre": "Baile Funk",
+    "file": "baile-funk.png"
+  },
+  {
+    "genre": "Bakersfield Sound",
+    "file": "bakersfield-sound.png"
+  },
+  {
+    "genre": "Balearic",
+    "file": "balearic.png"
+  },
+  {
+    "genre": "Bebop",
+    "file": "bebop.png"
+  },
+  {
+    "genre": "Benga",
+    "file": "benga.png"
+  },
+  {
+    "genre": "Big Band and Swing",
+    "file": "big-band-and-swing.png"
+  },
+  {
+    "genre": "Black Metal",
+    "file": "black-metal.png"
+  },
+  {
+    "genre": "Black Sea",
+    "file": "black-sea.png"
+  },
+  {
+    "genre": "Blackgaze",
+    "file": "blackgaze.png"
+  },
+  {
+    "genre": "Bluegrass",
+    "file": "bluegrass.png"
+  },
+  {
+    "genre": "Blues Guitar",
+    "file": "blues-guitar.png"
+  },
+  {
+    "genre": "Blues Piano",
+    "file": "blues-piano.png"
+  },
+  {
+    "genre": "Boeremusiek",
+    "file": "boeremusiek.png"
+  },
+  {
+    "genre": "Bolero",
+    "file": "bolero.png"
+  },
+  {
+    "genre": "Bollywood",
+    "file": "bollywood.png"
+  },
+  {
+    "genre": "Boogie-Woogie",
+    "file": "boogie-woogie.png"
+  },
+  {
+    "genre": "Bossa Nova",
+    "file": "bossa-nova.png"
+  },
+  {
+    "genre": "Brazilian Hip-Hop",
+    "file": "brazilian-hip-hop.png"
+  },
+  {
+    "genre": "Breakup Songs",
+    "file": "breakup-songs.png"
+  },
+  {
+    "genre": "Brill Building Pop",
+    "file": "brill-building-pop.png"
+  },
+  {
+    "genre": "British Blues",
+    "file": "british-blues.png"
+  },
+  {
+    "genre": "British",
+    "file": "british.png"
+  },
+  {
+    "genre": "British Folk",
+    "file": "british-folk.png"
+  },
+  {
+    "genre": "British Invasion",
+    "file": "british-invasion.png"
+  },
+  {
+    "genre": "Broken Beat",
+    "file": "broken-beat.png"
+  },
+  {
+    "genre": "Canterbury Scene",
+    "file": "canterbury-scene.png"
+  },
+  {
+    "genre": "Celtic",
+    "file": "celtic.png"
+  },
+  {
+    "genre": "Chicago Blues",
+    "file": "chicago-blues.png"
+  },
+  {
+    "genre": "Chicago House",
+    "file": "chicago-house.png"
+  },
+  {
+    "genre": "Chicano Rock",
+    "file": "chicano-rock.png"
+  },
+  {
+    "genre": "Children’s Music in Russian",
+    "file": "childrens-music-in-russian.png"
+  },
+  {
+    "genre": "Chillwave",
+    "file": "chillwave.png"
+  },
+  {
+    "genre": "Chimurenga",
+    "file": "chimurenga.png"
+  },
+  {
+    "genre": "Christian",
+    "file": "christian.png"
+  },
+  {
+    "genre": "Christian Pop",
+    "file": "christian-pop.png"
+  },
+  {
+    "genre": "Christian Rap",
+    "file": "christian-rap.png"
+  },
+  {
+    "genre": "Christian Rock",
+    "file": "christian-rock.png"
+  },
+  {
+    "genre": "Classic Blues",
+    "file": "classic-blues.png"
+  },
+  {
+    "genre": "Classic Broadway",
+    "file": "classic-broadway.png"
+  },
+  {
+    "genre": "Classic Gospel",
+    "file": "classic-gospel.png"
+  },
+  {
+    "genre": "Classic House",
+    "file": "classic-house.png"
+  },
+  {
+    "genre": "Classic Metal",
+    "file": "classic-metal.png"
+  },
+  {
+    "genre": "Classic Movie Musicals",
+    "file": "classic-movie-musicals.png"
+  },
+  {
+    "genre": "Classic Punk",
+    "file": "classic-punk.png"
+  },
+  {
+    "genre": "Classic Rock",
+    "file": "classic-rock.png"
+  },
+  {
+    "genre": "Classic Salsa",
+    "file": "classic-salsa.png"
+  },
+  {
+    "genre": "Classic Singer-Songwriter",
+    "file": "classic-singer-songwriter.png"
+  },
+  {
+    "genre": "Classic Ska",
+    "file": "classic-ska.png"
+  },
+  {
+    "genre": "Classic Spanish Pop",
+    "file": "classic-spanish-pop.png"
+  },
+  {
+    "genre": "Coffee Shop",
+    "file": "coffee-shop.png"
+  },
+  {
+    "genre": "College Rock",
+    "file": "college-rock-1.png"
+  },
+  {
+    "genre": "College Rock",
+    "file": "college-rock-2.png"
+  },
+  {
+    "genre": "Colombian Cumbia",
+    "file": "colombian-cumbia.png"
+  },
+  {
+    "genre": "Conscious Hip-Hop",
+    "file": "conscious-hip-hop.png"
+  },
+  {
+    "genre": "Contemporary Christian",
+    "file": "contemporary-christian.png"
+  },
+  {
+    "genre": "Contemporary Experimental Metal",
+    "file": "contemporary-experimental-metal.png"
+  },
+  {
+    "genre": "Cool Jazz",
+    "file": "cool-jazz.png"
+  },
+  {
+    "genre": "Country Ballads",
+    "file": "country-ballads.png"
+  },
+  {
+    "genre": "Country Jukebox",
+    "file": "country-jukebox.png"
+  },
+  {
+    "genre": "Country Rock",
+    "file": "country-rock.png"
+  },
+  {
+    "genre": "Countrypolitan",
+    "file": "countrypolitan.png"
+  },
+  {
+    "genre": "Crooners",
+    "file": "crooners.png"
+  },
+  {
+    "genre": "Crunk",
+    "file": "crunk.png"
+  },
+  {
+    "genre": "Cuban Music",
+    "file": "cuban-music.png"
+  },
+  {
+    "genre": "Cumbia",
+    "file": "cumbia.png"
+  },
+  {
+    "genre": "Cumbia Sonidera Mexicana",
+    "file": "cumbia-sonidera-mexicana.png"
+  },
+  {
+    "genre": "Dad Rock",
+    "file": "dad-rock.png"
+  },
+  {
+    "genre": "Dance Pop",
+    "file": "dance-pop.png"
+  },
+  {
+    "genre": "Dance Remixes",
+    "file": "dance-remixes.png"
+  },
+  {
+    "genre": "Dance-Punk",
+    "file": "dance-punk.png"
+  },
+  {
+    "genre": "Dancehall",
+    "file": "dancehall.png"
+  },
+  {
+    "genre": "Dark Wave",
+    "file": "dark-wave.png"
+  },
+  {
+    "genre": "Death 'N' Roll",
+    "file": "death-n-roll.png"
+  },
+  {
+    "genre": "Death Metal",
+    "file": "death-metal.png"
+  },
+  {
+    "genre": "Deathcore",
+    "file": "deathcore.png"
+  },
+  {
+    "genre": "Deep House",
+    "file": "deep-house.png"
+  },
+  {
+    "genre": "Delta Blues",
+    "file": "delta-blues.png"
+  },
+  {
+    "genre": "Detroit Techno",
+    "file": "detroit-techno.png"
+  },
+  {
+    "genre": "Deutscher Hip-Hop",
+    "file": "deutscher-hip-hop.png"
+  },
+  {
+    "genre": "Dinner Party",
+    "file": "dinner-party.png"
+  },
+  {
+    "genre": "Disco",
+    "file": "disco.png"
+  },
+  {
+    "genre": "Disney",
+    "file": "disney.png"
+  },
+  {
+    "genre": "Diva",
+    "file": "diva.png"
+  },
+  {
+    "genre": "Dive Bar",
+    "file": "dive-bar.png"
+  },
+  {
+    "genre": "Djent",
+    "file": "djent.png"
+  },
+  {
+    "genre": "Doo-Wop",
+    "file": "doo-wop.png"
+  },
+  {
+    "genre": "Doom Metal",
+    "file": "doom-metal.png"
+  },
+  {
+    "genre": "Downtempo",
+    "file": "downtempo.png"
+  },
+  {
+    "genre": "Drone Metal",
+    "file": "drone-metal.png"
+  },
+  {
+    "genre": "Drum ’n’ Bass",
+    "file": "drum-n-bass.png"
+  },
+  {
+    "genre": "Dub",
+    "file": "dub.png"
+  },
+  {
+    "genre": "Dubstep",
+    "file": "dubstep.png"
+  },
+  {
+    "genre": "East African Dancehall",
+    "file": "east-african-dancehall.png"
+  },
+  {
+    "genre": "East African Taarab",
+    "file": "east-african-taarab.png"
+  },
+  {
+    "genre": "East Coast Hip-Hop",
+    "file": "east-coast-hip-hop.png"
+  },
+  {
+    "genre": "Easy Listening",
+    "file": "easy-listening.png"
+  },
+  {
+    "genre": "EDM",
+    "file": "edm.png"
+  },
+  {
+    "genre": "Egyptian Hits",
+    "file": "egyptian-hits.png"
+  },
+  {
+    "genre": "Egyptian Tarab",
+    "file": "egyptian-tarab.png"
+  },
+  {
+    "genre": "Electric Blues",
+    "file": "electric-blues.png"
+  },
+  {
+    "genre": "Electro-Funk",
+    "file": "electro-funk.png"
+  },
+  {
+    "genre": "Electroclash",
+    "file": "electroclash.png"
+  },
+  {
+    "genre": "Emo",
+    "file": "emo.png"
+  },
+  {
+    "genre": "Feminism",
+    "file": "feminism.png"
+  },
+  {
+    "genre": "Shoegaze and Dream Pop",
+    "file": "shoegaze-and-dream-pop.png"
+  },
+  {
+    "genre": "Soul Jazz",
+    "file": "soul-jazz.png"
+  },
+  {
+    "genre": "Ethio-Jazz",
+    "file": "ethio-jazz.png"
+  },
+  {
+    "genre": "Ethnic Israeli",
+    "file": "ethnic-israeli.png"
+  },
+  {
+    "genre": "Eurodance",
+    "file": "eurodance.png"
+  },
+  {
+    "genre": "Exotica",
+    "file": "exotica.png"
+  },
+  {
+    "genre": "Film Score",
+    "file": "film-score.png"
+  },
+  {
+    "genre": "First Nations Australia Country",
+    "file": "first-nations-australia-country.png"
+  },
+  {
+    "genre": "Flamenco",
+    "file": "flamenco.png"
+  },
+  {
+    "genre": "Folk",
+    "file": "folk.png"
+  },
+  {
+    "genre": "Folk Metal",
+    "file": "folk-metal.png"
+  },
+  {
+    "genre": "Folk Punk",
+    "file": "folk-punk.png"
+  },
+  {
+    "genre": "Folk Rock",
+    "file": "folk-rock.png"
+  },
+  {
+    "genre": "Folktronica",
+    "file": "folktronica.png"
+  },
+  {
+    "genre": "Forró",
+    "file": "forro.png"
+  },
+  {
+    "genre": "Free Jazz",
+    "file": "free-jazz.png"
+  },
+  {
+    "genre": "Freestyle",
+    "file": "freestyle.png"
+  },
+  {
+    "genre": "French Afropop",
+    "file": "french-afropop.png"
+  },
+  {
+    "genre": "French Chanson",
+    "file": "french-chanson.png"
+  },
+  {
+    "genre": "French Jazz",
+    "file": "french-jazz.png"
+  },
+  {
+    "genre": "French Love Song",
+    "file": "french-love-song.png"
+  },
+  {
+    "genre": "French Lullaby",
+    "file": "french-lullaby.png"
+  },
+  {
+    "genre": "French Musicals",
+    "file": "french-musicals.png"
+  },
+  {
+    "genre": "French Reggae",
+    "file": "french-reggae.png"
+  },
+  {
+    "genre": "French Rock",
+    "file": "french-rock.png"
+  },
+  {
+    "genre": "French Synth-Pop",
+    "file": "french-synth-pop.png"
+  },
+  {
+    "genre": "French Touch",
+    "file": "french-touch.png"
+  },
+  {
+    "genre": "Freshening Up",
+    "file": "freshening-up.png"
+  },
+  {
+    "genre": "Funk",
+    "file": "funk.png"
+  },
+  {
+    "genre": "Funk Metal",
+    "file": "funk-metal.png"
+  },
+  {
+    "genre": "Fújì",
+    "file": "fuji.png"
+  },
+  {
+    "genre": "Gangsta Rap",
+    "file": "gangsta-rap.png"
+  },
+  {
+    "genre": "Garage Rock",
+    "file": "garage-rock.png"
+  },
+  {
+    "genre": "Genge",
+    "file": "genge.png"
+  },
+  {
+    "genre": "Glam",
+    "file": "glam.png"
+  },
+  {
+    "genre": "Gospel",
+    "file": "gospel.png"
+  },
+  {
+    "genre": "Goth",
+    "file": "goth.png"
+  },
+  {
+    "genre": "Gqom",
+    "file": "gqom.png"
+  },
+  {
+    "genre": "Gratitude",
+    "file": "gratitude.png"
+  },
+  {
+    "genre": "Great American Songbook",
+    "file": "great-american-songbook.png"
+  },
+  {
+    "genre": "Grime",
+    "file": "grime.png"
+  },
+  {
+    "genre": "Grindcore",
+    "file": "grindcore.png"
+  },
+  {
+    "genre": "Groove Metal",
+    "file": "groove-metal.png"
+  },
+  {
+    "genre": "Grupera",
+    "file": "grupera.png"
+  },
+  {
+    "genre": "Guitar Greats",
+    "file": "guitar-greats.png"
+  },
+  {
+    "genre": "Hair Metal Ballad",
+    "file": "hair-metal-ballad.png"
+  },
+  {
+    "genre": "Hair Metal",
+    "file": "hair-metal.png"
+  },
+  {
+    "genre": "Hamburger Schule",
+    "file": "hamburger-schule.png"
+  },
+  {
+    "genre": "Hard Bop",
+    "file": "hard-bop.png"
+  },
+  {
+    "genre": "Hardcore",
+    "file": "hardcore.png"
+  },
+  {
+    "genre": "Harlem Stride",
+    "file": "harlem-stride.png"
+  },
+  {
+    "genre": "Heartland Rock",
+    "file": "heartland-rock.png"
+  },
+  {
+    "genre": "Highlife",
+    "file": "highlife.png"
+  },
+  {
+    "genre": "Hill Country Blues",
+    "file": "hill-country-blues.png"
+  },
+  {
+    "genre": "Hindi Hip-Hop",
+    "file": "hindi-hip-hop.png"
+  },
+  {
+    "genre": "Hindi Pop",
+    "file": "hindi-pop.png"
+  },
+  {
+    "genre": "Hip-Hop and Jazz Fusion",
+    "file": "hip-hop-and-jazz-fusion.png"
+  },
+  {
+    "genre": "Hip-Hop en Español",
+    "file": "hip-hop-en-espanol.png"
+  },
+  {
+    "genre": "Hip-Hop in Russian",
+    "file": "hip-hop-in-russian.png"
+  },
+  {
+    "genre": "Hiplife",
+    "file": "hiplife.png"
+  },
+  {
+    "genre": "Hong Kong Hip-Hop",
+    "file": "hong-kong-hip-hop.png"
+  },
+  {
+    "genre": "Honky-Tonk",
+    "file": "honky-tonk.png"
+  },
+  {
+    "genre": "Horror Score",
+    "file": "horror-score.png"
+  },
+  {
+    "genre": "Houston Hip-Hop",
+    "file": "houston-hip-hop.png"
+  },
+  {
+    "genre": "Hyphy",
+    "file": "hyphy.png"
+  },
+  {
+    "genre": "Ibiza Chill",
+    "file": "ibiza-chill.png"
+  },
+  {
+    "genre": "Ibiza EDM",
+    "file": "ibiza-edm.png"
+  },
+  {
+    "genre": "Ibiza",
+    "file": "ibiza.png"
+  },
+  {
+    "genre": "Ibiza Minimal",
+    "file": "ibiza-minimal.png"
+  },
+  {
+    "genre": "Ibiza Techno",
+    "file": "ibiza-techno.png"
+  },
+  {
+    "genre": "IDM",
+    "file": "idm.png"
+  },
+  {
+    "genre": "Indie Dance",
+    "file": "indie-dance.png"
+  },
+  {
+    "genre": "Indie Pop",
+    "file": "indie-pop.png"
+  },
+  {
+    "genre": "Indie R&B",
+    "file": "indie-r-b.png"
+  },
+  {
+    "genre": "Indie Rock",
+    "file": "indie-rock.png"
+  },
+  {
+    "genre": "Indo-Jazz",
+    "file": "indo-jazz.png"
+  },
+  {
+    "genre": "Industrial",
+    "file": "industrial.png"
+  },
+  {
+    "genre": "Inspirational Songs",
+    "file": "inspirational-songs.png"
+  },
+  {
+    "genre": "Instrumental Metal",
+    "file": "instrumental-metal.png"
+  },
+  {
+    "genre": "International Jet Set",
+    "file": "international-jet-set.png"
+  },
+  {
+    "genre": "Iraqi",
+    "file": "iraqi.png"
+  },
+  {
+    "genre": "Israeli Alternative",
+    "file": "israeli-alternative.png"
+  },
+  {
+    "genre": "Israeli Hip-Hop",
+    "file": "israeli-hip-hop.png"
+  },
+  {
+    "genre": "Israeli Pop",
+    "file": "israeli-pop.png"
+  },
+  {
+    "genre": "Israeli Rock",
+    "file": "israeli-rock.png"
+  },
+  {
+    "genre": "Italo Disco",
+    "file": "italo-disco.png"
+  },
+  {
+    "genre": "J-Jazz",
+    "file": "j-jazz.png"
+  },
+  {
+    "genre": "Jalsat Khaleejiya",
+    "file": "jalsat-khaleejiya.png"
+  },
+  {
+    "genre": "Jam Band",
+    "file": "jam-band.png"
+  },
+  {
+    "genre": "James Bond",
+    "file": "james-bond.png"
+  },
+  {
+    "genre": "Jangle Pop",
+    "file": "jangle-pop.png"
+  },
+  {
+    "genre": "Japanese Kids’ Songs",
+    "file": "japanese-kids-songs.png"
+  },
+  {
+    "genre": "Japanese Metal",
+    "file": "japanese-metal.png"
+  },
+  {
+    "genre": "Japanese Punk",
+    "file": "japanese-punk.png"
+  },
+  {
+    "genre": "Jazz Alto Saxophone",
+    "file": "jazz-alto-saxophone.png"
+  },
+  {
+    "genre": "Jazz Bass",
+    "file": "jazz-bass.png"
+  },
+  {
+    "genre": "Jazz Clarinet",
+    "file": "jazz-clarinet.png"
+  },
+  {
+    "genre": "Jazz Drum",
+    "file": "jazz-drum.png"
+  },
+  {
+    "genre": "Jazz Flamenco Fusion",
+    "file": "jazz-flamenco-fusion.png"
+  },
+  {
+    "genre": "Jazz Funk",
+    "file": "jazz-funk.png"
+  },
+  {
+    "genre": "Jazz Guitar",
+    "file": "jazz-guitar.png"
+  },
+  {
+    "genre": "Jazz in 1959",
+    "file": "jazz-in-1959.png"
+  },
+  {
+    "genre": "Jazz Piano",
+    "file": "jazz-piano.png"
+  },
+  {
+    "genre": "Jazz Rock",
+    "file": "jazz-rock.png"
+  },
+  {
+    "genre": "Jazz Soprano Saxophone",
+    "file": "jazz-soprano-saxophone.png"
+  },
+  {
+    "genre": "Jazz Standards",
+    "file": "jazz-standards.png"
+  },
+  {
+    "genre": "Jazz Tenor Saxophone",
+    "file": "jazz-tenor-saxophone.png"
+  },
+  {
+    "genre": "Jazz Trombone",
+    "file": "jazz-trombone.png"
+  },
+  {
+    "genre": "Jazz Trumpet",
+    "file": "jazz-trumpet.png"
+  },
+  {
+    "genre": "Jazz Vocal",
+    "file": "jazz-vocal.png"
+  },
+  {
+    "genre": "Jazztronica",
+    "file": "jazztronica.png"
+  },
+  {
+    "genre": "Jump Blues",
+    "file": "jump-blues.png"
+  },
+  {
+    "genre": "K-Pop",
+    "file": "k-pop.png"
+  },
+  {
+    "genre": "Karaoke",
+    "file": "karaoke.png"
+  },
+  {
+    "genre": "Khaleeji Love Songs",
+    "file": "khaleeji-love-songs.png"
+  },
+  {
+    "genre": "Khaleeji Pop",
+    "file": "khaleeji-pop.png"
+  },
+  {
+    "genre": "Korean Hip-Hop",
+    "file": "korean-hip-hop.png"
+  },
+  {
+    "genre": "Krautrock",
+    "file": "krautrock.png"
+  },
+  {
+    "genre": "Kurdish",
+    "file": "kurdish.png"
+  },
+  {
+    "genre": "Kwaito",
+    "file": "kwaito.png"
+  },
+  {
+    "genre": "Kwela",
+    "file": "kwela.png"
+  },
+  {
+    "genre": "Latin Classical",
+    "file": "latin-classical.png"
+  },
+  {
+    "genre": "Latin Jazz",
+    "file": "latin-jazz.png"
+  },
+  {
+    "genre": "Laurel Canyon",
+    "file": "laurel-canyon.png"
+  },
+  {
+    "genre": "Lebanese Pop",
+    "file": "lebanese-pop.png"
+  },
+  {
+    "genre": "Love Song in Russian",
+    "file": "love-song-in-russian.png"
+  },
+  {
+    "genre": "Love Songs",
+    "file": "love-songs.png"
+  },
+  {
+    "genre": "Lovers Rock",
+    "file": "lovers-rock.png"
+  },
+  {
+    "genre": "Lullaby",
+    "file": "lullaby.png"
+  },
+  {
+    "genre": "M-BASE",
+    "file": "m-base.png"
+  },
+  {
+    "genre": "Madchester",
+    "file": "madchester.png"
+  },
+  {
+    "genre": "Manouche Jazz",
+    "file": "manouche-jazz.png"
+  },
+  {
+    "genre": "Marchinhas",
+    "file": "marchinhas.png"
+  },
+  {
+    "genre": "Marseille Hip-Hop",
+    "file": "marseille-hip-hop.png"
+  },
+  {
+    "genre": "Maskandi",
+    "file": "maskandi.png"
+  },
+  {
+    "genre": "Mbalax",
+    "file": "mbalax.png"
+  },
+  {
+    "genre": "Mbaqanga",
+    "file": "mbaqanga.png"
+  },
+  {
+    "genre": "Mbube",
+    "file": "mbube.png"
+  },
+  {
+    "genre": "Memphis Hip-Hop",
+    "file": "memphis-hip-hop.png"
+  },
+  {
+    "genre": "Merengue",
+    "file": "merengue.png"
+  },
+  {
+    "genre": "Metal Español",
+    "file": "metal-espanol.png"
+  },
+  {
+    "genre": "Metal Latino",
+    "file": "metal-latino.png"
+  },
+  {
+    "genre": "Metalcore",
+    "file": "metalcore.png"
+  },
+  {
+    "genre": "Microhouse",
+    "file": "microhouse.png"
+  },
+  {
+    "genre": "Mod Dance Party",
+    "file": "mod-dance-party.png"
+  },
+  {
+    "genre": "Modern Broadway",
+    "file": "modern-broadway.png"
+  },
+  {
+    "genre": "Modern City Pop",
+    "file": "modern-city-pop.png"
+  },
+  {
+    "genre": "Modern Movie Musical",
+    "file": "modern-movie-musical.png"
+  },
+  {
+    "genre": "Modern Singer-Songwriter",
+    "file": "modern-singer-songwriter.png"
+  },
+  {
+    "genre": "Motown",
+    "file": "motown.png"
+  },
+  {
+    "genre": "Movie Hits",
+    "file": "movie-hits.png"
+  },
+  {
+    "genre": "MPB",
+    "file": "mpb.png"
+  },
+  {
+    "genre": "Mzansi Gospel",
+    "file": "mzansi-gospel.png"
+  },
+  {
+    "genre": "Mzansi Hip-Hop",
+    "file": "mzansi-hip-hop.png"
+  },
+  {
+    "genre": "Mzansi House",
+    "file": "mzansi-house.png"
+  },
+  {
+    "genre": "Mzansi Jazz",
+    "file": "mzansi-jazz.png"
+  },
+  {
+    "genre": "Mzansi Soul",
+    "file": "mzansi-soul.png"
+  },
+  {
+    "genre": "NDW Party",
+    "file": "ndw-party.png"
+  },
+  {
+    "genre": "Neo-Bop",
+    "file": "neo-bop.png"
+  },
+  {
+    "genre": "Neo-Soul",
+    "file": "neo-soul.png"
+  },
+  {
+    "genre": "New Age",
+    "file": "new-age.png"
+  },
+  {
+    "genre": "New Classical",
+    "file": "new-classical.png"
+  },
+  {
+    "genre": "New Jack Swing",
+    "file": "new-jack-swing.png"
+  },
+  {
+    "genre": "New Orleans and Dixieland",
+    "file": "new-orleans-and-dixieland.png"
+  },
+  {
+    "genre": "New Orleans Brass Band",
+    "file": "new-orleans-brass-band.png"
+  },
+  {
+    "genre": "New Orleans Hip-Hop",
+    "file": "new-orleans-hip-hop-1.png"
+  },
+  {
+    "genre": "New Orleans Hip-Hop",
+    "file": "new-orleans-hip-hop-2.png"
+  },
+  {
+    "genre": "New Orleans R&B",
+    "file": "new-orleans-r-b.png"
+  },
+  {
+    "genre": "New Romantic",
+    "file": "new-romantic.png"
+  },
+  {
+    "genre": "New Wave",
+    "file": "new-wave.png"
+  },
+  {
+    "genre": "New Wave of British Heavy Metal",
+    "file": "new-wave-of-british-heavy-metal.png"
+  },
+  {
+    "genre": "New York Drill",
+    "file": "new-york-drill.png"
+  },
+  {
+    "genre": "New Zealand Hip-Hop",
+    "file": "new-zealand-hip-hop.png"
+  },
+  {
+    "genre": "Nigerian Afropop",
+    "file": "nigerian-afropop.png"
+  },
+  {
+    "genre": "Nigerian Gospel",
+    "file": "nigerian-gospel.png"
+  },
+  {
+    "genre": "Nigerian Hip-Hop",
+    "file": "nigerian-hip-hop.png"
+  },
+  {
+    "genre": "Nigerian Wedding",
+    "file": "nigerian-wedding.png"
+  },
+  {
+    "genre": "Northern Soul",
+    "file": "northern-soul.png"
+  },
+  {
+    "genre": "Novelas",
+    "file": "novelas.png"
+  },
+  {
+    "genre": "Nu Cumbia",
+    "file": "nu-cumbia.png"
+  },
+  {
+    "genre": "NYC Garage",
+    "file": "nyc-garage.png"
+  },
+  {
+    "genre": "Open Road Rockers",
+    "file": "open-road-rockers.png"
+  },
+  {
+    "genre": "Outlaw Country",
+    "file": "outlaw-country.png"
+  },
+  {
+    "genre": "Pagode",
+    "file": "pagode.png"
+  },
+  {
+    "genre": "Paisley Underground",
+    "file": "paisley-underground.png"
+  },
+  {
+    "genre": "Paris Hip-Hop",
+    "file": "paris-hip-hop.png"
+  },
+  {
+    "genre": "Partyschlager",
+    "file": "partyschlager.png"
+  },
+  {
+    "genre": "Peruvian Cumbia",
+    "file": "peruvian-cumbia.png"
+  },
+  {
+    "genre": "Philly Soul",
+    "file": "philly-soul.png"
+  },
+  {
+    "genre": "Piano",
+    "file": "piano.png"
+  },
+  {
+    "genre": "Polish Alternative",
+    "file": "polish-alternative.png"
+  },
+  {
+    "genre": "Polish Pop",
+    "file": "polish-pop.png"
+  },
+  {
+    "genre": "Polish Rock",
+    "file": "polish-rock.png"
+  },
+  {
+    "genre": "Pop en Español",
+    "file": "pop-en-espanol.png"
+  },
+  {
+    "genre": "Pop Italiano",
+    "file": "pop-italiano.png"
+  },
+  {
+    "genre": "Pop Punk",
+    "file": "pop-punk.png"
+  },
+  {
+    "genre": "Portuguese Rock",
+    "file": "portuguese-rock.png"
+  },
+  {
+    "genre": "Post-Bop",
+    "file": "post-bop.png"
+  },
+  {
+    "genre": "Post-Hardcore",
+    "file": "post-hardcore.png"
+  },
+  {
+    "genre": "Post-Industrial",
+    "file": "post-industrial.png"
+  },
+  {
+    "genre": "Post-Punk",
+    "file": "post-punk.png"
+  },
+  {
+    "genre": "Post-Rock",
+    "file": "post-rock.png"
+  },
+  {
+    "genre": "Power Ballads",
+    "file": "power-ballads.png"
+  },
+  {
+    "genre": "Power Metal",
+    "file": "power-metal.png"
+  },
+  {
+    "genre": "Power Pop",
+    "file": "power-pop.png"
+  },
+  {
+    "genre": "Pride",
+    "file": "pride.png"
+  },
+  {
+    "genre": "Pride Party",
+    "file": "pride-party.png"
+  },
+  {
+    "genre": "Prog Rock",
+    "file": "prog-rock.png"
+  },
+  {
+    "genre": "Progresivo en Español",
+    "file": "progresivo-en-espanol.png"
+  },
+  {
+    "genre": "Progressive House",
+    "file": "progressive-house.png"
+  },
+  {
+    "genre": "Progressive Metal",
+    "file": "progressive-metal.png"
+  },
+  {
+    "genre": "Psychedelic Jazz",
+    "file": "psychedelic-jazz.png"
+  },
+  {
+    "genre": "Psychedelic Pop",
+    "file": "psychedelic-pop.png"
+  },
+  {
+    "genre": "Psychedelic Rock",
+    "file": "psychedelic-rock.png"
+  },
+  {
+    "genre": "Psychobilly",
+    "file": "psychobilly.png"
+  },
+  {
+    "genre": "Punjabi",
+    "file": "punjabi.png"
+  },
+  {
+    "genre": "Punk en Español",
+    "file": "punk-en-espanol.png"
+  },
+  {
+    "genre": "Quiet Storm",
+    "file": "quiet-storm.png"
+  },
+  {
+    "genre": "Ragtime",
+    "file": "ragtime.png"
+  },
+  {
+    "genre": "Rancheras y Mariachi",
+    "file": "rancheras-y-mariachi.png"
+  },
+  {
+    "genre": "Red Dirt Country",
+    "file": "red-dirt-country.png"
+  },
+  {
+    "genre": "Reggaetón",
+    "file": "reggaeton.png"
+  },
+  {
+    "genre": "Riot Grrrl",
+    "file": "riot-grrrl.png"
+  },
+  {
+    "genre": "Roadhouse",
+    "file": "roadhouse.png"
+  },
+  {
+    "genre": "Rock Argentino",
+    "file": "rock-argentino.png"
+  },
+  {
+    "genre": "Rock en Español",
+    "file": "rock-en-espanol.png"
+  },
+  {
+    "genre": "Rockabilly",
+    "file": "rockabilly.png"
+  },
+  {
+    "genre": "Rocksteady",
+    "file": "rocksteady.png"
+  },
+  {
+    "genre": "Romantic Piano Music",
+    "file": "romantic-piano-music.png"
+  },
+  {
+    "genre": "Roots Reggae",
+    "file": "roots-reggae-1.png"
+  },
+  {
+    "genre": "Roots Reggae",
+    "file": "roots-reggae-2.png"
+  },
+  {
+    "genre": "Roots Rock",
+    "file": "roots-rock.png"
+  },
+  {
+    "genre": "Russian Movie Hits",
+    "file": "russian-movie-hits.png"
+  },
+  {
+    "genre": "Samba de Enredo",
+    "file": "samba-de-enredo.png"
+  },
+  {
+    "genre": "Samba",
+    "file": "samba.png"
+  },
+  {
+    "genre": "Samba Rock",
+    "file": "samba-rock.png"
+  },
+  {
+    "genre": "Sanremo",
+    "file": "sanremo.png"
+  },
+  {
+    "genre": "Schlager",
+    "file": "schlager.png"
+  },
+  {
+    "genre": "Screamo",
+    "file": "screamo.png"
+  },
+  {
+    "genre": "Shibuya-Kei",
+    "file": "shibuya-kei.png"
+  },
+  {
+    "genre": "Sing-Along",
+    "file": "sing-along.png"
+  },
+  {
+    "genre": "Singer-songwriters en Español",
+    "file": "singer-songwriters-en-espanol.png"
+  },
+  {
+    "genre": "Ska en Español",
+    "file": "ska-en-espanol.png"
+  },
+  {
+    "genre": "Ska Revival",
+    "file": "ska-revival.png"
+  },
+  {
+    "genre": "Ska-Punk",
+    "file": "ska-punk.png"
+  },
+  {
+    "genre": "Slow Jam",
+    "file": "slow-jam.png"
+  },
+  {
+    "genre": "Sludge",
+    "file": "sludge.png"
+  },
+  {
+    "genre": "Smooth Jazz",
+    "file": "smooth-jazz.png"
+  },
+  {
+    "genre": "Soca",
+    "file": "soca.png"
+  },
+  {
+    "genre": "SoCal Punk",
+    "file": "socal-punk.png"
+  },
+  {
+    "genre": "Son Mexicano",
+    "file": "son-mexicano.png"
+  },
+  {
+    "genre": "Soul Singers",
+    "file": "soul-singers.png"
+  },
+  {
+    "genre": "South African Alternative",
+    "file": "south-african-alternative.png"
+  },
+  {
+    "genre": "South African Pop",
+    "file": "south-african-pop.png"
+  },
+  {
+    "genre": "South Asian Wedding",
+    "file": "south-asian-wedding.png"
+  },
+  {
+    "genre": "Southern Gospel",
+    "file": "southern-gospel.png"
+  },
+  {
+    "genre": "Southern Hip-Hop",
+    "file": "southern-hip-hop.png"
+  },
+  {
+    "genre": "Southern Rap",
+    "file": "southern-rap.png"
+  },
+  {
+    "genre": "Southern Rock",
+    "file": "southern-rock.png"
+  },
+  {
+    "genre": "Spiritual Jazz",
+    "file": "spiritual-jazz.png"
+  },
+  {
+    "genre": "St. Patrick's Day",
+    "file": "st-patrick-s-day.png"
+  },
+  {
+    "genre": "Stoner Rock",
+    "file": "stoner-rock.png"
+  },
+  {
+    "genre": "String Quartets",
+    "file": "string-quartets.png"
+  },
+  {
+    "genre": "Summertime",
+    "file": "summertime.png"
+  },
+  {
+    "genre": "Sunshine Pop",
+    "file": "sunshine-pop.png"
+  },
+  {
+    "genre": "Surf",
+    "file": "surf.png"
+  },
+  {
+    "genre": "Symphonic Black Metal",
+    "file": "symphonic-black-metal.png"
+  },
+  {
+    "genre": "Synth-Pop",
+    "file": "synth-pop.png"
+  },
+  {
+    "genre": "Tarab",
+    "file": "tarab.png"
+  },
+  {
+    "genre": "Technical Death Metal",
+    "file": "technical-death-metal.png"
+  },
+  {
+    "genre": "Techno",
+    "file": "techno.png"
+  },
+  {
+    "genre": "Techno Kayo",
+    "file": "techno-kayo.png"
+  },
+  {
+    "genre": "Teen Pop",
+    "file": "teen-pop.png"
+  },
+  {
+    "genre": "The Wrecking Crew",
+    "file": "the-wrecking-crew.png"
+  },
+  {
+    "genre": "Third Stream",
+    "file": "third-stream.png"
+  },
+  {
+    "genre": "Thrash Metal",
+    "file": "thrash-metal.png"
+  },
+  {
+    "genre": "Thriller Score",
+    "file": "thriller-score.png"
+  },
+  {
+    "genre": "Traditional Chinese New Year",
+    "file": "traditional-chinese-new-year.png"
+  },
+  {
+    "genre": "Trance",
+    "file": "trance.png"
+  },
+  {
+    "genre": "Trap",
+    "file": "trap.png"
+  },
+  {
+    "genre": "Trip-Hop",
+    "file": "trip-hop.png"
+  },
+  {
+    "genre": "Tropical House",
+    "file": "tropical-house.png"
+  },
+  {
+    "genre": "Tropicália",
+    "file": "tropicalia.png"
+  },
+  {
+    "genre": "Turkish Film Scores",
+    "file": "turkish-film-scores.png"
+  },
+  {
+    "genre": "Turkish Funk",
+    "file": "turkish-funk.png"
+  },
+  {
+    "genre": "Turkish Fusion",
+    "file": "turkish-fusion.png"
+  },
+  {
+    "genre": "Turkish Jazz",
+    "file": "turkish-jazz.png"
+  },
+  {
+    "genre": "Turkish Love Song",
+    "file": "turkish-love-song.png"
+  },
+  {
+    "genre": "Turkish Pop",
+    "file": "turkish-pop.png"
+  },
+  {
+    "genre": "Turkish Rap",
+    "file": "turkish-rap.png"
+  },
+  {
+    "genre": "Turkish Rock",
+    "file": "turkish-rock.png"
+  },
+  {
+    "genre": "UK Bass",
+    "file": "uk-bass.png"
+  },
+  {
+    "genre": "UK Funky",
+    "file": "uk-funky.png"
+  },
+  {
+    "genre": "UK Garage",
+    "file": "uk-garage.png"
+  },
+  {
+    "genre": "UK Guitar Anthems",
+    "file": "uk-guitar-anthems.png"
+  },
+  {
+    "genre": "Underground Disco",
+    "file": "underground-disco.png"
+  },
+  {
+    "genre": "Underground Hip-Hop",
+    "file": "underground-hip-hop.png"
+  },
+  {
+    "genre": "Urban Cowboy",
+    "file": "urban-cowboy.png"
+  },
+  {
+    "genre": "Vallenato",
+    "file": "vallenato.png"
+  },
+  {
+    "genre": "Variété Française",
+    "file": "variete-francaise.png"
+  },
+  {
+    "genre": "Viking Metal",
+    "file": "viking-metal.png"
+  },
+  {
+    "genre": "Vocaloid",
+    "file": "vocaloid.png"
+  },
+  {
+    "genre": "Volksmusik",
+    "file": "volksmusik.png"
+  },
+  {
+    "genre": "West Coast Hip-Hop",
+    "file": "west-coast-hip-hop.png"
+  },
+  {
+    "genre": "West Coast Jazz",
+    "file": "west-coast-jazz.png"
+  },
+  {
+    "genre": "Worship",
+    "file": "worship.png"
+  },
+  {
+    "genre": "Yacht Rock",
+    "file": "yacht-rock.png"
+  }
+]

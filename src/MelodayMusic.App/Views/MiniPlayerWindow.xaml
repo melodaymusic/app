@@ -1,0 +1,67 @@
+<Window
+    x:Class="MelodayMusic.Views.MiniPlayerWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers">
+    <Window.SystemBackdrop>
+        <MicaBackdrop Kind="Base" />
+    </Window.SystemBackdrop>
+
+    <Grid x:Name="Root" RequestedTheme="Dark" Background="#FF101014">
+        <controls:ArtworkImage x:Name="Art" DecodeSize="480" PlaceholderIcon="Music" ArtworkCornerRadius="0"
+                               SourcePath="{x:Bind Player.ArtworkPath, Mode=OneWay}" />
+        <Rectangle IsHitTestVisible="False">
+            <Rectangle.Fill>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                    <GradientStop Offset="0" Color="#66000000" />
+                    <GradientStop Offset="0.18" Color="#00000000" />
+                    <GradientStop Offset="0.45" Color="#00000000" />
+                    <GradientStop Offset="1" Color="#E6000000" />
+                </LinearGradientBrush>
+            </Rectangle.Fill>
+        </Rectangle>
+
+        <Grid x:Name="TitleBar" Height="40" VerticalAlignment="Top" Background="Transparent" Padding="8,0,0,0">
+            <Button x:Name="ExpandButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonS}" Height="{StaticResource MelodayButtonS}"
+                    HorizontalAlignment="Left" Click="OnExpand" ToolTipService.ToolTip="Back to the full window" AutomationProperties.Name="Back to the full window">
+                <controls:LucideIcon Icon="Maximize2" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" />
+            </Button>
+        </Grid>
+
+        <StackPanel VerticalAlignment="Bottom" Padding="16,0,16,12" Spacing="2">
+            <TextBlock Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource MelodayBodyStrongText}" TextTrimming="CharacterEllipsis" />
+            <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextTrimming="CharacterEllipsis" />
+            <Slider x:Name="Progress" Minimum="0" StepFrequency="1" IsThumbToolTipEnabled="False" Margin="0,4,0,0"
+                    Maximum="{x:Bind Player.DurationSeconds, Mode=OneWay}" Value="{x:Bind Player.PositionSeconds, Mode=TwoWay}"
+                    IsEnabled="{x:Bind Player.CanSeek, Mode=OneWay}" AutomationProperties.Name="Playback position" />
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <ToggleButton Style="{StaticResource MelodayIconToggleStyle}" IsChecked="{x:Bind Player.IsShuffled, Mode=TwoWay}"
+                              IsEnabled="{x:Bind Player.CanShuffle, Mode=OneWay}" ToolTipService.ToolTip="{x:Bind Player.ShuffleLabel, Mode=OneWay}" AutomationProperties.Name="Shuffle">
+                    <controls:LucideIcon Icon="Shuffle" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                </ToggleButton>
+                <Button Grid.Column="1" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonL}" Height="{StaticResource MelodayButtonL}"
+                        Command="{x:Bind Player.PreviousCommand}" IsEnabled="{x:Bind Player.HasPrevious, Mode=OneWay}" AutomationProperties.Name="Previous">
+                    <controls:LucideIcon Icon="SkipBack" IsFilled="True" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" />
+                </Button>
+                <Button Grid.Column="2" Style="{StaticResource MelodayPlayButtonStyle}" Width="{StaticResource MelodayButtonXL}" Height="{StaticResource MelodayButtonXL}" Margin="12,0"
+                        Command="{x:Bind Player.PlayPauseCommand}" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                        AutomationProperties.Name="{x:Bind Player.PlayPauseLabel, Mode=OneWay}" AutomationProperties.AutomationId="MiniPlayPause">
+                    <controls:LucideIcon Icon="{x:Bind Player.PlayPauseIcon, Mode=OneWay}" IsFilled="True" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" />
+                </Button>
+                <Button Grid.Column="3" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonL}" Height="{StaticResource MelodayButtonL}"
+                        Command="{x:Bind Player.NextCommand}" IsEnabled="{x:Bind Player.HasNext, Mode=OneWay}" AutomationProperties.Name="Next">
+                    <controls:LucideIcon Icon="SkipForward" IsFilled="True" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" />
+                </Button>
+                <controls:RepeatToggle Grid.Column="4" HorizontalAlignment="Right" IconSize="{StaticResource MelodayIconM}" />
+            </Grid>
+        </StackPanel>
+    </Grid>
+</Window>

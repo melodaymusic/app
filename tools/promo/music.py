@@ -1,10 +1,10 @@
-"""Synthesizes the music bed for the Meloday Music promo: an original 112 BPM track, 24 bars, built from
+"""Synthesizes the music bed for the Meloday Music promo: an original 112 BPM track, 34 bars, built from
 synthesized drums, bass, pads, plucks and a lead (nothing sampled, nothing borrowed).
 
     python music.py <out.wav>
 
-Sections (bars): 0-1 intro, 2-3 pulse, 4-7 groove, 8-13 arp and clap, 14-15 riser, 16-19 drop,
-20-21 breakdown, 22-23 return, 24+ final chord and tail. The video's cuts are timed to these.
+Sections (bars): 0-1 intro, 2-3 pulse, 4-6 groove, 7-15 arp, 16-17 riser, 18-21 drop, 22-25 arp,
+26-27 riser, 28-31 drop, 32-33 return, 34+ final chord and tail. The video's cuts are timed to these.
 """
 import sys
 import numpy as np
@@ -15,7 +15,9 @@ SR = 48000
 BPM = 112.0
 BEAT = 60.0 / BPM
 BAR = 4 * BEAT
-BARS = 24
+BARS = 34
+RISERS = (16, 26)
+DROPS = (18, 28)
 TAIL = 4.5
 N = int((BARS * BAR + TAIL) * SR)
 rng = np.random.default_rng(7)
@@ -218,12 +220,14 @@ def bar_t(b, beat=0.0):
 def section(b):
     if b < 2: return "intro"
     if b < 4: return "pulse"
-    if b < 8: return "groove"
-    if b < 14: return "arp"
-    if b < 16: return "riser"
-    if b < 20: return "drop"
-    if b < 22: return "breakdown"
-    if b < 24: return "return"
+    if b < 7: return "groove"
+    if b < 16: return "arp"
+    if b < 18: return "riser"
+    if b < 22: return "drop"
+    if b < 26: return "arp"
+    if b < 28: return "riser"
+    if b < 32: return "drop"
+    if b < 34: return "return"
     return "end"
 
 
@@ -245,15 +249,15 @@ for b in range(BARS):
         for beat in range(4):
             place(kick_bus, K, bar_t(b, beat), 1.0)
     elif sec == "riser":
-        for beat in range(4 if b == 14 else 3):
+        for beat in range(4 if b in RISERS else 3):
             place(kick_bus, K, bar_t(b, beat), 0.95)
-    if b == 16:
+    if b in DROPS:
         place(kick_bus, K, bar_t(b, 0), 1.2)
 
     # Hats and claps
     if sec in ("groove", "arp", "drop", "return", "riser"):
         for step in range(8):
-            if sec == "groove" and b < 6 and step % 2 == 0:
+            if sec == "groove" and b < 5 and step % 2 == 0:
                 continue
             on_off = step % 2 == 1
             place(drum_bus, OHAT if (on_off and sec in ("drop",) and step in (3, 7)) else HAT, bar_t(b, step * 0.5), 0.8 if on_off else 0.45, 0.25 * (1 if step % 4 < 2 else -1))
@@ -305,22 +309,23 @@ for b in range(BARS):
             place(lead_bus, lead(midi(m), ln * BEAT * 1.15), bar_t(b, beat), 0.55)
 
 # Risers, impacts, crashes
-place(fx_bus, noise_riser(2 * BAR), bar_t(14), 0.8)
-place(fx_bus, impact(), bar_t(16), 1.0)
-place(fx_bus, crash(), bar_t(16), 0.9)
-place(fx_bus, crash(0.7), bar_t(22), 0.7)
+for r, d in zip(RISERS, DROPS):
+    place(fx_bus, noise_riser(2 * BAR), bar_t(r), 0.8)
+    place(fx_bus, impact(), bar_t(d), 1.0)
+    place(fx_bus, crash(), bar_t(d), 0.9)
+place(fx_bus, crash(0.7), bar_t(32), 0.7)
 place(fx_bus, impact(0.9), bar_t(0) + 0.0, 0.6)
 place(fx_bus, noise_riser(BAR * 0.9), bar_t(1, 0.4), 0.35)
 # Scene-change whooshes (short noise swells ending on the bar lines the video cuts at)
-for b in (4, 8, 12, 20):
+for b in (4, 7, 10, 12, 14, 22, 24, 26, 32):
     place(fx_bus, noise_riser(0.9), bar_t(b) - 0.9, 0.28)
 # The last chord: everything rings out
 final_notes = [53, 57, 60, 64, 69, 72]
-place(pad_bus, pad_chord(final_notes, TAIL + 1.0), bar_t(24) - 0.02, 1.3, 0)
-place(bass_bus, sub(midi(41), 3.0), bar_t(24), 0.8)
-place(kick_bus, K, bar_t(24), 1.0)
+place(pad_bus, pad_chord(final_notes, TAIL + 1.0), bar_t(BARS) - 0.02, 1.3, 0)
+place(bass_bus, sub(midi(41), 3.0), bar_t(BARS), 0.8)
+place(kick_bus, K, bar_t(BARS), 1.0)
 for i, m in enumerate([77, 81, 84, 88]):
-    place(pluck_bus, pluck(midi(m), 1.4, bright=5000), bar_t(24) + i * 0.09, 0.4, -0.5 + i * 0.33)
+    place(pluck_bus, pluck(midi(m), 1.4, bright=5000), bar_t(BARS) + i * 0.09, 0.4, -0.5 + i * 0.33)
 
 # ------------------------------------------------------------------ mixing
 
@@ -328,8 +333,8 @@ for i, m in enumerate([77, 81, 84, 88]):
 kick_env = np.zeros(N)
 for b in range(BARS + 1):
     sec = section(b)
-    beats = {"pulse": (0, 2), "groove": range(4), "arp": range(4), "drop": range(4), "return": range(4), "riser": range(4 if b == 14 else 3)}.get(sec, ())
-    if b == 24:
+    beats = {"pulse": (0, 2), "groove": range(4), "arp": range(4), "drop": range(4), "return": range(4), "riser": range(4 if b in RISERS else 3)}.get(sec, ())
+    if b == BARS:
         beats = (0,)
     for beat in beats:
         i = int(bar_t(b, beat) * SR)

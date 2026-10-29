@@ -1,0 +1,69 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.MediaRowControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:models="using:MelodayMusic.Core.Models"
+    xmlns:vm="using:MelodayMusic.ViewModels"
+    IsTabStop="False">
+
+    <UserControl.Resources>
+        <DataTemplate x:Key="TileTemplate" x:DataType="models:MediaItem">
+            <controls:MediaTile Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="BillboardTemplate" x:DataType="vm:BoardItem">
+            <controls:Billboard Board="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="EditorialTemplate" x:DataType="vm:BoardItem">
+            <controls:Billboard Board="{x:Bind}" IsEditorial="True" />
+        </DataTemplate>
+        <DataTemplate x:Key="ColourBoardTemplate" x:DataType="models:MediaItem">
+            <controls:ColourBoard Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="SquareBoardTemplate" x:DataType="models:MediaItem">
+            <controls:SquareBoard Item="{x:Bind}" />
+        </DataTemplate>
+        <DataTemplate x:Key="ChartColumnTemplate" x:DataType="vm:ChartColumn">
+            <controls:ChartColumnView Column="{x:Bind}" />
+        </DataTemplate>
+    </UserControl.Resources>
+
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <controls:SectionHeader x:Name="SectionHead" VerticalAlignment="Bottom" />
+
+        <Grid Grid.Row="1">
+        <ListView x:Name="List"
+                  SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnItemClick"
+                  ContainerContentChanging="OnContainerContentChanging" controls:QueueDrag.IsSource="True"
+                  ScrollViewer.HorizontalScrollMode="Enabled"
+                  ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                  ScrollViewer.VerticalScrollMode="Disabled"
+                  ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                  ScrollViewer.IsHorizontalRailEnabled="True"
+                  ItemContainerStyle="{StaticResource MelodayRowTileItemStyle}" ItemTemplate="{StaticResource TileTemplate}"
+                  Margin="-6,0,-6,0" Padding="0">
+            <ListView.Resources>
+                <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="MelodayRadiusTileHost" />
+            </ListView.Resources>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" Background="Transparent" controls:ScrollBehavior.PassVerticalWheel="True" />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+        </ListView>
+        <Button x:Name="LeftButton" Style="{StaticResource MelodayRowArrowButtonStyle}" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Opacity="0" IsHitTestVisible="False" Click="OnScrollLeft" AutomationProperties.Name="Scroll left">
+            <controls:LucideIcon Icon="ChevronLeft" StrokeWidth="1.75" Width="{StaticResource MelodayIconXL}" Height="{StaticResource MelodayIconXL}" />
+        </Button>
+        <Button x:Name="RightButton" Style="{StaticResource MelodayRowArrowButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Opacity="0" IsHitTestVisible="False" Click="OnScrollRight" AutomationProperties.Name="Scroll right">
+            <controls:LucideIcon Icon="ChevronRight" StrokeWidth="1.75" Width="{StaticResource MelodayIconXL}" Height="{StaticResource MelodayIconXL}" />
+        </Button>
+        </Grid>
+    </Grid>
+</UserControl>

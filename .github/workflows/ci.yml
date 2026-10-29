@@ -2,7 +2,7 @@ name: Build and test
 
 on:
   push:
-    branches: [main, feature/niche-mixes]
+    branches: [main]
   pull_request:
     branches: [main]
 
@@ -24,10 +24,10 @@ jobs:
           dotnet-version: 9.0.x
 
       - name: Restore
-        run: dotnet restore HumeMusic.sln -p:Platform=x64
+        run: dotnet restore MelodayMusic.sln -p:Platform=x64
 
       - name: Build
-        run: dotnet build HumeMusic.sln -c Release -p:Platform=x64 -p:WindowsAppSDKSelfContained=false -p:SelfContained=false -p:UseSharedCompilation=false -m:1 --no-restore
+        run: dotnet build MelodayMusic.sln -c Release -p:Platform=x64 -p:WindowsAppSDKSelfContained=false -p:SelfContained=false -p:UseSharedCompilation=false -m:1 --no-restore
 
       - name: Test
-        run: dotnet test tests/HumeMusic.Core.Tests/HumeMusic.Core.Tests.csproj -c Release --no-build --no-restore --logger "console;verbosity=normal"
+        run: dotnet test MelodayMusic.sln -c Release -p:Platform=x64 --no-build --no-restore

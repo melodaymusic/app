@@ -1,0 +1,118 @@
+<Page
+    x:Class="MelodayMusic.Views.PulseGuidePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:vm="using:MelodayMusic.ViewModels"
+    Background="Transparent">
+
+    <ScrollViewer x:Name="PageScroll" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySpaceGroup}">
+            <controls:PageHeader Title="Pulse Guide"
+                                 Subtitle="Your station, on your time. Pulse finishes the current song before a scheduled program begins.">
+                <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnAdd" AutomationProperties.AutomationId="PulseGuideAddButton">
+                    <controls:IconLabel Icon="Plus" Text="Add to Pulse" />
+                </Button>
+            </controls:PageHeader>
+
+            <Grid ColumnSpacing="{StaticResource MelodaySpaceS}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Button x:Name="PreviousButton" Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnPreviousWeek" AutomationProperties.Name="Previous week">
+                    <controls:LucideIcon Icon="ChevronLeft" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" />
+                </Button>
+                <Button Grid.Column="1" Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnToday">Today</Button>
+                <StackPanel Grid.Column="2" VerticalAlignment="Center" Margin="8,0,0,0">
+                    <TextBlock x:Name="DayHeading" Style="{StaticResource MelodayTitleText}" />
+                    <TextBlock x:Name="DaySubheading" Style="{StaticResource MelodaySecondaryText}" />
+                </StackPanel>
+                <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="{StaticResource MelodaySpaceS}">
+                    <CalendarDatePicker x:Name="DayPicker" DateChanged="OnDateChanged" PlaceholderText="Choose a day" AutomationProperties.Name="Go to the week of a day" />
+                    <Button Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnNextWeek" AutomationProperties.Name="Next week">
+                        <controls:LucideIcon Icon="ChevronRight" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel Style="{StaticResource MelodayGroupStyle}">
+                <Grid Margin="4,0,0,0">
+                    <TextBlock Text="PROGRAMS" Style="{StaticResource MelodayOverlineText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" VerticalAlignment="Center" />
+                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource MelodaySpaceS}" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnEarlier" AutomationProperties.Name="Earlier in the day" ToolTipService.ToolTip="Earlier">
+                            <controls:LucideIcon Icon="ArrowLeft" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" />
+                        </Button>
+                        <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnNow">Now</Button>
+                        <Button Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnLater" AutomationProperties.Name="Later in the day" ToolTipService.ToolTip="Later">
+                            <controls:LucideIcon Icon="ArrowLeft" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" RenderTransformOrigin="0.5,0.5">
+                                <controls:LucideIcon.RenderTransform>
+                                    <ScaleTransform ScaleX="-1" />
+                                </controls:LucideIcon.RenderTransform>
+                            </controls:LucideIcon>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+                <ItemsControl ItemsSource="{x:Bind Legend}" Margin="4,0,0,0">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <VariableSizedWrapGrid Orientation="Horizontal" ItemWidth="280" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:PulseGuideLegendItem">
+                            <Grid ColumnSpacing="10" Margin="0,0,16,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Width="12" Height="12" CornerRadius="4" Background="{x:Bind Brush}" VerticalAlignment="Top" Margin="0,4,0,0" />
+                                <StackPanel Grid.Column="1" Spacing="1">
+                                    <TextBlock Text="{x:Bind Title}" Style="{StaticResource MelodayBodyStrongText}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{x:Bind Description}" Style="{StaticResource MelodaySecondaryText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}"
+                                               TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <Border Style="{StaticResource MelodayGroupListStyle}" Background="{ThemeResource MelodayGlassFillBrush}" Padding="0,0,0,0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="92" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel>
+                            <Border Height="32" />
+                            <ItemsControl ItemsSource="{x:Bind Days}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="vm:PulseGuideDay">
+                                        <Grid Height="92" Padding="16,0,0,0" Opacity="{x:Bind Opacity}">
+                                            <StackPanel VerticalAlignment="Center" Spacing="2">
+                                                <TextBlock Text="{x:Bind Name}" Style="{StaticResource MelodayBodyStrongText}" />
+                                                <TextBlock Text="{x:Bind DateText}" Style="{StaticResource MelodaySecondaryText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" />
+                                                <TextBlock Text="TODAY" Style="{StaticResource MelodayOverlineText}" Foreground="{ThemeResource MelodayAccentTextBrush}"
+                                                           Visibility="{x:Bind TodayVisibility}" />
+                                            </StackPanel>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <ScrollViewer x:Name="TimelineScroll" Grid.Column="1"
+                                      HorizontalScrollMode="Enabled" HorizontalScrollBarVisibility="Auto"
+                                      VerticalScrollMode="Disabled" VerticalScrollBarVisibility="Disabled">
+                            <Canvas x:Name="Timeline" Background="Transparent" Margin="0,0,0,18" PointerWheelChanged="OnTimelineWheel" />
+                        </ScrollViewer>
+                    </Grid>
+                </Border>
+            </StackPanel>
+
+            <TextBlock Text="Built-in Pulse programs stay in the guide wherever you leave room. Your programs take priority and never overlap."
+                       Style="{StaticResource MelodaySecondaryText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" TextWrapping="Wrap" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

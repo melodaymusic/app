@@ -1,0 +1,51 @@
+<Page
+    x:Class="MelodayMusic.Views.RadioPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:vm="using:MelodayMusic.ViewModels"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                  AutomationProperties.AutomationId="PageScroller">
+        <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySectionSpacing}">
+            <controls:PageHeader Title="Radio">
+                <controls:ActionWrapPanel Spacing="8">
+                    <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnPulseGuide" AutomationProperties.AutomationId="PulseGuideButton">
+                        <controls:IconLabel Icon="Calendar" Text="Pulse Guide" />
+                    </Button>
+                    <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnArtistMixBuilder" AutomationProperties.AutomationId="ArtistMixBuilderButton">
+                        <controls:IconLabel Icon="Users" Text="Artist Radio Builder" />
+                    </Button>
+                    <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnAlbumMixBuilder" AutomationProperties.AutomationId="AlbumMixBuilderButton">
+                        <controls:IconLabel Icon="Disc3" Text="Album Radio Builder" />
+                    </Button>
+                    <Button x:Name="SonicAdventureButton" Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnSonicAdventure"
+                            AutomationProperties.AutomationId="SonicAdventureButton">
+                        <controls:IconLabel Icon="Route" Text="Sonic Adventure" />
+                    </Button>
+                </controls:ActionWrapPanel>
+            </controls:PageHeader>
+
+            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                    ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                    IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                                    EmptyText="There are no stations for this library yet." EmptyIcon="Radio" RetryRequested="OnRetry" />
+
+            <ItemsControl ItemsSource="{x:Bind ViewModel.Rows}" IsTabStop="False">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Spacing="{StaticResource MelodaySectionSpacing}" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:MediaRow">
+                        <controls:MediaRowControl Header="{x:Bind Title}" Subheader="{x:Bind Subtitle}" ItemsSource="{x:Bind Items}" SeeAllCommand="{x:Bind SeeAllCommand}"
+                                                  CardStyle="{x:Bind CardStyle}" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

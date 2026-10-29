@@ -1,0 +1,71 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.DetailHeader"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers"
+    IsTabStop="False">
+
+    <Grid x:Name="Root" Padding="{StaticResource MelodayDetailHeaderPadding}" ColumnSpacing="{StaticResource MelodayDetailHeaderSpacing}">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+
+        <Border x:Name="ShadowReceiver" Grid.ColumnSpan="2" Margin="-40,-40,-40,-40" IsHitTestVisible="False" />
+
+        <controls:ArtworkImage x:Name="Cover" DecodeSize="480" ArtworkCornerRadius="{StaticResource MelodayRadiusLargeArtwork}" VerticalAlignment="Top" />
+        <Border x:Name="LiveCoverHost" HorizontalAlignment="Left" VerticalAlignment="Top" CornerRadius="{StaticResource MelodayRadiusLargeArtwork}"
+                Width="{Binding Width, ElementName=Cover}" Height="{Binding Height, ElementName=Cover}" Visibility="Collapsed" IsHitTestVisible="False" />
+
+        <StackPanel x:Name="TextPanel" Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
+            <TextBlock x:Name="OverlineText" Style="{StaticResource MelodaySecondaryText}" Visibility="Collapsed" />
+            <TextBlock x:Name="TitleText" Style="{StaticResource MelodayHeroText}" TextWrapping="WrapWholeWords" MaxLines="2"
+                       TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True" AutomationProperties.HeadingLevel="1" />
+            <controls:ArtistLogo x:Name="LogoImage" HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="Collapsed"
+                                 AutomationProperties.AutomationId="ItemLogo" />
+            <HyperlinkButton x:Name="SubtitleLink" Style="{StaticResource MelodayHeroSubtitleLinkStyle}" Click="OnSubtitleClick" Visibility="Collapsed">
+                <TextBlock x:Name="SubtitleText" TextTrimming="CharacterEllipsis" />
+            </HyperlinkButton>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <controls:LucideIcon x:Name="SmartIcon" Icon="Sparkles" Margin="0,0,6,0" Width="{StaticResource MelodayIconXS}" Height="{StaticResource MelodayIconXS}" VerticalAlignment="Center" Visibility="Collapsed"
+                                     Foreground="{ThemeResource MelodayTextSecondaryBrush}" />
+                <TextBlock x:Name="MetaLine" Grid.Column="1" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" Visibility="Collapsed" />
+            </Grid>
+            <TextBlock x:Name="UntastedNote" Text="Not used for your taste profile" Style="{StaticResource MelodaySecondaryText}" Visibility="Collapsed"
+                       ToolTipService.ToolTip="Listening to this won't shape what Meloday recommends. Turn it back on from the More menu." />
+
+            <StackPanel x:Name="Notes" Margin="0,8,0,0" MaxWidth="720" HorizontalAlignment="Left" Visibility="Collapsed" helpers:Anim.Appear="True">
+                <TextBlock x:Name="NotesText" Style="{StaticResource MelodayParagraphText}" MaxLines="2" TextTrimming="WordEllipsis"
+                           IsTextTrimmedChanged="OnNotesTrimmedChanged" helpers:TextOverflow.Reveal="False" />
+                <HyperlinkButton x:Name="NotesToggle" Style="{StaticResource MelodayMoreLinkStyle}" Content="More" Click="OnToggleNotes" Visibility="Collapsed" />
+            </StackPanel>
+
+            <controls:ActionWrapPanel x:Name="Actions" Spacing="8" Margin="0,16,0,0">
+                <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnPlay" AutomationProperties.Name="Play" AutomationProperties.AutomationId="DetailPlayButton">
+                    <controls:IconLabel Icon="Play" IsFilled="True" Text="Play" />
+                </Button>
+                <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnShuffle" AutomationProperties.Name="Shuffle">
+                    <controls:IconLabel Icon="Shuffle" Text="Shuffle" />
+                </Button>
+                <controls:PinButton x:Name="Pin" />
+                <ContentPresenter x:Name="ExtraActionsHost" VerticalAlignment="Center" />
+                <Button x:Name="AddToPlaylistButton" Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnAddToPlaylist" Visibility="Collapsed"
+                        ToolTipService.ToolTip="Add to Playlist" AutomationProperties.Name="Add to Playlist" AutomationProperties.AutomationId="AddToPlaylistButton">
+                    <controls:LucideIcon Icon="ListPlus" />
+                </Button>
+                <Button x:Name="MoreButton" Style="{StaticResource MelodayRoundActionButtonStyle}" Click="OnMore"
+                        ToolTipService.ToolTip="More options" AutomationProperties.Name="More options">
+                    <controls:LucideIcon Icon="Ellipsis" />
+                </Button>
+                <controls:StarRating x:Name="HeaderRating" StarSize="{StaticResource MelodayStarM}" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed" />
+            </controls:ActionWrapPanel>
+            <TextBlock x:Name="StatusLine" Style="{StaticResource MelodaySecondaryText}" Margin="0,8,0,0" TextWrapping="WrapWholeWords" MaxWidth="720"
+                       HorizontalAlignment="Left" Visibility="Collapsed" />
+        </StackPanel>
+    </Grid>
+</UserControl>

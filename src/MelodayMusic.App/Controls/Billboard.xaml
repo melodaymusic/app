@@ -1,0 +1,71 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.Billboard"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    IsTabStop="False">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+    <Border x:Name="Plate" Grid.RowSpan="2" Background="{ThemeResource MelodayHoverOverlayBrush}" />
+    <StackPanel x:Name="Heading" Visibility="Collapsed" Spacing="1" Margin="2,0,2,10" IsHitTestVisible="False">
+        <TextBlock x:Name="HeadingEyebrow" Style="{StaticResource MelodayOverlineText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" />
+        <TextBlock x:Name="HeadingTitle" Style="{StaticResource MelodayHeadlineText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+        <TextBlock x:Name="HeadingSubtitle" Style="{StaticResource MelodaySecondaryText}" FontSize="{StaticResource MelodayFontBodyLarge}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
+        <TextBlock x:Name="HeadingDetail" Style="{StaticResource MelodaySecondaryText}" FontSize="{StaticResource MelodayFontCaption}" TextTrimming="CharacterEllipsis" MaxLines="1" />
+    </StackPanel>
+    <Grid x:Name="Root" Grid.Row="1" Width="{StaticResource MelodayBillboardWidth}" Height="{StaticResource MelodayBillboardHeight}" CornerRadius="{StaticResource MelodayRadiusBoard}" Background="Transparent"
+          PointerEntered="OnPointerEntered" PointerExited="OnPointerExited" PointerCanceled="OnPointerExited"
+          ContextRequested="OnContextRequested">
+        <controls:ArtworkImage x:Name="Art" DecodeSize="720" ArtworkCornerRadius="{StaticResource MelodayRadiusBoard}" PlaceholderIcon="MicVocal" />
+        <Border x:Name="Shade" IsHitTestVisible="False" CornerRadius="{StaticResource MelodayRadiusBoard}">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0.5,0" EndPoint="0.5,1">
+                    <GradientStop Color="#33000000" Offset="0" />
+                    <GradientStop Color="#00000000" Offset="0.3" />
+                    <GradientStop Color="#8C000000" Offset="0.68" />
+                    <GradientStop Color="#E0000000" Offset="1" />
+                </LinearGradientBrush>
+            </Border.Background>
+        </Border>
+
+        <Grid x:Name="Feature" Visibility="Collapsed" IsHitTestVisible="False">
+            <Border x:Name="Glow" CornerRadius="{StaticResource MelodayRadiusBoard}" Background="{ThemeResource MelodayPlaceholderBrush}" />
+            <controls:GlowBreath x:Name="Breath" HorizontalAlignment="Left" VerticalAlignment="Top" />
+            <Grid x:Name="ShadowHost" HorizontalAlignment="Center" VerticalAlignment="Center" />
+            <controls:ArtworkImage x:Name="CentreArt" HorizontalAlignment="Center" VerticalAlignment="Center" DecodeSize="480" PlaceholderIcon="Disc3" />
+        </Grid>
+
+        <Border x:Name="Badge" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="14,14,0,0" Padding="10,0"
+                Height="{StaticResource MelodayBadgeHeight}" CornerRadius="{StaticResource MelodayRadiusBadge}"
+                Background="#8C1A1A1D" BorderBrush="#33FFFFFF" BorderThickness="1" IsHitTestVisible="False">
+            <TextBlock x:Name="BadgeText" Style="{StaticResource MelodayBoardEyebrowText}" FontSize="{StaticResource MelodayFontBadge}"
+                       CharacterSpacing="80" Foreground="#FFFFFF" VerticalAlignment="Center" />
+        </Border>
+
+        <Grid x:Name="Editorial" VerticalAlignment="Bottom" Margin="16,0,72,16" ColumnSpacing="14" Visibility="Collapsed" IsHitTestVisible="False">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <controls:ArtworkImage x:Name="Cover" Width="64" Height="64" DecodeSize="128" ArtworkCornerRadius="{StaticResource MelodayRadiusArtwork}" PlaceholderIcon="Disc3" />
+            <TextBlock x:Name="EditorialLine" Grid.Column="1" Style="{StaticResource MelodayBoardSubtitleText}" Foreground="#FFFFFF" VerticalAlignment="Bottom"
+                       TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+        </Grid>
+
+        <StackPanel x:Name="Story" VerticalAlignment="Bottom" Padding="20,0,72,16" Spacing="1" IsHitTestVisible="False">
+            <TextBlock x:Name="TitleText" Style="{StaticResource MelodayBoardTitleText}" FontSize="{StaticResource MelodayFontBillboardTitle}" />
+            <TextBlock x:Name="SubtitleText" Style="{StaticResource MelodayBoardSubtitleText}" />
+            <TextBlock x:Name="DetailText" Style="{StaticResource MelodayBoardDetailText}" Margin="0,2,0,0" />
+        </StackPanel>
+        <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource MelodayOverlayButtonStyle}"
+                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,16,16" IsTabStop="False"
+                ToolTipService.ToolTip="Play" AutomationProperties.Name="Play" Click="OnPlayClick">
+            <controls:LucideIcon Icon="Play" IsFilled="True" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" Margin="2,0,0,0" />
+        </Button>
+    </Grid>
+    </Grid>
+</UserControl>

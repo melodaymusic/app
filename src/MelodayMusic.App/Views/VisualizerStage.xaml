@@ -1,0 +1,48 @@
+<UserControl
+    x:Class="MelodayMusic.Views.VisualizerStage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    IsTabStop="True"
+    Visibility="Collapsed">
+
+    <Grid x:Name="Root" PointerMoved="OnActivity" PointerPressed="OnActivity" KeyDown="OnKeyDown">
+        <controls:VisualizerView x:Name="View" />
+
+        <Grid x:Name="Chrome" Opacity="0" IsHitTestVisible="False">
+            <Border VerticalAlignment="Top" Height="170" IsHitTestVisible="False">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#99000000" Offset="0" />
+                        <GradientStop Color="#00000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <Border VerticalAlignment="Bottom" Height="170" IsHitTestVisible="False">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#00000000" Offset="0" />
+                        <GradientStop Color="#99000000" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+            </Border>
+            <StackPanel VerticalAlignment="Top" HorizontalAlignment="Left" Margin="56,44,56,0" Spacing="2" IsHitTestVisible="False">
+                <TextBlock Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource MelodayTitleText}" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,44" Spacing="14">
+                <controls:VisualizerButton Width="{StaticResource MelodayButtonL}" Height="{StaticResource MelodayButtonL}" IconSize="{StaticResource MelodayIconL}" />
+                <Button Style="{StaticResource MelodayPlayButtonStyle}" Width="{StaticResource MelodayButtonXXL}" Height="{StaticResource MelodayButtonXXL}"
+                        Command="{x:Bind Player.PlayPauseCommand}" IsEnabled="{x:Bind Player.HasTrack, Mode=OneWay}"
+                        ToolTipService.ToolTip="{x:Bind Player.PlayPauseLabel, Mode=OneWay}" AutomationProperties.Name="{x:Bind Player.PlayPauseLabel, Mode=OneWay}"
+                        AutomationProperties.AutomationId="StagePlayPause">
+                    <controls:LucideIcon Icon="{x:Bind Player.PlayPauseIcon, Mode=OneWay}" IsFilled="True" Width="{StaticResource MelodayIconXXL}" Height="{StaticResource MelodayIconXXL}" />
+                </Button>
+                <Button Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonL}" Height="{StaticResource MelodayButtonL}" Click="OnExit"
+                        ToolTipService.ToolTip="Leave full screen (Esc)" AutomationProperties.Name="Leave full screen" AutomationProperties.AutomationId="StageExit">
+                    <controls:LucideIcon Icon="Minimize2" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" />
+                </Button>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

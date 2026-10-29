@@ -1,0 +1,50 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.MediaTile"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    IsTabStop="False">
+
+    <Grid x:Name="Root" RowSpacing="2" Background="Transparent"
+          PointerEntered="OnPointerEntered" PointerExited="OnPointerExited" PointerCanceled="OnPointerExited"
+          ContextRequested="OnContextRequested">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        <Border x:Name="Plate" Grid.RowSpan="3" Background="{ThemeResource MelodayHoverOverlayBrush}" />
+
+        <controls:AspectBox>
+        <Grid x:Name="ArtHost" SizeChanged="OnArtSizeChanged">
+            <controls:ArtworkImage x:Name="Art" />
+            <Grid x:Name="StationArt" x:Load="False" CornerRadius="{StaticResource MelodayRadiusArtwork}">
+                <controls:MotionArtwork x:Name="StationField" />
+                <controls:CoverLabels x:Name="StationLabels" />
+                <controls:CoverSymbolLayer x:Name="StationSymbol" />
+            </Grid>
+            <controls:MixCover x:Name="MixArt" x:Load="False" />
+            <TextBlock x:Name="ChartRankText" Style="{StaticResource MelodayHeroText}" FontSize="36" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,-8" Visibility="Collapsed" IsHitTestVisible="False"/>
+            <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource MelodayOverlayButtonStyle}"
+                    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10"
+                    IsTabStop="False" ToolTipService.ToolTip="Play" AutomationProperties.Name="Play"
+                    Click="OnPlayClick">
+                <controls:LucideIcon Icon="Play" IsFilled="True" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" Margin="2,0,0,0" />
+            </Button>
+        </Grid>
+        </controls:AspectBox>
+
+        <TextBlock x:Name="TitleText" Grid.Row="1" Margin="0,12,0,0" Style="{StaticResource MelodayBodyStrongText}"
+                   TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+        <Grid x:Name="SubtitleRow" Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <controls:LucideIcon x:Name="SmartIcon" x:Load="False" Icon="Sparkles" Width="{StaticResource MelodayIconXS}" Height="{StaticResource MelodayIconXS}" Margin="0,3,4,0" VerticalAlignment="Top"
+                                 Foreground="{ThemeResource MelodayTextSecondaryBrush}" />
+            <TextBlock x:Name="SubtitleText" Grid.Column="1" Style="{StaticResource MelodaySecondaryText}"
+                       TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,30 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.PageStateView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers"
+    IsTabStop="False">
+
+    <Grid>
+        <controls:SkeletonView x:Name="Skeleton" Visibility="Collapsed" VerticalAlignment="Top" helpers:Anim.Appear="True" />
+        <ProgressRing x:Name="Spinner" IsActive="False" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,48" />
+
+        <StackPanel x:Name="ErrorPanel" Visibility="Collapsed" Spacing="12" MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,48"
+                    helpers:Anim.Appear="True">
+            <controls:LucideIcon Icon="WifiOff" Width="{StaticResource MelodayIconDisplay}" Height="{StaticResource MelodayIconDisplay}" Foreground="{ThemeResource MelodayTextSecondaryBrush}" HorizontalAlignment="Center" />
+            <TextBlock Text="Couldn't Load" Style="{StaticResource MelodaySectionText}" HorizontalAlignment="Center" />
+            <TextBlock x:Name="ErrorText" Style="{StaticResource MelodayParagraphText}" TextAlignment="Center" />
+            <Button x:Name="RetryButton" Style="{StaticResource MelodaySecondaryButtonStyle}" HorizontalAlignment="Center" Margin="0,4,0,0" Click="OnRetryClick">
+                <controls:IconLabel Icon="RefreshCw" Text="Try Again" />
+            </Button>
+        </StackPanel>
+
+        <StackPanel x:Name="EmptyPanel" Visibility="Collapsed" Spacing="12" MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,48"
+                    helpers:Anim.Appear="True">
+            <controls:LucideIcon x:Name="EmptyIconGlyph" Icon="Music" Width="{StaticResource MelodayIconDisplay}" Height="{StaticResource MelodayIconDisplay}" Foreground="{ThemeResource MelodayTextSecondaryBrush}" HorizontalAlignment="Center" />
+            <TextBlock x:Name="EmptyTitleBlock" Style="{StaticResource MelodaySectionText}" HorizontalAlignment="Center" TextAlignment="Center" Visibility="Collapsed" />
+            <TextBlock x:Name="EmptyTextBlock" Style="{StaticResource MelodayParagraphText}" TextAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,40 @@
+<UserControl
+    x:Class="MelodayMusic.Controls.ChipTabs"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    IsTabStop="False">
+
+    <Grid x:Name="Host">
+        <Border x:Name="PillIndicator" HorizontalAlignment="Left" VerticalAlignment="Top" Opacity="0" IsHitTestVisible="False"
+                Background="{ThemeResource MelodayChipSelectedBrush}" CornerRadius="{StaticResource MelodayRadiusChip}" />
+        <ListView x:Name="List" SelectionMode="Single" ItemContainerStyle="{StaticResource MelodayChipItemStyle}"
+                  ScrollViewer.HorizontalScrollMode="Enabled" ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                  ScrollViewer.VerticalScrollMode="Disabled" SelectionChanged="OnSelectionChanged">
+            <ListView.Resources>
+                <ResourceDictionary>
+                    <ResourceDictionary.MergedDictionaries>
+                        <ResourceDictionary Source="ms-appx:///Themes/NavList.xaml" />
+                    </ResourceDictionary.MergedDictionaries>
+                    <StaticResource x:Key="ListViewItemCornerRadius" ResourceKey="MelodayRadiusChip" />
+                    <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="Transparent" />
+                    <StaticResource x:Key="ListViewItemBackgroundSelectedPointerOver" ResourceKey="MelodayHoverOverlayBrush" />
+                    <StaticResource x:Key="ListViewItemBackgroundSelectedPressed" ResourceKey="MelodayPressedOverlayBrush" />
+                </ResourceDictionary>
+            </ListView.Resources>
+            <ListView.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <ItemsStackPanel Orientation="Horizontal" Background="Transparent" controls:ScrollBehavior.PassVerticalWheel="True" />
+                </ItemsPanelTemplate>
+            </ListView.ItemsPanel>
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="controls:IChipTab">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <controls:LucideIcon Icon="{x:Bind Icon}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                        <TextBlock Text="{x:Bind Label}" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
+    </Grid>
+</UserControl>

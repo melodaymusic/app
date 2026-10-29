@@ -1,0 +1,120 @@
+<Page
+    x:Class="MelodayMusic.Views.SearchPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers"
+    xmlns:models="using:MelodayMusic.Core.Models"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled">
+        <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySectionSpacing}">
+            <controls:PageHeader Title="Search" />
+
+            <StackPanel Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIf(ViewModel.ShowPrompt), Mode=OneWay}" Margin="0,24,0,0">
+                <controls:LucideIcon Icon="Search" Width="{StaticResource MelodayIconDisplay}" Height="{StaticResource MelodayIconDisplay}" HorizontalAlignment="Left" Foreground="{ThemeResource MelodayTextSecondaryBrush}" />
+                <TextBlock Text="Search your library" Style="{StaticResource MelodayParagraphText}" />
+                <TextBlock Text="Ctrl+F" Style="{StaticResource MelodaySecondaryText}" />
+            </StackPanel>
+
+            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                    ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
+                                    IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
+                                    EmptyText="No results. Try a different spelling or a shorter search." EmptyIcon="Search"
+                                    RetryRequested="OnRetry" />
+
+            <StackPanel Spacing="{StaticResource MelodaySectionSpacing}" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIf(ViewModel.HasResults), Mode=OneWay}">
+                <Grid x:Name="TopGrid" ColumnSpacing="32" RowSpacing="24">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition x:Name="TopColumn" Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel x:Name="TopPanel" Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfNotNull(ViewModel.TopResult), Mode=OneWay}">
+                        <controls:SectionHeader Title="Top Result" />
+                        <Button Style="{StaticResource MelodayTileButtonStyle}" HorizontalAlignment="Left" Margin="-10,-10,0,0"
+                                Click="OnTopResultClick" AutomationProperties.Name="Open top result">
+                            <controls:MediaTile Item="{x:Bind ViewModel.TopResult, Mode=OneWay}" TileSize="240" />
+                        </Button>
+                    </StackPanel>
+                    <StackPanel x:Name="SongsPanel" Grid.Column="1" Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Tracks.Count), Mode=OneWay}">
+                        <controls:SectionHeader Title="Tracks" />
+                        <ListView ItemsSource="{x:Bind ViewModel.Tracks}" Margin="-12,0" SelectionMode="Single"
+                                  controls:TrackListBehavior.IsEnabled="True" ItemContainerStyle="{StaticResource MelodayTrackItemStyle}"
+                                  ScrollViewer.VerticalScrollMode="Disabled" AutomationProperties.Name="Track results"
+                                  AutomationProperties.AutomationId="SearchTrackResults">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="models:Track">
+                                    <controls:TrackRow Track="{x:Bind}" />
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </Grid>
+
+                <StackPanel Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.SoundsLike.Count), Mode=OneWay}">
+                    <controls:SectionHeader Title="{x:Bind ViewModel.SoundsLikeTitle, Mode=OneWay}"
+                                            Subtitle="Songs the Meloday Engine hears this way, from their sound alone" />
+                    <ListView ItemsSource="{x:Bind ViewModel.SoundsLike}" Margin="-12,0" SelectionMode="Single"
+                              controls:TrackListBehavior.IsEnabled="True" ItemContainerStyle="{StaticResource MelodayTrackItemStyle}"
+                              ScrollViewer.VerticalScrollMode="Disabled" AutomationProperties.Name="Songs that sound like the search"
+                              AutomationProperties.AutomationId="SearchSoundsLikeResults">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:Track">
+                                <controls:TrackRow Track="{x:Bind}" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+
+                <controls:MediaRowControl Header="Artists" ItemsSource="{x:Bind ViewModel.Artists}"
+                                          helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Artists.Count), Mode=OneWay}" />
+                <controls:MediaRowControl Header="Albums" ItemsSource="{x:Bind ViewModel.Albums}"
+                                          helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Albums.Count), Mode=OneWay}" />
+                <controls:MediaRowControl Header="Playlists" ItemsSource="{x:Bind ViewModel.Playlists}"
+                                          helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Playlists.Count), Mode=OneWay}" />
+                <controls:MediaRowControl Header="Collections" ItemsSource="{x:Bind ViewModel.Collections}"
+                                          helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Collections.Count), Mode=OneWay}" />
+
+                <StackPanel Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.Tags.Count), Mode=OneWay}">
+                    <controls:SectionHeader Title="Genres, Moods and Styles" />
+                    <GridView ItemsSource="{x:Bind ViewModel.Tags}" SelectionMode="None" IsItemClickEnabled="True" ItemClick="OnTagClick"
+                              ItemContainerStyle="{StaticResource MelodayTileItemStyle}" Margin="-10,0" ScrollViewer.VerticalScrollMode="Disabled"
+                              controls:ResponsiveGrid.MinItemWidth="300" controls:ResponsiveGrid.FixedItemHeight="164">
+                        <GridView.ItemTemplate>
+                            <DataTemplate x:DataType="models:TagItem">
+                                <controls:CardSlot>
+                                    <controls:TagCard ShowKind="True" Item="{x:Bind}" />
+                                </controls:CardSlot>
+                            </DataTemplate>
+                        </GridView.ItemTemplate>
+                    </GridView>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+
+    <VisualStateManager.VisualStateGroups>
+        <VisualStateGroup>
+            <VisualState x:Name="WideState">
+                <VisualState.StateTriggers>
+                    <AdaptiveTrigger MinWindowWidth="1100" />
+                </VisualState.StateTriggers>
+            </VisualState>
+            <VisualState x:Name="NarrowState">
+                <VisualState.StateTriggers>
+                    <AdaptiveTrigger MinWindowWidth="0" />
+                </VisualState.StateTriggers>
+                <VisualState.Setters>
+                    <Setter Target="SongsPanel.(Grid.Column)" Value="0" />
+                    <Setter Target="SongsPanel.(Grid.Row)" Value="1" />
+                    <Setter Target="SongsPanel.(Grid.ColumnSpan)" Value="2" />
+                </VisualState.Setters>
+            </VisualState>
+        </VisualStateGroup>
+    </VisualStateManager.VisualStateGroups>
+</Page>

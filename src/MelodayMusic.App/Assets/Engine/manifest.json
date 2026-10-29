@@ -1,0 +1,24 @@
+{
+  "artifacts": {
+    "audio.onnx": {
+      "bytes": 285177239,
+      "sha256": "9533ed823c150fb13c91ecd7359aa3bff1aa6da7b44099a21ccea10c0adba2d6"
+    },
+    "text.onnx": {
+      "bytes": 501450229,
+      "sha256": "069e323e309284ae9aca6587b884afcd38f943fa1cba260823f4673b18f09a26"
+    },
+    "tokenizer.json": {
+      "bytes": 3558642,
+      "sha256": "2bb1a22cfbe25b8e5a232b7fc4d7fc5073923b45724a5f813b00811bb6620f66"
+    }
+  },
+  "checkpoint": "music_audioset_epoch_15_esc_90.14.pt",
+  "checkpoint_sha256": "fae3e9c087f2909c28a09dc31c8dfcdacbc42ba44c70e972b58c1bd1caf6dedd",
+  "created_at": "2026-07-11T20:01:37.698339+00:00",
+  "feature_revision": "clap-htsat-base-audio-window-v1",
+  "format_version": 1,
+  "model": "laion-clap-music-audioset",
+  "provider_version": "2026.7.11",
+  "vector_dimension": 512
+}

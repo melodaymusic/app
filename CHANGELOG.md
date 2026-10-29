@@ -1,58 +1,443 @@
 # Changelog
 
 Meloday Music follows semantic versioning. Until the public launch (1.0.0) the version stays below
-1.0: a run of work that adds or changes features raises the minor number (0.9.0 → 0.10.0), and a run
-of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in `Directory.Build.props`.
+1.0: a run of work that adds or changes features raises the minor number (0.9.0 to 0.10.0), and a run
+of fixes alone raises the patch number (0.9.0 to 0.9.1). The version is set in `Directory.Build.props`.
 
-## 0.57.0 — 2026-10-08
+## 0.96.0 - 2026-10-25
 
-- **One Edit Details window, as Plex has it.** Albums, artists, collections and playlists have a single "Edit Details…"
+- Meloday names follow what the mix mostly is: genres are counted by family first, so a mostly R&B Meloday is named for R&B rather than for one small tag.
+- Mixes and radios spread their artists: a fair share per artist in each batch, and no artist twice within three songs.
+- Everything Meloday picks rotates: songs and artists it has been suggesting a lot, across Meloday, mixes, radios, stations and Made by Meloday, are rested for a while instead of feeding on themselves.
+- New "Don't Use for My Taste Profile" option in the More menu of playlists, albums, mixes and stations: listening to them still counts in Plex and scrobbles, but doesn't shape your recommendations.
+- Made by Meloday playlists have photo covers: the first artist in the playlist who isn't already on another one's cover, with edge bars in a colour picked from the photo. The cover changes when the playlist does.
+- Artist pages open on just the artist's name or logo and the Play and Shuffle buttons, sitting just above the player bar; the details and tabs follow below. Names without a logo are larger. Releases from MusicBrainz sit in their own frame and scroll there, and hovering an artist's biography no longer shows all of it.
+- Genre pages show your top artist by the genre that put them there, and genre cards no longer cut names short ("Contemporary R&B", not "Contemp…").
+- Pointing at Meloday Music on the taskbar shows the playing artist's backdrop with the song, artist and progress, above the Previous, Play/Pause and Next buttons.
+- Switching Plex Home profile no longer crashes; the app saves and starts again as the new person. Quit from the tray now saves your queue and place like closing the window does.
+- Switch between the people in your Plex Home from Settings > Plex Account > Switch Profile, with their Plex Home PIN when they have one. Each person keeps their own history, ratings, taste, queue, pins and Meloday, and the Home shares the account's Plex Pass.
+- Two new visualizers on Now Playing: Pillars and Tiles.
+- Live station covers draw the Meloday wave moving across their colour, in place of the looping videos, and the app no longer carries those videos.
+- Switch the whole interface and every generated cover to the Nunito typeface, and redraw all generated covers with it.
+- Live station covers show "Live" beside the Meloday wave instead of the full name.
+- AutoMix stretches tempo with a phase vocoder instead of WSOLA, which removes the warble on held notes and chords, and adds a look-ahead limiter so overlapping songs don't distort.
+- Home has four new rails: On Repeat, Forgotten Favourites, New in Your Rotation and Your decade. A song shown on one rail isn't repeated on the next.
+- Home settings mark Meloday's own rails with the wave, list them first, and add the hubs from your Plex library switched off. Dragging a section near the edge of the list scrolls it.
+- Made for You has 20 mood playlists, 9 energy playlists and 18 moment playlists. Each rail has a See More button that opens the full set.
+- Artist pages show the artist's backdrop edge to edge, with the tabs just above the player bar, and the About section puts the portrait beside the biography.
+- The Pulse Guide starts at yesterday, dimmed, so today is near the top.
+- Trends cards grow to fit their text, charts use the Meloday palette, and the page shows artist photos and album covers. Fresh Finds and New in Your Rotation now check your whole listening history, so artists you played years ago no longer count as new. All Time no longer lists every artist as a fresh find.
+- Settings explains what Meloday uses from Plex, what the Meloday Engine adds and what Plex Pass adds as three layers, and the sound options comparison is rewritten around the one real choice: Meloday Engine or Plex Sonic Analysis.
+- New Genre Essentials artwork.
+- Settings > About has a Ko-fi link and a note on how the app was made.
+- Saved sign-ins and keys are encrypted under a new name, so anyone upgrading from an earlier build has to sign in and re-enter keys once.
+- Meloday Music is now licensed under the GPL-3.0.
+
+## 0.95.0 - 2026-10-21
+
+- Add the Pulse Guide: a simple, single-channel day schedule showing Pulse's built-in programmes and the listener's own programmes together.
+- Let listeners schedule a song, artist, album, playlist, genre, style, mood, decade or built-in Pulse programme once, every day, on weekdays, on weekends or on selected days. Programmes can last one song, a chosen number of songs or a chosen number of minutes.
+- Start scheduled music naturally after the song already on air, keep the running station intact across restarts, and re-plan only Pulse's future when the guide changes. Personal programmes take priority over built-in ones, while overlapping personal programmes are prevented in the editor.
+- Put Pulse scheduling one step from Radio and in eligible music-item menus, with editing and removal kept in the same compact schedule sheet.
+
+## 0.94.0 - 2026-10-19
+
+- Add a plain-language sound-options comparison in Settings > Audio Analysis. It compares Meloday Engine, Plex Sonic Analysis, having both available and using Meloday without sound results, including Plex Pass needs and work done on the listener's computer.
+- Show the difference through one familiar example: how Meloday Engine and Plex might connect "Blinding Lights" and "Take On Me", with a clear note that real matches depend on the listener's library.
+- Add a short guide for terms such as sound-aware, library details and local analysis, and make clear that AutoMix uses its own lighter transition analysis in every setup.
+
+## 0.93.2 - 2026-10-17
+
+- Cut Meloday's memory use. After a day running, it held about 2.3 GB, 900 MB of it in .NET objects.
+- Stop keeping the full analysis of every song's opening and ending in memory just to count coverage. That was about 73,000 beat grids and energy curves, roughly 150 MB. Only a song's tempo, key and which windows exist are kept now; the analyses stay on disk.
+- Stop keeping the whole library in the Plex response cache after each inventory sweep. Library-wide walks are no longer cached.
+- Let the Meloday Engine's audio model go after two minutes with nothing to analyse. Its weights and working memory run to hundreds of megabytes. It loads again in about a second when a new song needs analysing.
+- Ask .NET to compact its large-object heap when it fragments, which had wasted about 150 MB.
+
+## 0.93.1 - 2026-10-16
+
+- Make Bridge fill the whole gap. Between every two of your queued songs it lays five that lead from one to the next in even steps of sound: with the Meloday Engine, the songs nearest each point along the way; with Plex, evenly spaced songs of its sonic adventure. It works a couple of songs ahead and keeps going as the queue plays. Before, it added only one song, and only between songs that sounded far apart.
+
+## 0.93.0 - 2026-10-16
+
+- Add Bridge, a guest curator that smooths jumps in sound. A few songs ahead of what's playing, between two songs that sound far apart (further than one small step of a sonic adventure), it slips in the song from the middle of the sonic adventure between them. It never adds a song the queue already has or one rated one star, and keeps going as the queue plays. Turning it off takes out every song it added that hasn't played. It needs the Meloday Engine or Plex's sonic analysis.
+- Keep shapes on shape covers clear of the mix's name. The name's area now allows for two lines, the shapes may cover at most a tenth of it, and many more arrangements are tried before settling. Existing covers are redrawn.
+- Let the artist circles on large boards notice the pointer: circles near it drift out of its way, the nearer the firmer, and settle back once it has gone.
+
+## 0.92.0 - 2026-10-16
+
+- Make every mix endless, like a radio. Artist, genre, mood, niche and sound mixes and the Discovery Mix keep topping up as they run low. Artist mixes draw more from the artist's Plex station, or Meloday's own radio without one. Genre and mood mixes draw a fresh random helping, and sound niches a fresh pick of the songs ME hears carrying both words. Nothing the queue already has comes back.
+- Make Plex's sonic radio endless too. Each top-up is the music that sounds nearest the last song queued, so the radio drifts on. Other radios and live stations already never ended. Sonic Adventure still ends at the song it was asked to reach, and the Meloday and Made by Meloday playlists stay playlists.
+- Keep the artist circles on large boards near their own places. They wander a little round them and bounce lightly apart only when they touch.
+- Turn at most one shape on a moving shape cover. When both shapes are round, the second one grows and shrinks instead.
+
+## 0.91.0 - 2026-10-16
+
+- Show up to six artists on a mix's large colour board (Top Picks). The three new circles are three quarters the size of the smallest, at top right, left of centre and bottom right, with artists picked at random from the rest of the mix (the same all day). All six float and bounce off each other and the board's edges without overlapping. They only move while the board is on screen and animations are on.
+- Animate shape covers on large colour boards. Round shapes (those that sit within their own circle, like the flower or the star) slowly turn, once every minute or so in either direction. The other shapes slowly grow and shrink by a few per cent. Each moves at its own pace, under the still name, bars and M-wave. Shape covers are now also saved in layers for this.
+
+## 0.90.0 - 2026-10-16
+
+- Give each song in a mix a DJ mixer's kill EQ: lows, mids (split into the stereo centre, where a voice usually sits, and the sides, where most of the band is) and highs, each taken out by a fourth-order filter. At full it bypasses entirely, so songs play exactly as recorded outside a mix.
+- Add an EQ blend for beat-matched songs in keys that sit together. The next song's hi-hats come in first, then its mids, then its bass on the downbeat halfway as the outgoing song gives up its bass, then its mids, then its highs.
+- Layer voices where synced lyrics say where the singing is. If the outgoing song is still singing into a long instrumental intro, its voice rides over the next song's music, then fades. If the next song starts singing over the outgoing song's instrumental outro, its voice comes in first and the rest follows on the downbeat. Two voices never sing at once.
+- Cut instead of fade when tempos are too far apart to match and the outgoing song has a clear break (a downbeat where it drops at least 3 dB, usually where its outro starts), going straight into a next song that starts strong. Without such a break, the echo out stays.
+- These are EQ approximations of stems: a voice and the band are told apart by frequency and stereo position, not separated.
+
+## 0.89.1 - 2026-10-16
+
+- Redraw saved covers (pins, Home, Made by Meloday, mix shapes, artist Essentials, playlists) so their M-wave is white as well. Before, covers drawn earlier kept the old tinted symbol.
+- Replace the acrylic on the player bar and sidebar with a grain-free liquid glass. Both now show what's behind them blurred and slightly more saturated under a tint, without acrylic's noise texture. With transparency effects off in Windows they use a plain colour.
+
+## 0.89.0 - 2026-10-16
+
+- Add Genre Essentials to Made for You: up to 12 playlists of the best-known songs of the genres you play, each with its own illustrated cover. They are made each Monday for genres your library has that match one of 455 genre covers, the ones you play most first. Each holds the genre's 25 most popular songs in your library, using Plex's popularity score as artist Essentials do, each song once, at most two per artist and nothing rated one star. They open, play, save as a playlist and can be kept on Plex like Made by Meloday playlists.
+- Draw the M-wave symbol on every cover in white, or black where the cover under it is extremely light.
+- Let the sidebar's Library section open and close like Pinned (remembered). Give the sidebar the same liquid glass as the player bar, without the grainy look of the lighter glass it had.
+- Let card titles and subtitles (albums, playlists, artists, mixes) take two lines before they are cut short.
+- Ship the genre covers as 800-pixel JPEGs in `Assets/Genres` (about 23 MB), made from the sources in `design/covers/essentials` by `tools/covers/prepare-genre-covers.py`.
+
+## 0.88.0 - 2026-10-16
+
+- Use the three-circle cover only for mixes about artists: artist mixes, artist circles (two artists heard together) and radios built from chosen artists.
+- Give every other mix a shape cover in the style of Made by Meloday covers. This covers genre, mood, niche and sound mixes and the Discovery Mix. Each has a flat field in a stable palette colour, the edge bars, its name bottom left and the M-wave, with two different shapes from the new shape set laid on the field. Each shape is any size from about two fifths to three quarters of the cover and may be turned. No more than 40 per cent of a shape falls off the cover, and where the shapes overlap, no more than half of either is covered. They keep clear of the name where they can, and the larger shape sits behind.
+- Colour each shape cover's shapes in the two shades of the cover's colour family that the field isn't. The higher shape takes the edge bars' shade and the lower one the remaining shade, so it never runs into the bottom bar. The same mix always gets the same cover, on cards, Top Picks boards, pins and Home.
+- Move the shape SVGs into `src/MelodayMusic.App/Assets/Shapes`, where the app ships them.
+
+## 0.87.0 - 2026-10-16
+
+- Stop mixes repeating Made by Meloday's moods. A Plex mood mix that a Find Your Mood playlist already covers ("Melancholy" while Feeling Blue is made, "Upbeat" while Feel Good is) is no longer made. Every niche mix must be anchored in the music itself: a genre, an era, two artists, a song or the Meloday Engine's sounds. A mood or a time of day on its own is left to Made by Meloday.
+- Name niche mixes in at most two words about the music: what it is (its genre, else its era) and one thing about it ("Late Night R&B", "Melancholy Indie", "90s Indie", "Current Indie", "Indie Deep Cuts"). Build niches from two traits only, so the name says what is in the mix, and never show two niches with the same name.
+- Add sound niches in the Meloday Engine's own words, under Your Sounds on Made for You. ME pairs a mood it hears clearly with a genre or instrument it hears clearly in the same songs ("Dreamy Indie", "Melancholy Piano"), where that pairing runs through your recent listening across at least three artists. Up to four appear, each word used once. Their songs are the ones ME hears carrying both words most across the whole analysed library, each song once. The Taste Engine picks your favourites, with at most two per artist, ordered to flow, and a little different each day.
+
+## 0.86.0 - 2026-10-15
+
+- Treat copies of a song as one song in everything Meloday makes. A track on an album and on its deluxe edition, a remaster, a single or a compilation copy now counts once. This applies to mixes, radios and their top-ups, stations (live and Headliners), Sonic Adventure, sonic radio, Made by Meloday, Essentials, the Last.fm chart, Similar Tracks and Sounds Like. This week's Made by Meloday playlists also show each song once. Previously only the Meloday playlist did this; everything else only skipped the exact same file.
+- Never add a copy of a song the queue already has when a mix or radio tops up or follows the song playing. Look back 100 songs instead of 40. A live station in a small library may still rotate songs once it runs out.
+- Tell more songs apart when recognising copies. Titles that open with brackets keep all their words. Numbered parts ("Part 1", "Part 2") stay separate. Titles in non-Latin scripts are compared as written instead of being reduced to nothing. Shared titles such as "Intro" or "Interlude" only match on the same album or an edition of it.
+- Make active player toggles easy to see. Shuffle, repeat, the guest curator, the visualizer, lyrics, the queue, cast and the sleep timer now sit on a filled accent circle when on, as well as turning accent coloured with the dot.
+
+## 0.85.0 - 2026-10-15
+
+- Redraw the Bars visualizer as a row of 12 wide rounded pills. Each pill swells up and down from the middle with its part of the pitch, has a gradient from the light tone to the deep one, and drifts slightly off the centre line. Peak caps are removed.
+- Keep the guest curator on only for what was playing when it was chosen. Starting a playlist, album, mix, radio, Sonic Adventure or station turns it off, so their own order plays as made. Turn it on again to arrange the new queue. It stays on across a restart that resumes the same queue.
+- Make AutoMix meet halfway in tempo. Over the eight bars before a mix, the outgoing song eases to a shared tempo. The next song starts at that tempo, then eases back to its own after the outgoing song has gone. Each song changes by half the difference, keeping pitch, so songs up to about 21 per cent apart now beat-match (previously 8 per cent, from the incoming song alone). A mix called off on the way returns the song to its own tempo over about two seconds.
+
+## 0.84.0 - 2026-10-15
+
+- Remove achievements: levels and XP, milestone cards, weekly challenges, the Achievements page, the level in the sidebar, unlock notices and the Settings switch. Trends stays and keeps its listening log and Plex history.
+- Fix the app becoming sluggish after it starts and again every 15 minutes. The audio analysis inventory read tens of thousands of small cached files for a large library on the interface thread. It now reads them in the background and skips songs already known to be complete.
+- Stop recounting the Meloday Engine's profiles by rebuilding the library name for each of them.
+
+## 0.83.0 - 2026-10-15
+
+- Add Tag Moods in Plex to the album menu. It shows each song's moods in Plex, the moods the Meloday Engine would add and how sure it is, and changes nothing until confirmed. Remove Meloday's Moods takes them back out.
+- Add Moods in Plex to Settings > Audio Analysis: tag every analysed song in the background with progress and Stop, or remove every mood Meloday added.
+- Write only moods ME hears clearly (at most two per song), never change or remove a song's own moods, and lock the field so a Plex metadata refresh keeps them. Plexamp and other Plex apps can then filter and build mixes by them. Audio files are never touched.
+- Remember exactly which moods Meloday added to which song and whether the field was locked before, so removing them restores each song as it was. Nothing is written automatically; songs analysed later are tagged the next time it runs.
+
+## 0.82.1 - 2026-10-15
+
+- Fix the Meloday Engine's word calibration sampling past the end for about one library size in eight, including 36,382 analysed songs. This could block Made by Meloday, Sounds Like search and What ME Hears.
+- Show Made by Meloday playlists in Home's Jump back in from Meloday's own copy instead of looking them up in Plex. Their missing Plex IDs had made all of Recently Played fail to refresh.
+- Log a failed weekly Made by Meloday build and retry it later.
+
+## 0.82.0 - 2026-10-15
+
+- Add Find Your Mood playlists to Made by Meloday: Feel Good, Relax, Energy, Focus, Heartbreak and Feeling Blue. Moods suit any time of day, so time-of-day fit does not affect them.
+- Define each playlist by wanted and avoided sounds. Leave out any song clearly carrying an avoided sound, relaxing the limit only when too few songs remain. Dinner can be warm and mellow but not sad; Feel Good excludes melancholy; Focus excludes rap and spoken word; Heartbreak excludes celebration.
+- Move Made by Meloday to Made for You. Add a Find Your Mood row, lead Right Now with the current time-of-day playlist, add Workout to By Energy and Road Trip to For the Weekend, and put the rest in For Every Moment. Restore Playlists to the listener's own playlists.
+- Change generated-cover edges: the left bar is now 120 tall and half as wide as the bottom bar, and its bottom aligns with the label's final baseline at the size used. Apply this to still covers, live mix and station cards, Essentials, the Last.fm chart and Made by Meloday covers.
+
+## 0.81.0 - 2026-10-15
+
+- Add Made by Meloday playlists for moments: Wake Up, Sunny Afternoon, Focus, Workout, Dinner, Rainy Day, Late Night and Road Trip. The Meloday Engine picks songs that sound right from weighted words, then the Taste Engine favours songs the listener likes at that time of day and leaves out low-rated and skipped songs.
+- Make them weekly from the whole analysed library after ME has read it in. Use each song in at most one playlist per week, limit each artist to two songs, and order songs so each leads into a similar sound. Keep playlists unchanged during the week.
+- Show them first on the Playlists page, open them like Essentials, and add Keep on Plex for one Plex playlist updated in place each week with title, description and cover. Hide Plex copies from the listener's own playlists. Save as a Playlist keeps a fixed copy.
+- Draw covers like Meloday's other covers: a stable palette colour per playlist, edge bars and M-wave symbol one shade darker (one shade lighter on the darkest shade), and the name bottom left.
+
+## 0.80.0 - 2026-10-14
+
+- Let the Meloday Engine describe songs in words. CLAP learnt sound and text together, so ME compares a song's fingerprint with 112 words in six groups (mood, energy, genre, instruments, vocals, moments) and says which fit, with how sure it is. The words' text vectors are made ahead of time by the matching CLAP text encoder (`tools/engine/vocabulary`) and shipped as a small pinned file; no text model ships or runs in the app.
+- Calibrate the words against the listener's own library so words that suit almost any music (raw, most songs "sound" falsetto) don't win everywhere; genre stays close to raw, where it agrees best with Plex.
+- Add What ME Hears to Sound Fingerprint: each group's three best words with confidences, weak guesses greyed.
+- Add Sounds Like to Search: a description such as "rainy day jazz", "late night electronic" or "chill piano" finds the analysed songs that fit every word. Searches with a word ME doesn't know are left to Plex.
+- Use what ME hears in mixes where Plex has nothing: energy mixes use ME's heard energy when a song has no steady beat, and mood mixes favour songs ME hears in that mood when Plex has no mood for them.
+
+## 0.79.0 - 2026-10-14
+
+- Add sound to the Taste Engine. With the Meloday Engine chosen, it learns the sound of the listener's taste from the fingerprints of songs they play and finish, minus songs they skip. Unplayed songs that sound like favourites now score higher in Meloday, mixes, radios, live stations and discovery.
+- Keep varied taste apart: up to five sound clusters instead of one average, measured from the library's centre so songs can be told apart. Night, morning, afternoon and evening get their own sound when enough is played then.
+- Song Info explains "It sounds like music you love" and "It sounds like what you play around this time". Songs without a fingerprint, or with Plex Sonic Analysis chosen, are scored as before.
+- Rebuild the sound with the rest of the taste every 30 minutes on a background thread, when the engine is switched, and as ME learns many more songs.
+
+## 0.78.0 - 2026-10-14
+
+- Add Sound Fingerprint to a song's right-click menu. It shows the Meloday Engine's 512-number fingerprint as a ring (positive values in the accent, negative in grey, length by strength) with key figures, model version and analysis time.
+- Show where ME listened across the whole song: its three samples and the opening and ending used for tempo and key, with times and sample loudness.
+- Show opening and ending tempo, confidence, beat spacing, key with Camelot code, beat and bar counts, and a beat grid where each tick's height is the beat's loudness and bar lines are emphasised.
+- Show the six most similar songs by ME fingerprint, with match percentages. Unanalysed songs offer Analyse Now.
+
+## 0.77.0 - 2026-10-14
+
+- Add the Taste Engine as one view of the listener's taste for Meloday, mixes, radios, live stations and Home/Made for You discovery. It reads Plex ratings, play counts, lifetime skips, last played, a year of history and album genres, moods and years. It adds only what Plex cannot record: early skips, played-through songs and deliberate picks. Recent signals fade over time.
+- Replace separate rating, play and skip rules: radios and Headliners use a single like score, mixes add time-of-day fit and novelty, artist mixes favour artists the listener has not been skipping, and discovery uses the same artist and taste weights.
+- Use Meloday's skip and played-through data in Meloday's period profile instead of treating every Plex play as heard through, and favour liked songs in history and filler picks.
+- Count songs picked from a list, songs queued with Play Next or Add to Queue, Previous and restarting a song as deliberate choices. Read the previous skip memory once.
+- Add a Taste Engine group in Settings > Meloday with Adventure (Familiar to Adventurous), a summary of what it learnt and lately, and Forget for local signals only. Song Info explains why Meloday would play a song.
+
+## 0.76.0 - 2026-10-14
+
+- Redesign milestones as collectible cards: a square art panel shows the achievement's icon large on Meloday's sun rings, with the medal and tier numeral in the corners, followed by the name, next goal, progress to the next tier, tier dots and XP. Rank colours the edge, panel, rings and lit dots. Locked cards are neutral and show a lock. Cards lift slightly on hover.
+- Add All, Unlocked and Locked tabs to Milestones, with counts in the heading.
+- Let card art replace the icon from Assets/Achievements/<id>.png, or <id>-<rank>.png for one rank, without changing code. Locked cards dim it.
+
+## 0.75.0 - 2026-10-14
+
+- Give every achievement ten tiers with Bronze, Silver, Gold, Platinum and Diamond ranks and rising XP. Show each milestone's rank and progress toward its next tier. Recalculate unlocks from 0.74.0 against the new tiers silently, keeping when each achievement was first reached.
+- Add weekly challenges: three goals each Monday to Sunday, drawn from eleven, each worth 150 XP. Show progress and when they reset, plus the milestones closest to their next tier. Announce completed challenges and new levels, and show the current level beside Achievements in the sidebar.
+- Add Trends for this week, month, year or all time. Show time listened against the same point in the previous period, top artists, albums and songs, listening by hour and weekday, the period by day, month or year, highlights, first-time artists, a year-long listening calendar and up to three listening traits.
+- Keep a local listening log for Trends: count songs here as they finish and add earlier Plex history once, with its length estimated where Plex has none. Settings > General can hide Trends and Achievements separately.
+
+## 0.74.0 - 2026-10-14
+
+- Add Achievements: 17 listening milestones with up to six tiers each (songs played, time listened, artists, first-ever artists, albums, albums heard through in one sitting, day streaks, days listened, a favourite artist's plays, night-owl and early-bird songs, genres, decades, rediscovered songs, Meloday and mix songs, radio songs, longest listening day). Every tier and every song played awards XP toward a level with a title and progress to the next.
+- Count songs in Meloday Music once they have played as long as a scrobble needs, with where they played from; add the earlier listening once from Plex history without counting a play twice. Keep the totals and unlocks in a local file only.
+- Add an Achievements page above Settings in the sidebar with level and XP, headline listening numbers, every milestone's progress and tiers, and recent unlocks. It follows along while music plays; a short notice reports unlocks and new levels. Settings > General can hide it; listening is still counted.
+
+## 0.73.0 - 2026-10-13
+
+- Keep Last.fm optional and use only the listener's encrypted personal credentials. A saved API key enables charts without requiring an account connection; scrobbling still requires explicit account approval. Hide Last.fm Home options without a key.
+- Add an optional MusicBrainz artist release catalogue: recent releases and releases absent from the Plex library, paginated fully and cached for a day, with Cover Art Archive artwork. Catalogue entries open on MusicBrainz; local releases retain their normal playback actions.
+- Add optional ListenBrainz connection and scrobbling with an encrypted user token, encrypted retry queue, listening count and separate opt-in switch. Both new integrations start off and work independently of Last.fm.
+
+## 0.72.2 - 2026-10-12
+
+- Fix the left cover bar at the same position and height on every generated square cover, independent of title length, line wrapping or glyphs. Share the fixed geometry between live cards and saved artwork; refresh cover caches.
+
+## 0.72.1 - 2026-10-12
+
+- Thicken generated square cover edges by 10 canvas pixels and end the left bar at the label's visible ink, including fitted titles.
+- Remove the bottom-left shadow from square mix cards and their saved covers.
+- Fade circle-only radio portraits toward their centre using four concentric rings in the portrait's dominant palette colour. Match saved radio artwork to the cards and use that colour for their edge overlays. Refresh affected cover caches.
+
+## 0.72.0 - 2026-10-12
+
+- Match the Essentials symbol exactly to its lower panel and add matching symbols to large mix colour boards.
+- Add matching bottom and short left edge overlays to generated square covers, using the adjacent palette shade. Apply them to saved and animated covers; exclude timed Meloday covers and large mix colour boards. Refresh the generated-cover caches.
+- Rotate Home Spotlight through additions, familiar artists and rediscoveries each listening period instead of always selecting the same leading artists. Keep each period stable, avoid repeated artists and stop labeling old library additions as new albums.
+- Put Spotlight tags, names and details above the backdrop, allow names two lines, and show album artwork in the bottom-left corner. Align editorial rail arrows with the image.
+
+## 0.71.1 - 2026-10-12
+
+- Keep live station and programme labels beside the song title and artist without stretching the title row or shifting the progress bar. Align the live dot with the station label.
+- Give the curator and other player toggle indicators a clearer gap beneath their icons while keeping the icons aligned.
+
+## 0.71.0 - 2026-10-12
+
+- Reorganize Settings into General, Appearance, Home, Playback, Meloday, Audio Analysis, Connections and About. Use a section dropdown in narrow windows, keep Settings anchored in the main sidebar and preserve saved section choices and deep links. Keep Home visibility and ordering together, including Last.fm charts.
+- Use one rail header for See More and Play All. Wrap header actions when space is tight, preserve command availability and add contextual accessible labels.
+- Unify editor, menu, tooltip, dialog and selection styling. Use neutral focus outlines instead of native colored underlines or edge indicators. Make Settings actions stack when needed, constrain dialogs to the available window and fix concentric builder/duplicate-picker corners.
+- Shorten routine screen explanations while retaining privacy, destructive-action and unfamiliar-feature guidance. Align loading, empty and error wording across pages.
+- Restore the base opacity after page and Settings fades. Scale the mini-player window with its controls so transport buttons fit at larger interface sizes; disable live-radio shuffle and label live-card actions Tune In.
+
+## 0.70.1 - 2026-10-12
+
+- Fix concurrent artist-affinity accumulation across similar-artist, playlist and tag lookups. Keep the strongest weight atomically, publish a completed dictionary snapshot and retry cancelled cached loads. This prevents radio generation and contextual Home loading from failing with dictionary-corruption errors.
+
+## 0.70.0 - 2026-10-12
+
+- Repair Artist and Album Radio Builder dialog construction so their content has one UI parent. Keep Sonic Adventure endpoint rows stable when selecting and changing songs.
+- Add Pulse programme labels to the player, queue and Now Playing, including artist takeovers and actual genre blocks. Save labels with the broadcast and retain them through cooldown filtering; sparse named programmes report continuous rotation instead.
+
+## 0.69.0 - 2026-10-12
+
+- Add Analysis pace in Audio Analysis settings: Background or Power through. Power through uses normal CPU priority and a 250 ms pause after each job instead of the background mode's ten-second pause. Applies to both ME sound profiles and transition analysis, saves the selected pace and takes effect without restarting.
+- Retain one analysis worker, cached progress, upcoming-track priority, buffering/power/data pauses and failed-track retry delays in both modes. Use completion-based scheduling so jobs never overlap; return to a slow polling interval while paused or waiting for the next library sweep.
+
+## 0.68.0 - 2026-10-11
+
+- Add the experimental Meloday Engine: bundled music-trained CLAP inference through ONNX Runtime, using three 10-second samples spread across each track. No Python, WSL, cloud inference or Plex Pass required. Pin and verify model integrity; retain model and runtime notices.
+- Add a strict ME/Plex Sonic Analysis selector in Audio Analysis settings. Route similarity, Sonic Adventure, discovery and Meloday playlists through the chosen source; keep ME profiles and Plex sonic caches separate. Separate saved Meloday mixes and live running orders by engine while sharing actual radio cooldown history.
+- Show ME sound-profile coverage alongside transition-analysis progress. Add Similar Tracks to track menus and cached ME sample/tempo/key/beat information to Song Info.
+- Use ME sound neighbours in persistent seed/artist radios and cached engine distances in Twin/Drift curators. Retain library-based playback while coverage builds, with explicit empty-analysis states.
+
+## 0.67.0 - 2026-10-11
+
+- Run audio analysis automatically for the whole app session, including in the tray; remove the opt-out toggle.
+- Add a dedicated Audio Analysis settings tab with live percentage, complete and partial track counts, activity and pause status, tempo statistics, estimated musical keys, beat grids and energy profiles.
+- Count existing cached results for the selected library on startup and refresh the inventory periodically. Coverage requires both opening and ending windows; musical statistics count each track once and exclude unreliable tempo/key estimates.
+
+## 0.66.0 - 2026-10-11
+
+- Record actual radio playback separately from the planned broadcast, with bounded persistent history and account/server/library/station scopes. Apply cooldowns to artist and builder radios across restarts and allow exhausted small libraries to rotate again.
+- Add the last five played and five most-played artists/albums to their respective radio builders, with artwork, one-click selection, stale-request protection and empty/connection states.
+- Fix Sonic Adventure reusing a button still attached to its previous row; guard repeated dialog opening and handle failed searches without losing playback.
+- Switch guest curators using cached audio immediately, ignore stale reorder requests, refine Smooth as background analysis completes, and restore the prior upcoming order when returning to Just as queued.
+- Scan the library for tempo, beats, key and energy in the background, one low-priority audio window at a time. Prioritise upcoming tracks, cache by server/library, bound memory, retry failures later, and pause during buffering, energy saver and metered connections. Add a Meloday settings toggle.
+- Catch up Meloday after reconnect/wake and system clock changes; retry failed generation within five minutes. Isolate saved mixes and their Plex sync state by account/server/library.
+- Enable close-to-tray by default for new installations, retaining saved preferences. Package a self-contained tester installer with graceful app shutdown and a SHA-256 checksum.
+
+## 0.65.0 - 2026-10-11
+
+- Tint generated cover symbols with the dominant colour family's lighter palette shade, using its darker shade on light backgrounds.
+- Add the symbol to radio and live-station cards and remove the Radio page byline.
+- Set top-right cover text to Black and bottom-left text to Bold; refresh generated artwork and kept Plex covers.
+
+## 0.64.0 - 2026-10-11
+
+- Change the app's typeface across the interface, intro, covers and lyrics, and redraw generated artwork.
+
+## 0.63.0 - 2026-10-11
+
+- Move the small upper-left mix circle down and the lower-right circle up, keeping the symbol clear in animated and saved covers.
+- Prefer a white symbol on midtone backgrounds, including pink; use black on pale backgrounds where white drops below 3:1 contrast.
+- Add Discovery Mix, Time of day, Day of week, Seasonal rotation, and This Time Last Year to Home hub settings, with saved ordering and visibility across context changes.
+
+## 0.62.2 - 2026-10-11
+
+- Set the cover symbol's left and top insets to 70 px.
+- Show A Meloday for above the mix title, move listener/update attribution into the metadata line, and remove the kept-on-Plex subline.
+- Preserve listener/update attribution in the complete description sent to Plex.
+
+## 0.62.1 - 2026-10-11
+
+- Move the generated-cover symbol to 39 px from the left and 70 px from the top.
+- Narrow the top-right title box to 675 px in saved and animated covers, keeping its height at 405 px.
+- Refresh cached covers and kept Meloday artwork on Plex.
+
+## 0.62.0 - 2026-10-11
+
+- Add the MelodayMusic-symbol.png silhouette as the top layer on generated playlist covers, 120 px wide with its original proportions, 40 px from the top and left of the 1000 px canvas.
+- Choose pure black or white from the actual background beneath the symbol for stronger contrast.
+- Refresh generated cover caches and the artwork of kept Meloday playlists on Plex.
+
+## 0.61.0 - 2026-10-11
+
+- Integrate the 0.60.0 source into this workspace, preserving Artist Essentials, projectM and the latest layout fixes.
+- Add standard Plex insecure-connection choices, defaulting to Never, and try HTTPS before HTTP fallback.
+- Show connection encryption status and reconnect when the policy changes. Authenticated API requests cannot follow redirects.
+- Harden trusted-LAN Companion controls against unrelated browser origins, DNS rebinding, invalid targets, excessive requests, and unsafe callback/queue parameters. Remote control defaults off for new installations.
+- Expand credential redaction, mask personal diagnostic fields, bound and prune logs while running, and add Clear Logs.
+- Explain local storage and optional external data sharing in Settings. See docs/security.md for research and remaining trust boundaries.
+
+## 0.60.0 - 2026-10-10
+
+- Artist Essentials stays in Meloday Music. Removed its Keep on Plex button and background playlist updater.
+  Previously saved Plex copies are left intact and shown as ordinary playlists; they are no longer updated automatically.
+  Essentials still refreshes locally from Plex's popularity scores.
+- projectM visualizers. The Windows x64 player now includes the real projectM 4.1.8 engine and five presets from its
+  community-curated Cream of the Crop pack: Airhandler, Neon Space, Spiral Artifact, Cosmic Dust and Molten Glass.
+  Choose them in the existing visualizer menu and use the same full-screen controls. They follow the audible stereo output,
+  stop when hidden, and scale down with the existing power and performance controls. The engine and presets ship with the app.
+  OpenGL 3.3 is required; unsupported drivers show an explanation. No published per-preset popularity ranking was available,
+  so these are curated selections, not a claimed top-five chart.
+
+## 0.59.1 - 2026-10-10
+
+- Header buttons no longer end up out of reach. On every page with actions in its header (Playlists, Albums, Artists, ...), the
+  last button or two could drop onto a second row that the header had made no room for, so the Sort button sat half under the
+  page and couldn't be used. Layout rounding gave the row a fraction of a pixel less than it had asked for; a button now wraps
+  only when it really doesn't fit, and the width asked for is rounded up.
+- Settings sections no longer overlap as you switch. Rows with their own fade-in and fade-out lingered over the next
+  section. Changing section now works as changing page does: the section on show fades away, quickly, and only then does the next
+  fade in.
+
+## 0.59.0 - 2026-10-10
+
+- Artist Essentials. Every artist page now leads its "More With This Artist" rail (it was "Featured in Your Playlists") with
+  "<Artist> Essentials": the artist's 25 most popular songs by Plex's own popularity score (the Last.fm listener count Plex holds
+  for each song, compilations and live albums left out), the song they are best known for first. It is not labelled a smart
+  playlist but behaves like one: it is worked out afresh whenever the page is opened and at most every six hours otherwise, so it
+  follows the score as it changes. A song listed twice counts once and one rated one star is left out; an artist Plex has scored
+  fewer than three songs for has none.
+- Its cover follows the mock-up: white above and the backdrop's most common colour below (muted colours count; it is tinted so
+  grey doesn't read as grey), the artist's backdrop centred on the join with room round it, "Essentials" in the top right and the
+  artist's name in the bottom left, in black or white, whichever reads better on the colour.
+- Keep on Plex. The Essentials page has the usual Keep on Plex switch: on, the playlist is made on the server and brought into
+  line (songs, order, cover) every six hours while Meloday Music is open; off, the app takes its own copy off the server again.
+  The copy is the app's: it is never listed in Meloday Music's Playlists, Home, search, "Add to Playlist" or the artist's rail, and
+  an Essentials can't be pinned, as it lives only on the artist's page.
+
+## 0.58.4 - 2026-10-10
+
+- Fix playlist covers not showing on Plex. Meloday uploaded each new cover correctly but then chose the wrong picture: Plex lists a playlist's uploaded pictures in the order of their file hashes, not the order they were made in, and Meloday took the last one in that list. After the first cover, the one on Plex was an arbitrary old cover (for example "Velvet Haze and Chill Tuesday Afternoon" on the Saturday Evening Meloday). Meloday now chooses the upload named for the hash of the cover it just sent. Already-synced playlists are repaired on the next start (Meloday, and the Last.fm chart at its next update).
+
+## 0.58.3 - 2026-10-10
+
+- Restore 100 library-matched Last.fm tracks and artists by continuing through chart pages after the live-page matches. The home rail remains the first ten tracks from the same playlist.
+- Generated gradient covers use coordinated colour families and three separate edges, with centres kept clear of corners.
+- Read Plex artwork Photo responses correctly so uploaded covers can be selected. Missing covers fail sync and Meloday retries incomplete transfers; existing synced playlists receive the cover repair.
+- Last.fm playlists are labelled Chart, with no smart-playlist sparkle or rules action.
+
+## 0.58.2 - 2026-10-09
+
+- All Last.fm trending lists preserve the public chart order after filtering to your library. Removed API entries that were being appended to tracks and artists; Home, chart pages, radio chart pools and Plex sync share the live source.
+
+## 0.58.1 - 2026-10-09
+
+- Soft mesh playlist covers with varied edge gradients and the existing bottom-left text layout.
+- Removed unsolicited radio settings, aligned Last.fm switches, and simplified Pulse artwork naming.
+- Pulse checks persistent radio history before selecting candidates and retains a longer rotation history.
+- Last.fm live-page matches retain the website's order and names; API matches fill the remainder of the 100-track playlist.
+- Chart rails show positions, and section navigation consistently uses See More.
+
+## 0.58.0 - 2026-10-09
+
+- Consistent neutral search-field focus outlines, scaled radio builder and Sonic Adventure spacing, and top-aligned detail artwork.
+- Generated playlists receive palette covers with bottom-left text and two edge gradients, uploaded to Plex. Last.fm Top 100 now uses the standard read-only playlist layout with chart positions and persistent movement indicators.
+- Headliners is now Meloday Pulse, preserving station history and pins. Pulse adds scheduled library-based new music, chart and release countdowns, genre programmes, weekly picks and throwbacks.
+- Settings > Meloday adds Canadian Broadcast for all live stations, aiming for 4–5 suitable songs per hour while retaining station fit and cooldown rules.
+
+## 0.57.0 - 2026-10-08
+
+- One Edit Details window, as Plex has it. Albums, artists, collections and playlists have a single "Edit Details…"
   (the artist page's pencil opens the same window): a Details tab for the title and summary, then Cover (Photo for an artist),
   Backdrop and Logo tabs, each a grid of the images Plex found with an Upload Image button. Nothing is sent until Save, and
   everything is kept on the Plex server. The separate Artwork submenu, the three "Change …" items and the fanart.tv logo
   picker (two ways to change a logo) are gone; a logo chosen in the old picker is replaced by the server's when a new one is saved.
-- **The builders and Sonic Adventure match the rest of the app.** The Artist and Album Radio Builders and Sonic Adventure
+- The builders and Sonic Adventure match the rest of the app. The Artist and Album Radio Builders and Sonic Adventure
   search in a plain text box with the matches listed under it in the app's rows (picture, title, detail), chosen ones sit in the
   grouped list used by Settings, and suggestions are capsule buttons with an icon.
-- **Settings uses the page's full width, and every section is reachable.** The page was held to 980 px, which cut the
+- Settings uses the page's full width, and every section is reachable. The page was held to 980 px, which cut the
   last chip ("About") off; the content now fills the page like the others. The chips also keep their pill inside the row,
   bring the chosen chip into view, and scroll with the mouse wheel when a narrow window can't show them all.
 
-## 0.56.0 — 2026-10-08
+## 0.56.0 - 2026-10-08
 
-- **Everything Meloday makes follows the same rules.** Nothing rated one star or less (the song, its album or its artist), no
+- Everything Meloday makes follows the same rules. Nothing rated one star or less (the song, its album or its artist), no
   muted music, no song that is a dupe of another (the keeper plays), and songs played lately are left out where there are
   enough others and otherwise held back (a song played an hour ago is very unlikely to come, one a week ago is held back, a
   month ago it counts as any): in the daily Meloday, the mixes, the live stations, the radios and what Made for You is drawn from.
-- **Live stations no longer open on the same artists after an update.** A station's running order is remembered between
+- Live stations no longer open on the same artists after an update. A station's running order is remembered between
   visits, which meant a restart rejoined the same songs it had already shown; now the first time a station is tuned in during
   a run of the app it keeps the song that is on and plans the rest afresh. Every station also remembers, between runs, the
   artists it has played lately (Headliners did already) and lets others come first. Random artists and albums for stations
   (Hits, Chill's moods, Deep Cuts, genre and decade radios) were being served from the cache, so they came back the same after a
   restart: they are fetched anew each time, and Deep Cuts chooses its thirty artists by chance from the ninety most played.
-- **Club Radio no longer takes pop.** Dance Pop, Dance-Pop, Pop Dance and Electropop (and Indie/Australian/Canadian Electropop)
+- Club Radio no longer takes pop. Dance Pop, Dance-Pop, Pop Dance and Electropop (and Indie/Australian/Canadian Electropop)
   are pop with a beat, too broad for a club. A song's tempo isn't known for most of a library (Plex doesn't hold it, and
   Meloday only measures songs as they are played or queued), so it isn't used.
-- **Every cover Meloday makes has its text in the same places at the same sizes.** The name top right and the label bottom left
+- Every cover Meloday makes has its text in the same places at the same sizes. The name top right and the label bottom left
   (a mix's name is its label, no longer a smaller line with its own margins) each have a box 760 wide in a 1000-unit square, at
   a fixed size; a text too long for its box is set just small enough to fit it, instead of being cut short with dots.
   Meloday's cover, the station covers, the mix covers and the still covers (pins, Jump back in) all use the one layout.
-- **Page changes never show two pages at once.** The page on show fades away (a tenth of a second), then the next takes its
+- Page changes never show two pages at once. The page on show fades away (a tenth of a second), then the next takes its
   place and fades in, so the new page can't be seen over the old one, whatever it takes to build it.
 
-## 0.55.1 — 2026-10-07
+## 0.55.1 - 2026-10-07
 
-- **Club Radio and Chill Radio read a real library's tags better.** Tested against the 731 genres and 293 moods of a
-  36,000-song library. Club now also takes the bass and big-room families (Future Bass, Melodic Bass, Brazilian Bass,
+- Club Radio and Chill Radio read a real library's tags better. Tested against the 731 genres and 293 moods of a
+  large library. Club now also takes the bass and big-room families (Future Bass, Melodic Bass, Brazilian Bass,
   Moombahton, Big Room, Big Beat, Complextro, Brostep, Neurostep, Ballroom Vogue, Aggrotech, Uk Funky, Kuduro, Amapiano,
   Jungle) and leaves out Witch House. Chill now also takes Vaporwave and Vapor Soul, Float House (moved from Club),
   Escape Room, Study Beats, Focus Beats, Neo Mellow, Mellow Gold and Slowed And Reverb. Chill's artist moods are the calm
   ones (plus Meditative, Ethereal and Reassuring/Consoling); Reflective, Wistful and Introspective no longer count, since
   they describe a lot of singer-songwriter music that isn't Chill.
 
-## 0.55.0 — 2026-10-07
+## 0.55.0 - 2026-10-07
 
-- **Mute a song or an artist for a while.** For when you don't want to hear them for now but don't want to rate them down:
+- Mute a song or an artist for a while. For when you don't want to hear them for now but don't want to rate them down:
   a muted song or artist stays out of everything Meloday makes (the daily Meloday, the mixes, the live stations, the radios,
   Sonic Radio and adventures) until the time is up, then comes back by itself. What you choose yourself (an album, a
   playlist, a song you play on purpose) still plays. Press **Mute** on Now Playing (beside the rating) to mute the song or
@@ -60,118 +445,118 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   artist menus everywhere have Mute too. Muting takes the muted music out of what is queued up next, moves on from a muted
   song that is playing (not on live radio, where the song carries on and the station leaves it out from then on), and takes
   it out of the Meloday on show.
-- **Settings > Muting**: how long a mute lasts (1 week, 1 month, or a number of days of your own) and the list of what is
+- Settings > Muting: how long a mute lasts (1 week, 1 month, or a number of days of your own) and the list of what is
   muted now, each with the days left and an Unmute button.
-- **Now Playing fits.** The format and bitrate ("MP3 · 320 kbps"), which were cut short beside the buttons, now sit between
+- Now Playing fits. The format and bitrate ("MP3 · 320 kbps"), which were cut short beside the buttons, now sit between
   the two times, and the actions are in two tidy rows: the rating with Mute, then the visualizer, curator, radio buttons
   on the left and lyrics, sleep timer and cast on the right.
 
-## 0.54.0 — 2026-10-07
+## 0.54.0 - 2026-10-07
 
-- **Lyric Studio shows what the space bar is doing.** The word being pressed for is shown large; when you press and hold,
+- Lyric Studio shows what the space bar is doing. The word being pressed for is shown large; when you press and hold,
   that word stays the active one (lit, with a bar under it that fills the longer you hold, and a hint that says to let go
   when the word ends) and the next word is only asked for once you let go. Before, holding moved the display on to the next
   word while timing the previous one. In the lines, the word being held is the brightest, words done are dimmest.
-- **Timing never carries you off the song.** While a song is being timed it neither starts over nor moves to the next song:
+- Timing never carries you off the song. While a song is being timed it neither starts over nor moves to the next song:
   at its end playback stops, still on that song, and you are asked whether to save the timing (Save timing, Don't save, or
   Keep timing). The same question, with playback paused, is asked if you press Back, go to another page, choose Change the
   words, or move to another song while some of it is tapped.
 
-## 0.53.0 — 2026-10-07
+## 0.53.0 - 2026-10-07
 
-- **Lyric Studio is played with the space bar alone**: press it as each word begins, and keep it down through a word that is
+- Lyric Studio is played with the space bar alone: press it as each word begins, and keep it down through a word that is
   held on a long note. A held word is kept with its length, and the lyric pictures show it in the artwork's colour,
   swelling a little, until it lets go. (Backspace, Left and Enter no longer do anything; Undo, Back 5 s, Pause and Tap
   remain as buttons, and holding the Tap button with the mouse holds the word too.)
-- **Breaks in the singing are clear of text** in the lyric pictures: in the intro, an instrumental passage or the end,
+- Breaks in the singing are clear of text in the lyric pictures: in the intro, an instrumental passage or the end,
   nothing shows, not even the song's name. A song with no lyrics at all still shows its name and artist.
-- **The lyric pictures are set in Manrope only.** The other five typefaces (Space Grotesk, Anton, Cormorant Garamond,
+- The lyric pictures are set in Manrope only. The other five typefaces (Space Grotesk, Anton, Cormorant Garamond,
   Bebas Neue, Fraunces) are gone, with their files and licences, which also makes the installer smaller.
 
-## 0.52.0 — 2026-10-07
+## 0.52.0 - 2026-10-07
 
-- **Lyric Studio**: time a song's lyrics yourself. Open it from a song's menu (Time Lyrics) or the timer button on the lyrics
+- Lyric Studio: time a song's lyrics yourself. Open it from a song's menu (Time Lyrics) or the timer button on the lyrics
   panel. The song plays from the start, the next word is shown, and you tap the space bar (or the Tap button) as each one
   begins; Backspace takes a tap back and replays the moment before it, Left goes back five seconds, Enter plays or pauses.
   Tap for every word (exact) or only every line (quicker; the words in each line are spaced for you). You can correct the
   words first, or paste them in for a song that has none. The timing is kept on this computer and replaces the source's
   for that song in the lyrics panel and the lyric pictures, and "Use original timing" takes it away.
-- **Shift a song's lyrics**: the lyrics panel's timer button moves a song's lyrics 0.1 s earlier or later at a time, for a
+- Shift a song's lyrics: the lyrics panel's timer button moves a song's lyrics 0.1 s earlier or later at a time, for a
   version of the song (another master, a longer intro) the timing wasn't made for, and undoes the shift.
-- **Better guessed timing** for lyrics timed only by line: words are spaced by their syllables rather than their letters
+- Better guessed timing for lyrics timed only by line: words are spaced by their syllables rather than their letters
   (so "beautiful" takes three beats and "strengths" one), the last word of a line is held, a comma or full stop leaves a
   pause, and a line in a slow song fills the time it has instead of finishing early. Lyrics with a time for each word are
   untouched.
 - Not done: snapping words to the song's beats, or aligning words to the audio itself. Edits are never deleted: taking
   one away writes it empty.
 
-## 0.51.1 — 2026-10-07
+## 0.51.1 - 2026-10-07
 
-- **Backdrops and logos on playlist, album and collection pages are laid out as the artist page lays out an artist's.**
+- Backdrops and logos on playlist, album and collection pages are laid out as the artist page lays out an artist's.
   The backdrop is the 16:9 picture flush with the right edge (the full width when the window is narrow), dissolving to
   the left and downward into the page's UltraBlur wash, which now stays behind it; it moves up with the page as you scroll
   instead of staying fixed under a dark shade. The logo takes the artist logo's size (smaller once the header condenses)
   and its colour treatment: in the page's colour with Colour Drop, in its own colours otherwise.
 
-## 0.51.0 — 2026-10-06
+## 0.51.0 - 2026-10-06
 
-- **Backdrops and logos come from the Plex server**, as artists' do. A playlist, album or collection shows the backdrop
+- Backdrops and logos come from the Plex server, as artists' do. A playlist, album or collection shows the backdrop
   its Plex item has across the top of its page, and its logo (Plex's clear logo) in place of its name. This replaces
   0.50.0's pictures kept only on this computer, which are gone.
-- **Edit the artwork from Meloday**: a playlist, album, artist or collection's menu has Artwork (cover or photo,
+- Edit the artwork from Meloday: a playlist, album, artist or collection's menu has Artwork (cover or photo,
   backdrop, logo): choose one of the images Plex offers or upload your own, and it is saved on the server for every
   app. Albums, artists and collections also have Edit Details for their name and description (playlists already did).
 - An artist's logo on Plex is used before fanart.tv's, unless a logo was chosen here.
 - Not exercised against a real server in testing: saving artwork and details writes to Plex, so those paths were built
   and unit-tested (the requests they make) but never run. Showing the backdrop and logo was checked live.
 
-## 0.50.0 — 2026-10-06
+## 0.50.0 - 2026-10-06
 
-- **Folders** in the sidebar (under Collections): the library as it is on disk. The top of it lists its folders; each
+- Folders in the sidebar (under Collections): the library as it is on disk. The top of it lists its folders; each
   opens into the folders and songs inside it, with the path above its name, and a folder with songs has Play and
   Shuffle. (Plex lists a folder's folders as untyped items, which is what the page reads.)
-- **Mixes that sound like a song** are now called "<Song> Mix" (no "Sounds Like"), and their covers show the song's album
+- Mixes that sound like a song are now called "<Song> Mix" (no "Sounds Like"), and their covers show the song's album
   in the middle and the albums of the mix around it, instead of the artists' photos.
-- **Mix cards** (More for You and the rest) are named on their cover, bottom left, as other covers are: whole, wrapped,
+- Mix cards (More for You and the rest) are named on their cover, bottom left, as other covers are: whole, wrapped,
   and cut short only if very long. The circles sit higher to leave room, and pinned mixes' still covers are drawn the same way.
-- **Time-of-day and seasonal shelves** also hold the playlists named for them: a small dictionary of words and phrases
+- Time-of-day and seasonal shelves also hold the playlists named for them: a small dictionary of words and phrases
   ("morning", "waking up", "rise & shine", "evening", "chill", "sunset", "late night", "can't sleep"... and for the
   seasons "summer", "beach", "road trip", "snow day", "christmas", "halloween", "fall vibes"...) matched as whole words
   in the playlist's name. Such a shelf is shown even when your listening history is thin.
-- **Browse** can sort its categories (as Default, A–Z, Z–A, largest or smallest first), and the albums of a genre, mood,
+- Browse can sort its categories (as Default, A–Z, Z–A, largest or smallest first), and the albums of a genre, mood,
   style or decade (the hub's sub pages) can be sorted like the Albums page. The hub pages themselves are as they were.
-- **Library pages** (Artists, Albums, Playlists, Collections) switch between a grid and a list (the capsule beside Sort);
+- Library pages (Artists, Albums, Playlists, Collections) switch between a grid and a list (the capsule beside Sort);
   each page keeps its choice.
-- **Playlist pages**: a circle with the search icon opens into a field (as the global search does) that searches only
+- Playlist pages: a circle with the search icon opens into a field (as the global search does) that searches only
   that playlist's songs by title, artist and album; every playlist, smart or not, can be viewed sorted by title, artist,
   album, recently added, most played, rating or duration (a view only: the playlist's own order is untouched, and
   dragging to reorder is offered only in that order).
-- **Playlist backgrounds**: "Set Background..." on a playlist's menu puts a picture of your own behind its page, fading
+- Playlist backgrounds: "Set Background..." on a playlist's menu puts a picture of your own behind its page, fading
   into it under a shade for legibility ("Remove Background" takes it away). It is kept on this computer, never sent to Plex.
 
-## 0.49.0 — 2026-10-06
+## 0.49.0 - 2026-10-06
 
-- **AutoMix gets more of what Spotify's Mix does.** It already matched tempos (stretching a song up to 8%), lined the next
+- AutoMix picks a style for each join. It already matched tempos (stretching a song up to 8%), lined the next
   song up on a bar, swapped the bass between the two and picked how long to blend by key and energy. Now each join has a
   style: a pair that fits perfectly is still blended long with the bass changing hands; any other beat-matched pair gets a
   **filter sweep** (the outgoing song loses its lows and then its mids as it goes, while the next one, dull at first,
   opens up); and songs whose tempos can't be matched get an **echo out** (the outgoing song repeats itself, fading, to its
   own beat) instead of a plain fade. The log says which was chosen and why.
-- **Headliners is programmed like a flagship radio show**, not artist after artist: artist blocks, runs of new releases
+- Headliners is programmed like a flagship radio show, not artist after artist: artist blocks, runs of new releases
   (albums from the last year and a half) and of what's trending on Last.fm (when that is switched on), and genre blocks
   (a few songs of one genre by different artists). It draws on a fresh sample of your hundred and twenty most played
   artists and the thirty played lately (it was always the same forty), and artists it has featured are rested for a day
   and a half, remembered between runs of the app, so it no longer opens on the same artists every time.
-- **The visualizers all use the artwork's four colours** (the same ones the window's backdrop is made of): Lyric Glow's
+- The visualizers all use the artwork's four colours (the same ones the window's backdrop is made of): Lyric Glow's
   ground is one and its three clouds are the other three, the Sun's four rings are one each (darkest outermost,
   lightest at the core), and M-Wave, Halo and Bars run through them too.
-- **Lyric videos:** the type is smaller; words arrive across the line as sung again (as before 0.48.0), except where the
+- Lyric videos: the type is smaller; words arrive across the line as sung again (as before 0.48.0), except where the
   lyrics time each word; the credits-style roll for untimed lyrics stays. A song reads in the same typeface and weight
   wherever it is shown (page or full screen), because the choice belongs to the song, not to the picture that shows it.
 
-## 0.48.0 — 2026-10-06
+## 0.48.0 - 2026-10-06
 
-- **Efficiency first.** The visualizers keep to what the computer can do: the picture is never drawn at more than about
+- Efficiency first. The visualizers keep to what the computer can do: the picture is never drawn at more than about
   a 1080p screen's pixels (a 4K window is drawn at half size and scaled up by the compositor); frames wait on a timer
   of their own instead of raising the whole system's timer resolution; the drawing stops while the window is in the
   background; when Windows' energy saver is on it runs at 30 frames a second; and when frames cost too much (a weak
@@ -180,20 +565,20 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   once, not each frame, and only the part of the screen a cloud reaches is painted. On this computer a frame costs
   about half a millisecond (M-Wave a little under one). The drawing uses only features of Windows 10 (version 2004)
   onward (not tried on Windows 10 itself yet).
-- **Ridgelines is gone** (a saved Ridgelines choice becomes M-Wave), **Corona is now Halo**, and **Meloday Wave is M-Wave**.
-- **M-Wave's colour pulses**: on every beat, and at the start of every line of the lyrics, a brighter band of colour
+- Ridgelines is gone (a saved Ridgelines choice becomes M-Wave), **Corona is now Halo**, and **Meloday Wave is M-Wave**.
+- M-Wave's colour pulses: on every beat, and at the start of every line of the lyrics, a brighter band of colour
   runs through the line from the left. The line is also a little calmer.
-- **Full screen** is on the same backdrop as the rest of the interface (not a darker shade), with the interface itself
+- Full screen is on the same backdrop as the rest of the interface (not a darker shade), with the interface itself
   out of the way, and **Esc leaves it** wherever the focus is.
-- **Lyrics:** the beat-keeping pulse of the type is gone (the fades and arrivals stay). With lyrics that are timed by
+- Lyrics: the beat-keeping pulse of the type is gone (the fades and arrivals stay). With lyrics that are timed by
   the line only (nearly all of them) the whole line now arrives together, instead of words guessed at; lyrics that time
   each word (Plex's, where it provides it) still arrive word by word. **Lyrics with no timing at all roll up the picture
   over the length of the song, as credits do**, faded at the top and the foot.
-- **The artists on a track are shown too**: for "Timbaland/Keri Hilson/D.O.E." or a "(feat. ...)" in the title, each
+- The artists on a track are shown too: for "Timbaland/Keri Hilson/D.O.E." or a "(feat. ...)" in the title, each
   other artist the library has (up to three) adds their backdrop and portrait to the pictures cycled behind the lyrics.
   Artists the library doesn't have are skipped; each is looked up once and remembered.
 
-## 0.47.0 — 2026-10-06
+## 0.47.0 - 2026-10-06
 
 - Visualizers are **really transparent** now. They were drawn on Win2D's animated control, whose swap chain showed as an
   opaque black square whatever the clear colour; they are now drawn onto a composition surface (with its own 60 fps
@@ -203,36 +588,36 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   across, the waves themselves travel the same way at a pace set by the song's tempo (once the beat is found), the
   bass, low mids, voice and highs each carry their own wave, and every beat gives the line a soft swell. Gentler
   overall.
-- **Lyric videos:** no drop shadow on the words (they sit in the picture), nothing of the next line shows before it is
+- Lyric videos: no drop shadow on the words (they sit in the picture), nothing of the next line shows before it is
   sung (the faint ghost words are gone), and the line before fades away completely before the next one begins. The Lyric
   Video now cycles through the **artist's backdrop, the album's cover and the artist's portrait**, each drifting and
   breathing, crossfading every fifteen seconds; the square ones are softened to a haze so they fill the screen
   gracefully.
 
-## 0.46.0 — 2026-10-06
+## 0.46.0 - 2026-10-06
 
-- **Dupes**, for Meloday: when two songs are the same song ("Sexy Chick" and "Sexy Bitch", a single and its album
+- Dupes, for Meloday: when two songs are the same song ("Sexy Chick" and "Sexy Bitch", a single and its album
   version), press the merge button on either one's row. A window asks which song it is the same as (pick it from the
   Meloday, or search the library), then lays the two side by side, with artwork, title, artist and album, and asks which
   one should play when the song comes up. Merge, and the two rows animate into one. From then on every Meloday holds
   the song you chose wherever either would have turned up, never both. Pairs are kept on this computer (per server),
   can't chain, and are listed in Settings, in the new **Dupes** tab, each with an Unmerge button.
-- **Last.fm**, two switches, both off until you turn them on once connected: **Scrobble what I play** (nothing is sent
+- Last.fm, two switches, both off until you turn them on once connected: **Scrobble what I play** (nothing is sent
   while it is off; turning it off also drops anything waiting to be sent) and **Show what's trending** (Home gets a
   "Trending on Last.fm" row: the songs of Last.fm's global chart that are in your library; only the chart is read,
   nothing about you is sent). Those who scrobbled before keep scrobbling until they choose otherwise.
-- **Lyric videos set in six typefaces**, chosen for the song: Manrope (the app's own; pop and R&B), Space Grotesk
+- Lyric videos set in six typefaces, chosen for the song: Manrope (the app's own; pop and R&B), Space Grotesk
   (electronic and indie), Anton (hip-hop and rock, tall and heavy), Cormorant Garamond (ballads and soul, a light
   serif), Bebas Neue (dance and fast songs, all capitals) and Fraunces (jazz and folk, a warm serif). The song's genres
   and moods pick the face (the tempo, once found, breaks ties and settles songs with no tags), and the weight follows
   the energy of the music, light in the quiet and heavy in the loud, on faces that have weights.
 
-## 0.45.0 — 2026-10-06
+## 0.45.0 - 2026-10-06
 
 - The **Meloday Wave** is loose and liquid: not the raw waveform (which is all edges) but a few slow waves laid over one
   another, each carried by its own part of the sound (the bass swells the long one, the highs ripple the short ones) and
   easing to the music like a fluid, still with the logo's thick line, glow, echoes and shifting colour.
-- **Ridgelines** glide back smoothly between moments instead of stepping, and every visualizer now draws at 60 frames a
+- Ridgelines glide back smoothly between moments instead of stepping, and every visualizer now draws at 60 frames a
   second (it was 30), at a cost of a few percent of one core.
 - Visualizers no longer sit in a filled square: they are drawn on a transparent ground over the page's own backdrop
   (where the artwork was).
@@ -241,11 +626,11 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   tempo (found from the bass as it plays). **Lyric Video** has the artist's backdrop drifting and breathing slowly behind
   the words under a wash of the artwork's colour; **Lyric Glow** a lively gradient of soft clouds of the artwork's colours.
   Between lines, and for songs without timed lyrics, the song's name and artist are set the same way.
-- **Full screen** for every visualizer (the menu's "Full screen", F11, or a double-tap on the picture): the window goes
+- Full screen for every visualizer (the menu's "Full screen", F11, or a double-tap on the picture): the window goes
   full screen with the picture filling it, and after three seconds of stillness the controls fade away, leaving only the
   picture. Moving the mouse or pressing a key brings them back; Esc or a double-tap leaves.
 
-## 0.44.0 — 2026-10-06
+## 0.44.0 - 2026-10-06
 
 - The waveform visualizer is now the **Meloday Wave**: the sound as the thick rounded line of the startup animation,
   with a soft glow, fading echoes trailing it and a colour that shifts along its length (neighbours of the artwork's
@@ -256,9 +641,9 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   with the bass, the outer rings with the mids and highs).
 - A visualizer chosen under its old name (Radial, Orbs) still reads from saved settings.
 
-## 0.43.0 — 2026-10-06
+## 0.43.0 - 2026-10-06
 
-- **Visualizers** on Now Playing: a button beside the rating (the waveform icon) chooses Bars, Radial, Waveform,
+- Visualizers on Now Playing: a button beside the rating (the waveform icon) chooses Bars, Radial, Waveform,
   Ridgelines or Orbs, drawn in the artwork's place from what the speakers are playing, in the artwork's own colour on a
   dark shade of it. They are Meloday Music's own drawings of the long-loved classics (the spectrum analyser, the
   oscilloscope, the circular spectrum, the ridgeline plot, drifting orbs), made to be light: the sound is only copied
@@ -270,14 +655,14 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   you ("OFF AIR · station"), and the button then says "Tune in": pressing it joins the station where it is by then, never
   where you left it.
 
-## 0.42.0 — 2026-10-05
+## 0.42.0 - 2026-10-05
 
 - The live stations are back on their moving covers, their name top right and "Meloday Live" bottom left. Headliners,
   Hits, Library and Deep Cuts keep a colour field each; Club and Chill share a new neutral (grey) field with a colour
   laid over it, video and still alike.
 - Meloday One is now **Headliners** (it plays an artist at a time), and the live stations are named Headliners Radio,
   Hits Radio, Club Radio and Chill Radio (pins made under the old names read with the new).
-- **Not for this station**, on live radio: a thumbs-down in the player bar and on Now Playing (where the guest
+- Not for this station, on live radio: a thumbs-down in the player bar and on Now Playing (where the guest
   curator's button is, which live radio has no use for) takes the song on off that station for good. The song finishes,
   as live radio can't be skipped, then never comes back to that station (it stays welcome on every other). Pressed
   again, it lets the song back on; Settings > Playback > Live Station Feedback counts them and resets them all.
@@ -286,24 +671,24 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   it opens at that level (where Plex is slow, it opens turned down and eases up, never down).
 - The Mix panel and mix styles of 0.40.0 are removed; AutoMix is as it was.
 
-## 0.41.0 — 2026-10-05
+## 0.41.0 - 2026-10-05
 
 - The live stations are now Meloday One, Hits, Club and Chill, with Library Radio and Deep Cuts after them (six
   in all, shown as the regular square cards). Each has its own logo: a big wordmark on a warm white card, a LIVE
   mark and "Meloday Radio" beneath, in the app's own typeface; they replace the colour fields.
-- **Meloday One** replaces Your Day. It plays an artist at a time: three of an artist's biggest songs back to
+- Meloday One replaces Your Day. It plays an artist at a time: three of an artist's biggest songs back to
   back (what you play and rate most, helped by how widely each song is known), then the next artist, never one
   featured lately. While a block is on, Now Playing features the artist, with their photo and "Song 2 of 3".
-- **Meloday Hits** replaces Time Travel: songs from albums of the '80s, '90s and 2000s in your library, the best
+- Meloday Hits replaces Time Travel: songs from albums of the '80s, '90s and 2000s in your library, the best
   known first.
-- **Meloday Club** plays your library's dance, electronic and club genres; **Meloday Chill** its ambient, downtempo
+- Meloday Club plays your library's dance, electronic and club genres; **Meloday Chill** its ambient, downtempo
   and lo-fi genres and the artists whose moods are quiet ones. A library that has none of a station's music isn't
   offered the station.
 - Now Playing says "LIVE · station" above the song on any live station.
 - Anything pinned of Your Day or Time Travel becomes Meloday One or Meloday Hits. The large station card layout
   (StationBoard) is gone; the live row uses the same square cards as the rest of the Radio page.
 
-## 0.40.0 — 2026-10-05
+## 0.40.0 - 2026-10-05
 
 - A Mix panel (the new waveform button in the player bar, or Ctrl+Shift+X) draws the next transition as the
   mixer is going to make it: the song that is ending above, the one coming in below, every bar as tall as the
@@ -319,14 +704,14 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   fades out the way its ending allows). The next transition is planned again the moment you choose. When AutoMix
   is off, the panel says so and turns it on from the next song.
 
-## 0.39.1 — 2026-10-05
+## 0.39.1 - 2026-10-05
 
 - A promo video of Meloday Music (56 s, 1080p at 60 fps) and the code that makes it, in `tools/promo`: real
   footage of the app (Home, Made for You, Meloday through its seven skies, the live stations' own moving
   artwork, AutoMix's sixteen-bar blend drawn out, Now Playing), cut to the bar lines of an original
   soundtrack that is synthesized by the same code. The app itself is unchanged in this version.
 
-## 0.39.0 — 2026-10-05
+## 0.39.0 - 2026-10-05
 
 - The AI DJ is removed completely: its Settings tab, its setup, its saved phrases and its voice are gone from
   the app. (Anything it saved on this computer, in `dj` and `cache\dj` under `%LOCALAPPDATA%\MelodayMusic`
@@ -336,7 +721,7 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   so are the media keys, Windows' media controls, remote controls, lyric clicks, shuffle, and anything that would
   rearrange or add to the queue. Pausing is allowed, but after a short pause the station is rejoined where it is
   by then rather than resumed from the past. Playing anything else replaces it as before.
-- Guest curators, after Plexamp's guest DJs: for any playback except live radio, choose how what plays next is
+- Guest curators: for any playback except live radio, choose how what plays next is
   arranged from the new button in the queue panel. Double Up (two songs from each artist), Twin (stays close to
   what's playing), Drift (starts close, then slowly wanders), Time Machine (oldest to newest), Smooth (each song
   flows into the next by tempo, key and energy: the old "Optimize flow") and Spread (never the same artist twice
@@ -349,7 +734,7 @@ of fixes alone raises the patch number (0.9.0 → 0.9.1). The version is set in 
   changing hands in the middle, and the outgoing song is gone by bar sixteen. Any other pair blends as before
   (eight bars at most), and a long blend never begins before the middle of a short song.
 
-## 0.38.1 — 2026-10-05
+## 0.38.1 - 2026-10-05
 
 The DJ no longer holds the music up.
 
@@ -365,7 +750,7 @@ The DJ no longer holds the music up.
 - Skipping to the next song on a live station (rather than letting it end) no longer loses the DJ's welcome.
 - If anything is slow, the log now says how long each step took (voice made, line decoded, ready).
 
-## 0.38.0 — 2026-10-05
+## 0.38.0 - 2026-10-05
 
 The DJ is now the host of the live stations, like a real radio DJ.
 
@@ -383,7 +768,7 @@ The DJ is now the host of the live stations, like a real radio DJ.
   and one that began part-way into the next song was taken for a song joined in the middle, so the DJ stayed
   silent. It now talks over the changeover, with the music dipping under the voice.
 
-## 0.37.0 — 2026-10-05
+## 0.37.0 - 2026-10-05
 
 - A new, optional AI DJ (Settings > DJ): a voice that greets you when you start listening and, every few
   songs, says what's coming up over the start of the next song, with the music dipping under it. It never
@@ -407,7 +792,7 @@ The DJ is now the host of the live stations, like a real radio DJ.
   from the mix's dominant mood) and era map (a nickname when one decade dominates), matched without regard to
   case, and a test confirms it.
 
-## 0.36.0 — 2026-10-05
+## 0.36.0 - 2026-10-05
 
 Meloday, mixes, live stations and radios now each have their own job and their own place.
 
@@ -428,7 +813,7 @@ Meloday, mixes, live stations and radios now each have their own job and their o
   different.
 - "Neighbourhood" mixes are now "Sounds Like ..." ("Sounds Like Adventure of a Lifetime Mix").
 
-## 0.35.0 — 2026-10-05
+## 0.35.0 - 2026-10-05
 
 - Made for You is now its own tab in the navigation (the button on Home is gone), and the one place
   for everything Meloday makes for you. Its mixes sit in rows that say why they exist: Your Mixes,
@@ -451,7 +836,7 @@ Meloday, mixes, live stations and radios now each have their own job and their o
 - The documentation names every card layout (Tile, ColourBoard, SquareBoard, StationBoard,
   Billboard, EditorialBoard, TagCard) and says what each is for.
 
-## 0.34.0 — 2026-10-05
+## 0.34.0 - 2026-10-05
 
 - Made for You: a new page (button at the top of Home) with personal mixes built from what you play
   and when you listen: niche mixes by genre, mood and era, a Discovery Mix, and mixes for the time
@@ -459,24 +844,20 @@ Meloday, mixes, live stations and radios now each have their own job and their o
 - Optimize flow in the queue reorders what's coming up so songs lead into each other well for
   AutoMix; the order only changes the up-next list.
 - A build-and-test check runs on GitHub for every push and pull request.
-- These changes were made in a separate copy of the project and have been brought into this one.
 
-## 0.33.0 — 2026-10-04
+## 0.33.0 - 2026-10-04
 
 - Meloday's names now draw on the full mood and era maps: each of the 300+ moods has a couple dozen
   descriptors (it was a handful) and each decade its nicknames, so a Meloday's title and description
   vary much more.
-- The project folder is tidied for publishing: the unused blank cover images are gone (covers are
-  drawn by the app), a README describes the project, and loose source art and scripts were moved
-  out of the way.
 
-## 0.32.0 — 2026-10-04
+## 0.32.0 - 2026-10-04
 
 - Playback holds up through longer freezes: the audio output now keeps 800 ms of sound waiting
   (it was 400 ms). In a hard stress test on a computer with little free memory, the app was held up
   for 370 to 630 ms by memory clean-ups, which was longer than the buffer; ordinary use stays under a
   quarter of a second. Pause, seeking, skipping and volume are still instant.
-- Home is redesigned after the mockup: the greeting and "Jump back in" above, with how long you've
+- Home is redesigned: the greeting and "Jump back in" above, with how long you've
   listened today counting up on the right (kept on this computer, starting again at midnight). Under
   it, the last thing you played is featured large with Play, Shuffle and Pin, and the eight before
   it sit beside it as glass tabs (cover and name). It follows what you play here (albums, playlists,
@@ -495,7 +876,7 @@ Meloday, mixes, live stations and radios now each have their own job and their o
   Meloday made while the app was closed is sent the next time it opens. "Save as a Playlist" on
   Meloday now sends the cover and description too, not just the tracks.
 
-## 0.31.0 — 2026-10-04
+## 0.31.0 - 2026-10-04
 
 - Playback no longer stutters when you move around the app. While pages open, the whole app can
   freeze for a quarter of a second (the interface framework forces full memory clean-ups, most of
@@ -523,7 +904,7 @@ Meloday, mixes, live stations and radios now each have their own job and their o
 - For speed checks, MELODAY_PERF=1 now also logs when the audio thread ran late, why each memory
   clean-up ran, and what is allocating large buffers.
 
-## 0.30.0 — 2026-10-04
+## 0.30.0 - 2026-10-04
 
 Meloday's own radio, so the best of Radio and Mixes no longer needs Plex Pass.
 
@@ -543,7 +924,7 @@ Meloday's own radio, so the best of Radio and Mixes no longer needs Plex Pass.
   only (nothing is sent to Plex), and fades over a month or two.
 - Sonic Adventure stays a Plex Pass feature.
 
-## 0.29.0 — 2026-10-03
+## 0.29.0 - 2026-10-03
 
 A speed and cache pass: everything already known is shown at once and brought up to date behind it.
 
@@ -566,9 +947,9 @@ A speed and cache pass: everything already known is shown at once and brought up
   keeps its paused videos for half a minute, so coming back doesn't set them all up again.
 - For speed checks, MELODAY_PERF=1 logs UI-thread hold-ups and how long each page takes to open.
 
-## 0.28.0 — 2026-10-03
+## 0.28.0 - 2026-10-03
 
-- AutoMix shares more of the music where songs suit each other, as Spotify's mixing does: when the
+- AutoMix shares more of the music where songs suit each other: when the
   playing song ends instrumentally and the next opens instrumentally, in a key that sits well with it
   and with the same sort of energy at the join, they overlap across both instrumental stretches, up
   to eight bars, beat-matched, the bass swapped halfway; the singing still never overlaps. Where the
@@ -579,13 +960,13 @@ A speed and cache pass: everything already known is shown at once and brought up
 - Checked offline and live: rendered mixes show no clicks, flutter or whine beyond the songs' own,
   and the song after a mix is sample-for-sample the original.
 
-## 0.27.0 — 2026-10-03
+## 0.27.0 - 2026-10-03
 
-- Editorial boards, after Apple Music's: a billboard told as a story, its heading (what it is, the
+- Editorial boards: a billboard told as a story, its heading (what it is, the
   album and the artist) above the backdrop rather than on it, a short line on the backdrop, and the
   album's cover in the bottom-left corner, clear of the play button. Browse hubs' billboards use them.
 
-## 0.26.2 — 2026-10-03
+## 0.26.2 - 2026-10-03
 
 - AutoMix's playback sounds right again. Its mixer cleared only a quarter of each block it sent to
   Windows (NAudio passes a byte buffer seen as floats, and the clear counted bytes), so every 10 ms
@@ -595,13 +976,13 @@ A speed and cache pass: everything already known is shown at once and brought up
   stretcher passes it through untouched), and stretching itself matches its slices more precisely.
 - A limiter keeps two loud songs overlapping in a mix from going past full scale.
 
-## 0.26.1 — 2026-10-03
+## 0.26.1 - 2026-10-03
 
 - Updating no longer stalls on "Setup was unable to automatically close all applications": Meloday
   Music closes within three seconds however long Plex or a phone following it takes to answer, and
   the installer closes it itself if it still hasn't.
 
-## 0.26.0 — 2026-10-03
+## 0.26.0 - 2026-10-03
 
 - Browse hubs (Pop, Chill & Calm...) open with billboards from your own library in that corner of
   it, each shown only when it's true: New in Pop (added in the last six months), your top album and
@@ -611,9 +992,9 @@ A speed and cache pass: everything already known is shown at once and brought up
 - Lyrics read by hand flow again: scrolling glides with the wheel, and a few seconds later the lyrics
   glide back to the singing instead of snapping there.
 
-## 0.25.0 — 2026-10-03
+## 0.25.0 - 2026-10-03
 
-- AutoMix mixes like a DJ (and like Apple Music's AutoMix), no longer just crossfading:
+- AutoMix mixes like a DJ instead of just crossfading:
   - Meloday Music listens to each song itself: how the playing song ends and the next begins, their
     tempo, beats, bar lines, key and energy (Plex has no beat analysis). Only those stretches are
     fetched; what's found is kept on this computer.
@@ -627,41 +1008,41 @@ A speed and cache pass: everything already known is shown at once and brought up
   - AutoMix plays through Meloday Music's own mixer, so mixes start on the exact sample; None and
     Crossfade, and casting, play as before.
 
-## 0.24.1 — 2026-10-03
+## 0.24.1 - 2026-10-03
 
 - Lyrics no longer jump to the top and back: a stray position reading (the player re-buffering for a
   moment) isn't taken as the song going back, and lines are measured where they're laid out rather
   than where they float.
 
-## 0.24.0 — 2026-10-02
+## 0.24.0 - 2026-10-02
 
-- Lyrics float, as Apple Music's do: the line being sung sits at the reading point, bright and full
+- Lyrics float: the line being sung sits at the reading point, bright and full
   size, and each line glides to its place on its own spring, those nearest the singing first and the
   rest a beat behind, so the lyrics drift up rather than scroll. Lines away from the singing grow
   dimmer and a little smaller with distance. Breaks in the singing, and a long intro, show three
   breathing dots. Scroll by hand to read ahead; the lyrics return to the singing a few seconds later.
 
-## 0.23.0 — 2026-10-02
+## 0.23.0 - 2026-10-02
 
 - Lyrics for far more songs: when Plex has none (or only unsynced ones), Meloday Music looks them up
   on LRCLIB (lrclib.net), the free, open lyrics database. In a sample of 40 songs from this library,
   Plex had synced lyrics for 2; with LRCLIB, 28 have them. Matches go by title, artist, album and
   length, also trying the lead artist and the title without its featured artists. What's found is
-  kept on this computer, so each song is looked up once (a miss is retried after a week). Settings →
-  Playback → Lyrics From LRCLIB turns it off; only the song's title, artist, album and length are sent.
+  kept on this computer, so each song is looked up once (a miss is retried after a week). Settings >
+  Playback > Lyrics From LRCLIB turns it off; only the song's title, artist, album and length are sent.
 - The lyrics panel says where the lyrics came from, and says so when a song is an instrumental.
 - AutoMix follows the singing with lyrics from either source.
 
-## 0.22.0 — 2026-10-02
+## 0.22.0 - 2026-10-02
 
 - Faster: Meloday Music keeps what Plex sends on this computer, so it starts and opens pages from
   what it already knows instead of asking the server for everything again. Kept answers show at
-  once and are brought up to date quietly behind them; Home catches up a few seconds after launch.
-  Measured on this library: everything Home needs is in hand 2 seconds after connecting, down from
+  once and are brought up to date in the background; Home catches up a few seconds after launch.
+  Measured on a large library: everything Home needs is in hand 2 seconds after connecting, down from
   5, and the slow requests at startup (twelve of over a second, Mixes for You's artist stations) are
   gone. Kept answers also stand in when the server can't be reached.
 - Staying in step with the library: Meloday Music notices when Plex says the library's content has
-  changed and checks what it kept before using it again. Settings → Server and Library → Keep In
+  changed and checks what it kept before using it again. Settings > Server and Library > Keep In
   Step With Your Library has Refresh Library (load everything afresh) and Scan for New Music (ask
   Plex to look through your music folders).
 - Lighter in the background: moving artwork rests while the window is minimised, as it already did
@@ -669,7 +1050,7 @@ A speed and cache pass: everything already known is shown at once and brought up
 - Lighter overall: the four pages visited last stay ready, and older ones are let go (they reopen
   from what's kept on disk) rather than every page staying in memory for the whole session.
 
-## 0.21.0 — 2026-10-02
+## 0.21.0 - 2026-10-02
 
 - Previous, play/pause and next under Meloday Music's taskbar thumbnail.
 - The player bar fits every window size: its buttons sit in two short rows when space runs low
@@ -677,30 +1058,30 @@ A speed and cache pass: everything already known is shown at once and brought up
   step out to Now Playing rather than being pushed off the bar.
 - Browse's category pills: the chosen one's highlight slides to it from the last.
 
-## 0.20.0 — 2026-10-02
+## 0.20.0 - 2026-10-02
 
 - Song Info, in every song's menu: the song (album, track, year, genre, mood, length), your
   listening (plays, skips, when last played and added, rating) and its file (format, quality,
   channels, size, Sound Check level, sonic analysis, whether it's downloaded, and where it is).
 - Song notifications: a quiet notification with the artwork as each song starts, while Meloday
-  Music is in the background; each replaces the last. Settings → Playback → Song Notifications.
+  Music is in the background; each replaces the last. Settings > Playback > Song Notifications.
 - Last.fm scrobbling, with your own Last.fm API account: Now Playing as each song starts, and a
   scrobble once it has played half its length or four minutes. Songs that can't be sent wait and go
   with the next. If your Plex account already scrobbles to Last.fm, leave it blank and keep Report
   listening to Plex on.
 
-## 0.19.0 — 2026-10-02
+## 0.19.0 - 2026-10-02
 
 - Downloads: keep songs, albums and playlists on this computer to play offline: Download in any
   song, album or playlist's … menu. Downloaded songs play from the computer instead of the server
-  (the original files where Windows can play them, otherwise 320 kbps MP3s). Library → Downloads
+  (the original files where Windows can play them, otherwise 320 kbps MP3s). Library > Downloads
   lists them, with Shuffle and a remove button on each; Settings shows how much is downloaded and
   can remove it all.
 - Lyrics have their own quote icon (the microphone stays with Artists).
 
-## 0.18.0 — 2026-10-02
+## 0.18.0 - 2026-10-02
 
-- Smart playlists can be made and edited: Playlists → New Smart Playlist, or Edit Rules… in a smart
+- Smart playlists can be made and edited: Playlists > New Smart Playlist, or Edit Rules… in a smart
   playlist's menu. Rules look at a song's title, artist, album, genre, style, mood, year, decade,
   rating, plays, skips, when it was last played or added; they can all have to match, or any one.
   Choose an order and, if you like, a limit. A count of the songs the rules match follows every
@@ -708,16 +1089,16 @@ A speed and cache pass: everything already known is shown at once and brought up
   in plain words and kept exactly as they were unless removed.
 - Smart playlists' songs no longer leave room for a remove button they can't have.
 
-## 0.17.0 — 2026-10-01
+## 0.17.0 - 2026-10-01
 
 - Control Meloday Music from your phone: Plex and Plexamp (and Plex Web) on the same network now
   find this computer as a player, the way they find Plexamp. Choose it as the player in the app, then
   start music from the app's own library view and use its controls: play, pause, skip, seek, volume,
-  shuffle and repeat, with the app following what plays here. On by default; Settings → Playback →
+  shuffle and repeat, with the app following what plays here. On by default; Settings > Playback >
   Control From Your Phone turns it off. Windows asks once to let Meloday Music talk on your network;
   allow it on private networks. Only devices on your own network can control the player.
 
-## 0.16.0 — 2026-10-01
+## 0.16.0 - 2026-10-01
 
 - Mini player: a small window that stays above everything else, with the artwork, the song and its
   controls, from the player bar's mini player button (or Ctrl+Shift+M). The full window steps aside
@@ -728,7 +1109,7 @@ A speed and cache pass: everything already known is shown at once and brought up
 - Toggle buttons' dots no longer stay lit after a change made from their menu.
 - Up Next says "1 track" rather than "1 tracks".
 
-## 0.15.0 — 2026-10-01
+## 0.15.0 - 2026-10-01
 
 - Lyrics: a Lyrics button in the player bar (and on Now Playing, or Ctrl+Shift+L) opens the song's
   lyrics beside the page, where the queue opens. Synced lyrics follow the song, the line being sung
@@ -737,15 +1118,15 @@ A speed and cache pass: everything already known is shown at once and brought up
 - The queue and lyrics panels share one place: opening one closes the other, and their buttons are
   lit only while their panel is open.
 
-## 0.14.1 — 2026-10-01
+## 0.14.1 - 2026-10-01
 
 - Track rows in playlists and the queue no longer shift when hovered: the remove button's column is
   kept for every row of a list that allows removal, including rows that appeared while a removal was
   still being made.
 
-## 0.14.0 — 2026-10-01
+## 0.14.0 - 2026-10-01
 
-- AutoMix, rebuilt in the spirit of Plexamp's Sweet Fades: every pair of songs gets its own handover.
+- AutoMix is rebuilt so every pair of songs gets its own handover.
   Each possible overlap, from half a second to twenty, is played out on the two songs' loudness
   (now read at two points a second) as it would be heard, fades and all, and the cleanest wins: no
   two songs loud at once, no sag in the music between them, and (with synced lyrics) never two voices
@@ -755,7 +1136,7 @@ A speed and cache pass: everything already known is shown at once and brought up
   rather than the next quarter-second.
 - An album played in order isn't mixed: its tracks run into one another as the album does.
 
-## 0.13.0 — 2026-10-01
+## 0.13.0 - 2026-10-01
 
 - AutoMix listens for the singing: with synced lyrics (LyricFind, through Plex Pass) it knows when a
   song's vocals end and when the next one's begin. An instrumental outro running into an instrumental
@@ -764,7 +1145,7 @@ A speed and cache pass: everything already known is shown at once and brought up
   sings at once, the handover stays short so two voices never clash. Songs without synced lyrics (or
   whose lyrics Plex can't fetch at the moment) are mixed from loudness alone, as before.
 
-## 0.12.0 — 2026-10-01
+## 0.12.0 - 2026-10-01
 
 - Cast: play to Google Cast devices (Chromecast, Google/Nest speakers, Google TV) and to UPnP/DLNA
   renderers such as Sonos speakers and many smart TVs, from a Cast button in the player bar and on Now
@@ -774,12 +1155,12 @@ A speed and cache pass: everything already known is shown at once and brought up
   between them by small sonic steps. From a track's … menu, or the Radio page.
 - AutoMix: transitions shaped to each pair of songs from Plex's loudness analysis. The next song
   comes in where the outgoing one starts to fade, for as long as that fade lasts (a short, tight
-  handover for songs that end cold), and starts at its first sound. Settings → Playback → Transitions.
+  handover for songs that end cold), and starts at its first sound. Settings > Playback > Transitions.
 - Sound Check: every song at the same loudness, from Plex's gain analysis (only ever turning down).
 - Meloday is made as the app starts (a couple of seconds after the library is ready), so it's ready
   to play by the time you open it.
 
-## 0.11.0 — 2026-10-01
+## 0.11.0 - 2026-10-01
 
 - New Meloday cover art: each part of the day has its own sky and sun of four soft rings, set where
   the sun sits at that time (low at dawn, high in the afternoon, off to the side late at night).
@@ -788,7 +1169,7 @@ A speed and cache pass: everything already known is shown at once and brought up
 - The Meloday page's cover breathes too. The saved cover (for Plex and thumbnails) uses the same art,
   still. The breathing follows the Motion setting and pauses off screen or when the window isn't in use.
 
-## 0.10.0 — 2026-09-30
+## 0.10.0 - 2026-09-30
 
 - Browse gathers genres, styles and moods into families: Pop (Dance Pop, Soft Pop, Bedroom Pop…),
   Hip-Hop, Electronic, Chill & Calm, Sad & Reflective and so on. A family card opens its hub, with
@@ -804,7 +1185,7 @@ A speed and cache pass: everything already known is shown at once and brought up
 - Browse cards are properly rounded at the bottom (the last few pixels were cut off), their titles
   wrap up to three lines, and titles stop short of however many albums the card shows.
 
-## 0.9.1 — 2026-09-30
+## 0.9.1 - 2026-09-30
 
 - The queue button now reliably closes the queue when it floats over the page: a click acts on
   whether the queue was open when it was pressed, so the press that dismisses the queue no longer
@@ -817,12 +1198,11 @@ A speed and cache pass: everything already known is shown at once and brought up
   - Clear Up Next (`list-x`), Play Next (`list-start`) and Add to Queue (`list-end`) are unchanged.
   - Settings: "Restore queue on launch" uses `list-restart`; Home's "Sections" uses `layout-list`.
 
-## 0.9.0 — 2026-09-30
+## 0.9.0 - 2026-09-30
 
 The first numbered pre-release, covering everything built so far, and this run of work:
 
-- Browse: genre, mood, style and decade cards are boards now, in the manner of Spotify's browse
-  cards. Each shows three of your most played albums with that tag, cascaded and tilted at the lower
+- Browse: genre, mood, style and decade cards are boards now. Each shows three of your most played albums with that tag, cascaded and tilted at the lower
   right, and takes the colour of the album on top. Search results use the same cards.
 - The queue button opens and closes the queue, and its dot shows only while the queue is open.
 - Hover plates are concentric with every kind of card (boards as well as tiles).
@@ -837,4 +1217,4 @@ The first numbered pre-release, covering everything built so far, and this run o
   logos imported from a folder, rankings, release types and appearances.
 - Meloday, the daylist-style radio, with optional AI titles.
 - Glass sidebar, floating queue and player bar, rows that slide under the sidebar, moving station
-  artwork, and the rename to Meloday Music.
+  artwork.

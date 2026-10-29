@@ -1,0 +1,75 @@
+Meloday Music includes the following third-party works.
+
+Nunito (typeface)
+  Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
+  Licensed under the SIL Open Font License, Version 1.1.
+  Full licence: Assets/Fonts/NUNITO-LICENSE.txt
+
+Lucide (icons)
+  Copyright (c) Lucide Icons and Contributors
+  Licensed under the ISC License.
+  Full licence: Assets/LUCIDE-LICENSE.txt, and https://lucide.dev/license
+
+projectM 4.1.8 (music visualization engine, dynamically linked and unmodified)
+  Copyright 2003-2026 projectM Team and contributors.
+  GNU Lesser General Public License, version 2.1 or later.
+  Full licence: Assets/ProjectM/PROJECTM-LICENSE.txt.
+  Exact corresponding source, with its dependencies and their notices:
+  Assets/ProjectM/Source/libprojectM-4.1.8.tar.gz.
+  Upstream: https://github.com/projectM-visualizer/projectm/releases/tag/v4.1.8
+  Rebuild instructions and bridge source: tools/projectm in the Meloday Music project.
+  The app loads projectM-4.dll dynamically; it may be replaced with a compatible build.
+
+GLEW 2.2.0 (OpenGL extension loader)
+  Copyright Milan Ikits, Marcelo E. Magallon, Lev Povalahev and contributors.
+  BSD-style, Mesa and Khronos licences; full text: Assets/ProjectM/GLEW-LICENSE.txt.
+  https://github.com/nigels-com/glew
+
+MilkDrop presets from projectM's Cream of the Crop collection
+  Original works by Aderrasi, martin, Geiss and shifter, shipped unmodified.
+  Credits, exact sources and collection inclusion statement: Assets/ProjectM/PRESETS.md.
+
+Meloday Engine: LAION CLAP music audio model
+  Music checkpoint: music_audioset_epoch_15_esc_90.14.pt.
+  Upstream: https://github.com/LAION-AI/CLAP (CC0-1.0).
+  ONNX conversion: https://huggingface.co/muzaiten/clap-htsat-base-onnx
+  Pinned revision: d4d4372c9894b975ec118589b4f4328103796e15; conversion distributed as CC0-1.0.
+  Model SHA-256: 9533ed823c150fb13c91ecd7359aa3bff1aa6da7b44099a21ccea10c0adba2d6.
+  Model documentation, provenance, manifest and CC0 license: Assets/Engine.
+  LAION also distributes its larger_clap_music model under Apache-2.0:
+  https://huggingface.co/laion/larger_clap_music. Apache-2.0 terms included in Assets/Engine.
+  Authors: Yusong Wu, Ke Chen, Tianyu Zhang, Yuchen Hui, Taylor Berg-Kirkpatrick, Shlomo Dubnov.
+
+Meloday Engine words: LAION CLAP music text encoder (offline only; not shipped)
+  Same checkpoint (music_audioset_epoch_15_esc_90.14.pt, SHA-256 fae3e9c087f2909c28a09dc31c8dfcdacbc42ba44c70e972b58c1bd1caf6dedd), CC0-1.0.
+  ONNX conversion: https://huggingface.co/muzaiten/clap-htsat-base-onnx, revision d4d4372c9894b975ec118589b4f4328103796e15, CC0-1.0.
+  text.onnx SHA-256 069e323e309284ae9aca6587b884afcd38f943fa1cba260823f4673b18f09a26;
+  tokenizer.json SHA-256 2bb1a22cfbe25b8e5a232b7fc4d7fc5073923b45724a5f813b00811bb6620f66.
+  The app ships only Assets/Engine/descriptors.json: text vectors for a fixed vocabulary, computed offline by tools/engine/vocabulary.
+  The text tower and tokenizer derive from RoBERTa-base (https://github.com/facebookresearch/fairseq,
+  https://huggingface.co/FacebookAI/roberta-base), Copyright (c) Facebook, Inc. and its affiliates, MIT License:
+  Assets/Engine/ROBERTA-LICENSE.txt.
+
+ONNX Runtime 1.23.2
+  Copyright (c) Microsoft Corporation. Licensed under the MIT License.
+  Full license and dependency notices: Assets/Engine/ONNX-RUNTIME-LICENSE.txt and ONNX-RUNTIME-NOTICES.txt.
+
+NAudio 2.2.1 (NAudio.Core, NAudio.Wasapi)
+  Copyright (c) Mark Heath and contributors. Licensed under the MIT License.
+  https://github.com/naudio/NAudio
+
+Win2D 1.4.0
+  Copyright (c) Microsoft Corporation. Licensed under the MIT License.
+  https://github.com/microsoft/Win2D
+
+Windows App SDK 1.8
+  Copyright (c) Microsoft Corporation. Licensed under the MIT License.
+  https://github.com/microsoft/WindowsAppSDK
+
+CommunityToolkit.Mvvm 8.4.2
+  Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License.
+  https://github.com/CommunityToolkit/dotnet
+
+Microsoft.Extensions.DependencyInjection, Microsoft.Extensions.Logging, System.Security.Cryptography.ProtectedData 9.0
+  Copyright (c) .NET Foundation and Contributors. Licensed under the MIT License.
+  https://github.com/dotnet/runtime

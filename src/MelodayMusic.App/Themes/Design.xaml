@@ -1,0 +1,667 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:helpers="using:MelodayMusic.Helpers">
+
+    <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#38FFFFFF" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#70FFFFFF" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#F4F2EE" />
+            <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
+            <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
+            <Color x:Key="SystemAccentColor">#D98A1C</Color>
+            <Color x:Key="SystemAccentColorLight1">#E69B35</Color>
+            <Color x:Key="SystemAccentColorLight2">#F2AE4E</Color>
+            <Color x:Key="SystemAccentColorLight3">#F8C77D</Color>
+            <Color x:Key="SystemAccentColorDark1">#A5620A</Color>
+            <Color x:Key="SystemAccentColorDark2">#85500A</Color>
+            <Color x:Key="SystemAccentColorDark3">#663C05</Color>
+
+            <SolidColorBrush x:Key="MelodayAccentBrush" Color="#F2AE4E" />
+            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="#F2AE4E" />
+            <SolidColorBrush x:Key="MelodayOnAccentBrush" Color="#16130F" />
+            <SolidColorBrush x:Key="MelodayWindowBrush" Color="#121114" />
+            <SolidColorBrush x:Key="MelodayContentBrush" Color="#18171B" />
+            <SolidColorBrush x:Key="MelodaySubtleFillBrush" Color="#26FFFFFF" />
+            <SolidColorBrush x:Key="MelodayHoverOverlayBrush" Color="#17FFFFFF" />
+            <SolidColorBrush x:Key="MelodayPressedOverlayBrush" Color="#0BFFFFFF" />
+            <SolidColorBrush x:Key="MelodayDividerBrush" Color="#1AFFFFFF" />
+            <SolidColorBrush x:Key="MelodayTextPrimaryBrush" Color="#F4F2EE" />
+            <SolidColorBrush x:Key="MelodayTextSecondaryBrush" Color="#B3AFA8" />
+            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="#8C8881" />
+            <SolidColorBrush x:Key="MelodayChipSelectedBrush" Color="#1CFFFFFF" />
+            <SolidColorBrush x:Key="MelodayPlaceholderBrush" Color="#29282E" />
+            <SolidColorBrush x:Key="MelodayPlaceholderIconBrush" Color="#5C5963" />
+            <SolidColorBrush x:Key="MelodayPlayButtonBrush" Color="#F4F2EE" />
+            <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="#141316" />
+            <SolidColorBrush x:Key="MelodayHairlineBrush" Color="#1FFFFFFF" />
+            <helpers:LiquidGlassBrush x:Key="MelodayPlayerAcrylicBrush" TintColor="#1E1D23" TintOpacity="0.62" FallbackColor="#26252B" />
+            <AcrylicBrush x:Key="MelodayGlassBrush" TintColor="#16161B" TintOpacity="0.2" TintLuminosityOpacity="0.38" FallbackColor="#1C1B21" />
+            <AcrylicBrush x:Key="MelodayOverlayGlassBrush" TintColor="#141316" TintOpacity="0.28" TintLuminosityOpacity="0.45" FallbackColor="#B3141316" />
+            <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="#24FFFFFF" />
+            <SolidColorBrush x:Key="MelodayGlassFillBrush" Color="#14FFFFFF" />
+            <SolidColorBrush x:Key="MelodayAmbientDimBrush" Color="#A8101013" />
+            <SolidColorBrush x:Key="MelodayArtworkOutlineBrush" Color="#14FFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemPointerOverBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedPointerOverBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedPressedBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelected" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPointerOver" Color="#12FFFFFF" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#12FFFFFF" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#38000000" />
+            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#70000000" />
+            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#1B1A1D" />
+            <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
+            <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
+            <Color x:Key="SystemAccentColor">#C77912</Color>
+            <Color x:Key="SystemAccentColorLight1">#D98A1C</Color>
+            <Color x:Key="SystemAccentColorLight2">#E69B35</Color>
+            <Color x:Key="SystemAccentColorLight3">#F2AE4E</Color>
+            <Color x:Key="SystemAccentColorDark1">#A15C07</Color>
+            <Color x:Key="SystemAccentColorDark2">#854B06</Color>
+            <Color x:Key="SystemAccentColorDark3">#663A05</Color>
+
+            <SolidColorBrush x:Key="MelodayAccentBrush" Color="#A15C07" />
+            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="#8A4F06" />
+            <SolidColorBrush x:Key="MelodayOnAccentBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="MelodayWindowBrush" Color="#F1EFEC" />
+            <SolidColorBrush x:Key="MelodayContentBrush" Color="#FBFAF8" />
+            <SolidColorBrush x:Key="MelodaySubtleFillBrush" Color="#17000000" />
+            <SolidColorBrush x:Key="MelodayHoverOverlayBrush" Color="#12000000" />
+            <SolidColorBrush x:Key="MelodayPressedOverlayBrush" Color="#1F000000" />
+            <SolidColorBrush x:Key="MelodayDividerBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="MelodayTextPrimaryBrush" Color="#1B1A1D" />
+            <SolidColorBrush x:Key="MelodayTextSecondaryBrush" Color="#5E5A55" />
+            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="#77736D" />
+            <SolidColorBrush x:Key="MelodayChipSelectedBrush" Color="#14000000" />
+            <SolidColorBrush x:Key="MelodayPlaceholderBrush" Color="#E6E3DE" />
+            <SolidColorBrush x:Key="MelodayPlaceholderIconBrush" Color="#A6A19A" />
+            <SolidColorBrush x:Key="MelodayPlayButtonBrush" Color="#1B1A1D" />
+            <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="#FBFAF8" />
+            <SolidColorBrush x:Key="MelodayHairlineBrush" Color="#1A000000" />
+            <helpers:LiquidGlassBrush x:Key="MelodayPlayerAcrylicBrush" TintColor="#FFFFFF" TintOpacity="0.72" FallbackColor="#FAF9F7" />
+            <AcrylicBrush x:Key="MelodayGlassBrush" TintColor="#FFFFFF" TintOpacity="0.3" TintLuminosityOpacity="0.55" FallbackColor="#F7F6F4" />
+            <AcrylicBrush x:Key="MelodayOverlayGlassBrush" TintColor="#141316" TintOpacity="0.28" TintLuminosityOpacity="0.45" FallbackColor="#B3141316" />
+            <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="#80FFFFFF" />
+            <SolidColorBrush x:Key="MelodayGlassFillBrush" Color="#66FFFFFF" />
+            <SolidColorBrush x:Key="MelodayAmbientDimBrush" Color="#C7F3F1EE" />
+            <SolidColorBrush x:Key="MelodayArtworkOutlineBrush" Color="#12000000" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemPointerOverBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedPointerOverBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemSelectedPressedBorderBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#0F000000" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#0F000000" />
+            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#0F000000" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundPointerOver" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="Transparent" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelected" Color="#0F000000" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPointerOver" Color="#0F000000" />
+            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#0F000000" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="HighContrast">
+            <SolidColorBrush x:Key="MelodayDangerBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="MelodayAccentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="MelodayOnAccentBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
+            <SolidColorBrush x:Key="MelodayWindowBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayContentBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodaySubtleFillBrush" Color="{ThemeResource SystemColorButtonFaceColor}" />
+            <SolidColorBrush x:Key="MelodayHoverOverlayBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="MelodayPressedOverlayBrush" Color="Transparent" />
+            <SolidColorBrush x:Key="MelodayDividerBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayTextPrimaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayTextSecondaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayChipSelectedBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="MelodayPlaceholderBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayPlaceholderIconBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayPlayButtonBrush" Color="{ThemeResource SystemColorButtonFaceColor}" />
+            <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
+            <SolidColorBrush x:Key="MelodayHairlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayPlayerAcrylicBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayGlassBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayOverlayGlassBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
+            <SolidColorBrush x:Key="MelodayGlassFillBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayAmbientDimBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayArtworkOutlineBrush" Color="Transparent" />
+        </ResourceDictionary>
+    </ResourceDictionary.ThemeDictionaries>
+    <Thickness x:Key="TextControlBorderThemeThickness">1</Thickness>
+    <Thickness x:Key="TextControlBorderThemeThicknessFocused">1</Thickness>
+
+    <FontFamily x:Key="MelodayFont">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
+    <FontFamily x:Key="ContentControlThemeFontFamily">ms-appx:///Assets/Fonts/Nunito.ttf#Nunito</FontFamily>
+
+    <SolidColorBrush x:Key="MelodayOnColorPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorBodyBrush" Color="#E6FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorSecondaryBrush" Color="#B3FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorTertiaryBrush" Color="#A6FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorFillBrush" Color="#29FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorPanelBrush" Color="#14FFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorHairlineBrush" Color="#1FFFFFFF" />
+    <SolidColorBrush x:Key="MelodayOnColorEdgeBrush" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="MelodayArtworkShadeBrush" Color="#80000000" />
+    <SolidColorBrush x:Key="MelodayColourBoardFallbackBrush" Color="#2A2930" />
+
+    <x:Boolean x:Key="ListViewItemSelectionIndicatorVisualEnabled">False</x:Boolean>
+
+    <Style x:Key="MelodayTextBase" TargetType="TextBlock">
+        <Setter Property="helpers:TextOverflow.Reveal" Value="True" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+        <Setter Property="TextWrapping" Value="NoWrap" />
+    </Style>
+    <Style x:Key="MelodayHeroText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="AutomationProperties.HeadingLevel" Value="1" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontHero}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LineHeight" Value="{StaticResource MelodayLineHero}" />
+        <Setter Property="CharacterSpacing" Value="-20" />
+        <Setter Property="TextWrapping" Value="WrapWholeWords" />
+        <Setter Property="MaxLines" Value="2" />
+    </Style>
+    <Style x:Key="MelodayDisplayText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontDisplay}" />
+        <Setter Property="FontWeight" Value="ExtraBold" />
+        <Setter Property="LineHeight" Value="{StaticResource MelodayLineDisplay}" />
+        <Setter Property="CharacterSpacing" Value="-15" />
+        <Setter Property="TextWrapping" Value="WrapWholeWords" />
+        <Setter Property="MaxLines" Value="2" />
+    </Style>
+    <Style x:Key="MelodayTitleText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontTitle}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-10" />
+    </Style>
+    <Style x:Key="MelodaySectionText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontSection}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-10" />
+    </Style>
+    <Style x:Key="MelodayLyricText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontSection}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-10" />
+        <Setter Property="TextWrapping" Value="WrapWholeWords" />
+    </Style>
+    <Style x:Key="MelodayHeadlineText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontSubtitle}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="MelodayBodyStrongText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="MelodayBodyText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+    </Style>
+    <Style x:Key="MelodaySecondaryText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontCaption}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextSecondaryBrush}" />
+    </Style>
+    <Style x:Key="MelodayParagraphText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="LineHeight" Value="{StaticResource MelodayLineParagraph}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextSecondaryBrush}" />
+        <Setter Property="TextWrapping" Value="WrapWholeWords" />
+        <Setter Property="TextTrimming" Value="None" />
+    </Style>
+    <Style x:Key="MelodayOverlineText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontCaption}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextSecondaryBrush}" />
+    </Style>
+
+    <ControlTemplate x:Key="MelodayButtonTemplate" TargetType="Button">
+        <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}"
+              BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+            <Border x:Name="Overlay" Background="Transparent" CornerRadius="{TemplateBinding CornerRadius}" helpers:Anim.Fade="True" />
+            <ContentPresenter x:Name="Presenter" helpers:Anim.Fade="True"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Foreground="{TemplateBinding Foreground}"
+                              FontFamily="{TemplateBinding FontFamily}"
+                              FontSize="{TemplateBinding FontSize}"
+                              FontWeight="{TemplateBinding FontWeight}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="CommonStates">
+                    <VisualState x:Name="Normal" />
+                    <VisualState x:Name="PointerOver">
+                        <VisualState.Setters>
+                            <Setter Target="Overlay.Background" Value="{ThemeResource MelodayHoverOverlayBrush}" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Pressed">
+                        <VisualState.Setters>
+                            <Setter Target="Overlay.Background" Value="{ThemeResource MelodayPressedOverlayBrush}" />
+                            <Setter Target="Presenter.Opacity" Value="0.8" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Disabled">
+                        <VisualState.Setters>
+                            <Setter Target="Root.Opacity" Value="0.38" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+        </Grid>
+    </ControlTemplate>
+
+    <Style x:Key="MelodayButtonBase" TargetType="Button">
+        <Setter Property="Template" Value="{StaticResource MelodayButtonTemplate}" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="VerticalContentAlignment" Value="Center" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualMargin" Value="-3" />
+    </Style>
+
+    <Style x:Key="MelodayIconButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayButtonM}" />
+        <Setter Property="Height" Value="{StaticResource MelodayButtonM}" />
+        <Setter Property="CornerRadius" Value="999" />
+    </Style>
+
+    <Style x:Key="MelodayPlayButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodayPlayButtonBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayOnPlayButtonBrush}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayButtonXL}" />
+        <Setter Property="Height" Value="{StaticResource MelodayButtonXL}" />
+        <Setter Property="CornerRadius" Value="999" />
+    </Style>
+
+    <Style x:Key="MelodayPrimaryButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodayAccentBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayOnAccentBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayCapsulePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+    <Style x:Key="MelodaySecondaryButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodaySubtleFillBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayCapsulePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+    <Style x:Key="MelodayDangerButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodayDangerBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayOnDangerBrush}" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayCapsulePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+    <Style x:Key="MelodayRoundActionButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodaySubtleFillBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="CornerRadius" Value="999" />
+    </Style>
+
+    <Style x:Key="MelodayRowPlayButtonStyle" TargetType="Button">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Grid Background="Transparent">
+                        <ContentPresenter x:Name="ContentPresenter" Content="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="MelodayHeroPlayButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodayAccentBrush}" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayOnAccentBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayCapsulePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+    <Style x:Key="MelodayGlassButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{StaticResource MelodayOnColorFillBrush}" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorPrimaryBrush}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayCapsulePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+    <Style x:Key="MelodayGlassRoundButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayGlassButtonStyle}">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayControlHeight}" />
+    </Style>
+
+    <Style x:Key="MelodayTabButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorSecondaryBrush}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBodyLarge}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Height" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="Padding" Value="4,0" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+    </Style>
+
+    <Style x:Key="MelodayGlassPanelStyle" TargetType="Border">
+        <Setter Property="Background" Value="{StaticResource MelodayOnColorPanelBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource MelodayOnColorPanelBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusBoard}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayPanelPadding}" />
+    </Style>
+
+    <Style x:Key="MelodayBoardEyebrowText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBoardEyebrow}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="CharacterSpacing" Value="160" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorBodyBrush}" />
+    </Style>
+    <Style x:Key="MelodayBoardTitleText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBoardTitle}" />
+        <Setter Property="FontWeight" Value="Bold" />
+        <Setter Property="CharacterSpacing" Value="-10" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorPrimaryBrush}" />
+    </Style>
+    <Style x:Key="MelodayBoardSubtitleText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBoardSubtitle}" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorBodyBrush}" />
+    </Style>
+    <Style x:Key="MelodayBoardDetailText" TargetType="TextBlock" BasedOn="{StaticResource MelodayTextBase}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBoardDetail}" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorTertiaryBrush}" />
+    </Style>
+
+    <Style x:Key="MelodayOverlayButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="{ThemeResource MelodayOverlayGlassBrush}" />
+        <Setter Property="BorderBrush" Value="{StaticResource MelodayOnColorEdgeBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Foreground" Value="{StaticResource MelodayOnColorPrimaryBrush}" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayButtonS}" />
+        <Setter Property="Height" Value="{StaticResource MelodayButtonS}" />
+        <Setter Property="CornerRadius" Value="999" />
+    </Style>
+
+    <Style x:Key="MelodayRowArrowButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayOverlayButtonStyle}">
+        <Setter Property="IsTabStop" Value="False" />
+    </Style>
+
+    <Style TargetType="ComboBox" BasedOn="{StaticResource DefaultComboBoxStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusPill}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayComboBoxPadding}" />
+    </Style>
+
+    <Style TargetType="TextBox" BasedOn="{StaticResource DefaultTextBoxStyle}">
+        <Setter Property="helpers:EditorChrome.Neutral" Value="True" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="{StaticResource MelodayTextBoxPadding}" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusControl}" />
+    </Style>
+    <Style TargetType="PasswordBox" BasedOn="{StaticResource DefaultPasswordBoxStyle}">
+        <Setter Property="helpers:EditorChrome.Neutral" Value="True" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="Padding" Value="{StaticResource MelodayTextBoxPadding}" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusControl}" />
+    </Style>
+
+    <Style TargetType="NumberBox">
+        <Setter Property="helpers:EditorChrome.Neutral" Value="True" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayControlHeight}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusControl}" />
+    </Style>
+    <Style TargetType="CheckBox" BasedOn="{StaticResource DefaultCheckBoxStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayControlHeight}" />
+    </Style>
+    <Style TargetType="ToggleSwitch" BasedOn="{StaticResource DefaultToggleSwitchStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="VerticalAlignment" Value="Center" />
+        <Setter Property="HorizontalAlignment" Value="Right" />
+    </Style>
+    <Style TargetType="MenuFlyoutItem" BasedOn="{StaticResource DefaultMenuFlyoutItemStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayButtonS}" />
+    </Style>
+    <Style TargetType="ToggleMenuFlyoutItem" BasedOn="{StaticResource DefaultToggleMenuFlyoutItemStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayButtonS}" />
+    </Style>
+    <Style TargetType="MenuFlyoutSubItem" BasedOn="{StaticResource DefaultMenuFlyoutSubItemStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayButtonS}" />
+    </Style>
+    <Style TargetType="RadioMenuFlyoutItem" BasedOn="{StaticResource DefaultRadioMenuFlyoutItemStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="FontWeight" Value="Medium" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodayButtonS}" />
+    </Style>
+    <Style TargetType="FlyoutPresenter" BasedOn="{StaticResource DefaultFlyoutPresenterStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusBoard}" />
+    </Style>
+    <Style TargetType="MenuFlyoutPresenter" BasedOn="{StaticResource DefaultMenuFlyoutPresenterStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusBoard}" />
+    </Style>
+    <Style TargetType="ToolTip" BasedOn="{StaticResource DefaultToolTipStyle}">
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontCaption}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusControl}" />
+    </Style>
+
+    <Style x:Key="MelodayTileButtonStyle" TargetType="Button" BasedOn="{StaticResource MelodayButtonBase}">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+        <Setter Property="Padding" Value="{StaticResource MelodayTilePadding}" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusTileHost}" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Top" />
+        <Setter Property="FocusVisualMargin" Value="0" />
+    </Style>
+
+    <Style x:Key="MelodayIconToggleStyle" TargetType="ToggleButton">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextSecondaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Width" Value="{StaticResource MelodayButtonM}" />
+        <Setter Property="Height" Value="{StaticResource MelodayButtonM}" />
+        <Setter Property="CornerRadius" Value="999" />
+        <Setter Property="UseSystemFocusVisuals" Value="True" />
+        <Setter Property="FocusVisualMargin" Value="-3" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Grid x:Name="Root" Background="{TemplateBinding Background}" CornerRadius="{TemplateBinding CornerRadius}">
+                        <Border x:Name="Fill" Background="{ThemeResource MelodayAccentBrush}" CornerRadius="{TemplateBinding CornerRadius}" Opacity="0" helpers:Anim.Fade="True" />
+                        <Border x:Name="Overlay" Background="Transparent" CornerRadius="{TemplateBinding CornerRadius}" helpers:Anim.Fade="True" />
+                        <ContentPresenter x:Name="Presenter" helpers:Anim.Fade="True"
+                                          Content="{TemplateBinding Content}"
+                                          Foreground="{TemplateBinding Foreground}"
+                                          HorizontalContentAlignment="Center"
+                                          VerticalContentAlignment="Center" />
+                        <Ellipse x:Name="Dot" Width="4" Height="4" Fill="{ThemeResource MelodayAccentBrush}" helpers:Anim.Fade="True"
+                                 VerticalAlignment="Bottom" HorizontalAlignment="Center" Margin="0,0,0,-4" Opacity="0" />
+                        <VisualStateManager.VisualStateGroups>
+                            <VisualStateGroup x:Name="CommonStates">
+                                <VisualState x:Name="Normal">
+                                    <VisualState.Setters>
+                                        <Setter Target="Dot.Opacity" Value="0" />
+                                        <Setter Target="Fill.Opacity" Value="0" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="PointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Dot.Opacity" Value="0" />
+                                        <Setter Target="Fill.Opacity" Value="0" />
+                                        <Setter Target="Overlay.Background" Value="{ThemeResource MelodayHoverOverlayBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Pressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Dot.Opacity" Value="0" />
+                                        <Setter Target="Fill.Opacity" Value="0" />
+                                        <Setter Target="Overlay.Background" Value="{ThemeResource MelodayPressedOverlayBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Disabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Dot.Opacity" Value="0" />
+                                        <Setter Target="Fill.Opacity" Value="0" />
+                                        <Setter Target="Root.Opacity" Value="0.38" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Checked">
+                                    <VisualState.Setters>
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayAccentBrush}" />
+                                        <Setter Target="Dot.Opacity" Value="1" />
+                                        <Setter Target="Fill.Opacity" Value="0.2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPointerOver">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Background" Value="{ThemeResource MelodayHoverOverlayBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayAccentBrush}" />
+                                        <Setter Target="Dot.Opacity" Value="1" />
+                                        <Setter Target="Fill.Opacity" Value="0.2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedPressed">
+                                    <VisualState.Setters>
+                                        <Setter Target="Overlay.Background" Value="{ThemeResource MelodayPressedOverlayBrush}" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayAccentBrush}" />
+                                        <Setter Target="Dot.Opacity" Value="1" />
+                                        <Setter Target="Fill.Opacity" Value="0.2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="CheckedDisabled">
+                                    <VisualState.Setters>
+                                        <Setter Target="Root.Opacity" Value="0.38" />
+                                        <Setter Target="Presenter.Foreground" Value="{ThemeResource MelodayAccentBrush}" />
+                                        <Setter Target="Fill.Opacity" Value="0.2" />
+                                    </VisualState.Setters>
+                                </VisualState>
+                                <VisualState x:Name="Indeterminate" />
+                                <VisualState x:Name="IndeterminatePointerOver" />
+                                <VisualState x:Name="IndeterminatePressed" />
+                                <VisualState x:Name="IndeterminateDisabled" />
+                            </VisualStateGroup>
+                        </VisualStateManager.VisualStateGroups>
+                    </Grid>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="MelodayHeroSubtitleLinkStyle" TargetType="HyperlinkButton" BasedOn="{StaticResource MelodayLinkButtonStyle}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontHeading}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayAccentTextBrush}" />
+    </Style>
+    <Style x:Key="MelodayFeatureSubtitleLinkStyle" TargetType="HyperlinkButton" BasedOn="{StaticResource MelodayHeroSubtitleLinkStyle}">
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontSubtitle}" />
+    </Style>
+    <Style x:Key="MelodayMoreLinkStyle" TargetType="HyperlinkButton" BasedOn="{StaticResource MelodayLinkButtonStyle}">
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextPrimaryBrush}" />
+    </Style>
+
+    <Style x:Key="MelodayGroupStyle" TargetType="StackPanel">
+        <Setter Property="Spacing" Value="{StaticResource MelodaySpaceS}" />
+    </Style>
+    <Style x:Key="MelodayGroupHeaderText" TargetType="TextBlock" BasedOn="{StaticResource MelodayBodyStrongText}">
+        <Setter Property="AutomationProperties.HeadingLevel" Value="3" />
+        <Setter Property="Margin" Value="4,0,0,0" />
+    </Style>
+    <Style x:Key="MelodayGroupListStyle" TargetType="Border">
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusGroup}" />
+    </Style>
+    <Style x:Key="MelodayGroupRowsStyle" TargetType="StackPanel">
+        <Setter Property="Spacing" Value="2" />
+    </Style>
+    <Style x:Key="MelodayGroupRowStyle" TargetType="Grid">
+        <Setter Property="Background" Value="{ThemeResource MelodayGlassFillBrush}" />
+        <Setter Property="Padding" Value="{StaticResource MelodaySettingsRowPadding}" />
+        <Setter Property="ColumnSpacing" Value="{StaticResource MelodaySpaceL}" />
+        <Setter Property="MinHeight" Value="{StaticResource MelodaySettingsRowHeight}" />
+        <Setter Property="helpers:SettingsLayout.Adaptive" Value="True" />
+    </Style>
+
+    <Style x:Key="MelodayLinkButtonStyle" TargetType="HyperlinkButton">
+        <Setter Property="Padding" Value="0" />
+        <Setter Property="Foreground" Value="{ThemeResource MelodayTextSecondaryBrush}" />
+        <Setter Property="FontFamily" Value="{StaticResource MelodayFont}" />
+        <Setter Property="FontSize" Value="{StaticResource MelodayFontBody}" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="MinHeight" Value="0" />
+        <Setter Property="MinWidth" Value="0" />
+        <Setter Property="CornerRadius" Value="{StaticResource MelodayRadiusThumb}" />
+        <Setter Property="FocusVisualMargin" Value="-2" />
+    </Style>
+</ResourceDictionary>

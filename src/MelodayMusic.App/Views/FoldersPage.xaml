@@ -1,0 +1,58 @@
+<Page
+    x:Class="MelodayMusic.Views.FoldersPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:local="using:MelodayMusic.Views"
+    xmlns:models="using:MelodayMusic.Core.Models"
+    Background="Transparent">
+
+    <Page.Resources>
+        <DataTemplate x:Key="FolderTemplate" x:DataType="models:FolderEntry">
+            <Grid ColumnSpacing="16" Padding="4,6,4,6" AutomationProperties.Name="{x:Bind Title}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <Border Width="44" Height="44" CornerRadius="{StaticResource MelodayRadiusThumb}" Background="{ThemeResource MelodaySubtleFillBrush}">
+                    <controls:LucideIcon Icon="Folder" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <TextBlock Grid.Column="1" Text="{x:Bind Title}" Style="{StaticResource MelodayBodyStrongText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                <controls:LucideIcon Grid.Column="2" Icon="ChevronRight" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" VerticalAlignment="Center" Opacity="0.6" />
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="TrackTemplate" x:DataType="models:Track">
+            <controls:TrackRow Track="{x:Bind}" />
+        </DataTemplate>
+        <local:FolderTemplateSelector x:Key="Selector" FolderTemplate="{StaticResource FolderTemplate}" TrackTemplate="{StaticResource TrackTemplate}" />
+    </Page.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <controls:PageHeader Padding="{StaticResource MelodayPageHeaderPadding}" Eyebrow="{x:Bind ViewModel.Eyebrow, Mode=OneWay}"
+                             Title="{x:Bind ViewModel.Folder.Title, Mode=OneWay}" Subtitle="{x:Bind ViewModel.CountText, Mode=OneWay}">
+            <StackPanel x:Name="Actions" Orientation="Horizontal" Spacing="8" Visibility="Collapsed">
+                <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnPlay" AutomationProperties.AutomationId="FolderPlayButton">
+                    <controls:IconLabel Icon="Play" IsFilled="True" Text="Play" />
+                </Button>
+                <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnShuffle">
+                    <controls:IconLabel Icon="Shuffle" Text="Shuffle" />
+                </Button>
+            </StackPanel>
+        </controls:PageHeader>
+
+        <ListView x:Name="ItemList" Grid.Row="1" Padding="{StaticResource MelodayListPadding}" ItemsSource="{x:Bind ViewModel.Items}"
+                  ItemTemplateSelector="{StaticResource Selector}" ItemContainerStyle="{StaticResource MelodayTrackItemStyle}"
+                  SelectionMode="Extended" IsItemClickEnabled="True" ItemClick="OnItemClick" controls:TrackListBehavior.IsEnabled="True"
+                  AutomationProperties.Name="Folder contents" AutomationProperties.AutomationId="FolderList" />
+
+        <controls:PageStateView SkeletonKind="Tracks" SkeletonPadding="{StaticResource MelodayListPadding}" Grid.Row="1" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+                                ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}" RetryRequested="OnRetry"
+                                IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}" EmptyText="There is nothing in this folder." EmptyIcon="Folder" />
+    </Grid>
+</Page>
