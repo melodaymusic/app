@@ -214,7 +214,7 @@ public sealed class MelodayService
                     .Where(t => !_mutes.IsMuted(saved.Server, t.RatingKey, t.ArtistRatingKey)).ToList();
                 if (tracks.Count > 0)
                 {
-                    var cover = saved.Cover is { } path && Path.GetFileName(path).StartsWith("cover-v7-", StringComparison.Ordinal) && File.Exists(path) ? path : await MelodayCover.RenderAsync(period, saved.Title, saved.MadeAt, _log).ConfigureAwait(false);
+                    var cover = saved.Cover is { } path && Path.GetFileName(path).StartsWith(MelodayCover.FilePrefix, StringComparison.Ordinal) && File.Exists(path) ? path : await MelodayCover.RenderAsync(period, saved.Title, saved.MadeAt, _log).ConfigureAwait(false);
                     if (saved.Cover != cover) { saved.Cover = cover; SaveState(state); }
                     var mix = new MelodayMix(saved.Title, saved.Description, period, saved.PeriodStart, saved.MadeAt, tracks, cover);
                     ct.ThrowIfCancellationRequested();
@@ -783,7 +783,7 @@ public sealed class MelodayService
         }
     }
 
-    private const int PlexCoverVersion = 8;
+    private const int PlexCoverVersion = 9;
 
     private string StorageScope => _storageScope.Value ?? Scope;
     private string ScopedPath(string name) => Path.Combine(AppPaths.Meloday, name + "-" +

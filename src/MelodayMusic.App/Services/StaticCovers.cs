@@ -15,7 +15,7 @@ namespace MelodayMusic.Services;
 
 public sealed class StaticCovers
 {
-    private const int Version = 30;
+    private const int Version = 31;
 
     private readonly ArtworkService _artwork;
     private readonly MelodayService _meloday;

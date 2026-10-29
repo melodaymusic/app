@@ -52,7 +52,7 @@ public sealed partial class MadeForYouViewModel : ViewModelBase
         {
             Show(Compose(await _mixes.GetMixesAsync()));
             IsEmpty = Rows.Count == 0;
-            if (IsEmpty) Description = "Listen a little more and Meloday will start finding the specific corners of your taste.";
+            if (IsEmpty) Description = "Listen a little more and Meloday will start making mixes from the genres and moods you play most.";
             if (IsEmpty) return;
 
             await Task.WhenAll(EnsureShelvesAsync(libraryVersion), EnsureDiscoveryAsync(libraryVersion));
@@ -132,7 +132,7 @@ public sealed partial class MadeForYouViewModel : ViewModelBase
         Add("made.genres", "Genre Essentials", "The best-known songs of the genres you play, from your own library. New every Monday",
             Take(_made.On(PlaylistShelf.Genre), 12));
 
-        Add("made.sounds", "Your Sounds", "Genres, moods and the corners of your library you keep coming back to",
+        Add("made.sounds", "Your Sounds", "Genres, moods and niches you keep coming back to",
             Take(plain.Cast<MediaItem>().Concat(niche.Where(m => m.Focus is NicheFocus.Lately or NicheFocus.Sound
                 || (m.Focus == NicheFocus.Blend && m.Mood is not null && m.Context is null && m.Energy == NicheEnergy.Any && m.ArtistNames.Count < 2)))));
 

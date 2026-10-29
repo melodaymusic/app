@@ -94,7 +94,7 @@ public static class PulseScheduleDialog
 
         var chosenHost = new StackPanel { Spacing = UiScale.Size(8) };
         var status = Dialogs.Note(string.Empty);
-        status.Foreground = (Microsoft.UI.Xaml.Media.Brush)resources["MelodayDangerBrush"];
+        status.Foreground = (Microsoft.UI.Xaml.Media.Brush)resources["MelodayDangerTextBrush"];
         status.Visibility = Visibility.Collapsed;
         var title = new TextBox { Header = "Program name", PlaceholderText = source?.Title ?? "Optional", Text = rule?.Title ?? string.Empty };
 

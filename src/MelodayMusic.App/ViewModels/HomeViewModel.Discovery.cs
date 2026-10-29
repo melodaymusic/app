@@ -91,7 +91,7 @@ public sealed partial class HomeViewModel
             {
                 Identifier = "context.discovery",
                 Title = "Discovery Mix",
-                Subtitle = "Underplayed and unheard corners of your library, chosen from what you tend to like",
+                Subtitle = "Songs you rarely or never play, picked from what you tend to like",
                 Items = items,
                 CardStyle = CardStyle.Tile,
             });

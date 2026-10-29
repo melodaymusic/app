@@ -84,6 +84,8 @@ same computed host radius. Artwork placeholders and decoded artwork share the sa
 - On colour (`MelodayOnColorPrimaryBrush`, `...Body`, `...Secondary`, `...Tertiary`, `...Fill`,
   `...Panel`, `...Hairline`, `...Edge`): text and controls over artwork or a coloured page, always
   light, at fixed strengths. Never write a colour value in a page.
+- `MelodayDangerBrush` is a fill behind `MelodayOnDangerBrush` text. For red text (destructive menu
+  items, error notes) use `MelodayDangerTextBrush`, which stays above 4.5:1 in dark mode.
 - The accent follows the page's artwork (`Accent`); buttons, links and selection use it.
 - `MelodayChipSelectedBrush`: the chosen chip's fill (Browse's sliding category pill), the same strength
   as a selected sidebar item.

@@ -254,7 +254,7 @@ public sealed class LibraryActions
             tracks.Add(end);
             if (tracks.Count <= 2)
             {
-                _notifications.ShowInfo("No way between them", _intelligence.IsMeloday ? "ME needs both endpoints and enough connecting tracks analysed. They have been prioritised; try again as coverage grows." : "Plex could not find a sonic path between these tracks.");
+                _notifications.ShowInfo("No way between them", _intelligence.IsMeloday ? "The Meloday Engine hasn't analysed enough songs between these two yet. It will analyse them next, so try again soon." : "Plex could not find a sonic path between these tracks.");
                 return;
             }
             await _player.PlayTracksAsync(tracks);

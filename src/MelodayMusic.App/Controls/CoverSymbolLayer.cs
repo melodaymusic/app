@@ -9,12 +9,10 @@ namespace MelodayMusic.Controls;
 
 public sealed partial class CoverSymbolLayer : Grid
 {
-    private readonly ArtistLogo _symbol = new()
+    private readonly MelodayMark _symbol = new()
     {
         Width = CoverSymbol.Width,
-        Height = CoverSymbol.Width * 226.0 / 512,
-        MaxLogoWidth = CoverSymbol.Width,
-        MaxLogoHeight = CoverSymbol.Width * 226.0 / 512,
+        Height = CoverSymbol.Height,
         HorizontalAlignment = HorizontalAlignment.Left,
         VerticalAlignment = VerticalAlignment.Top,
         Margin = new Thickness(CoverSymbol.Left, CoverSymbol.Top, 0, 0),
@@ -46,11 +44,6 @@ public sealed partial class CoverSymbolLayer : Grid
             Stretch = Stretch.UniformToFill,
             Child = new Grid { Width = 1000, Height = 1000, Children = { _symbol, badgeRow } },
         });
-        Loaded += (_, _) =>
-        {
-            _symbol.Logo = null;
-            _symbol.Logo = new PreparedLogo(Path.Combine(AppContext.BaseDirectory, "Assets", "MelodayMusic-symbol.png"), 512.0 / 226);
-        };
     }
 
     public string Badge
@@ -76,9 +69,9 @@ public sealed partial class CoverSymbolLayer : Grid
     internal void SetColour(uint ink)
     {
         _groundVersion++;
-        var colour = Windows.UI.Color.FromArgb(255, (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink);
-        _symbol.SetColour(colour, animate: false);
-        _badge.Foreground = new SolidColorBrush(colour);
+        var brush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink));
+        _symbol.Foreground = brush;
+        _badge.Foreground = brush;
     }
 
     internal void SetStation(MelodayMusic.Core.Models.Station station) => SetGround(StationColours.Ground(station));

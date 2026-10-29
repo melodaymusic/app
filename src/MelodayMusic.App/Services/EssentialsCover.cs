@@ -13,7 +13,7 @@ namespace MelodayMusic.Services;
 public static class EssentialsCover
 {
     private const float Size = 1000, Margin = 40, Join = 500;
-    private const int Version = 17;
+    private const int Version = 18;
 
     public static async Task<string?> RenderAsync(string identity, string artistName, byte[]? backdrop, ILogger log)
     {

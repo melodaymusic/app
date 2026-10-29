@@ -4,6 +4,14 @@ Meloday Music follows semantic versioning. Until the public launch (1.0.0) the v
 1.0: a run of work that adds or changes features raises the minor number (0.9.0 to 0.10.0), and a run
 of fixes alone raises the patch number (0.9.0 to 0.9.1). The version is set in `Directory.Build.props`.
 
+## 0.96.1 - 2026-10-29
+
+- The Meloday wave on covers, Home settings and the loading screen is drawn from a vector (MelodayMusic-symbol.svg) instead of a PNG, so it stays sharp at small sizes. Generated covers are redrawn once with it.
+- Saved Meloday covers are reused after a restart instead of being redrawn every launch.
+- Settings > About credits the cover shapes (Shape Icons by SVGBackgrounds.com and shapes.gallery) and says the Genre Essentials covers are based on Apple Music's genre artwork, redesigned in the Meloday palette. THIRD-PARTY-NOTICES.txt and the README list them too.
+- Red text in menus and the Pulse schedule dialog is lighter in dark mode, and tertiary text is slightly darker in light mode, so both meet 4.5:1 contrast.
+- Clearer wording in a few places, including the Sonic Adventure tooltip, the message when the Meloday Engine can't link two songs yet, and the mood tagging explanation in Settings.
+
 ## 0.96.0 - 2026-10-25
 
 - Meloday names follow what the mix mostly is: genres are counted by family first, so a mostly R&B Meloday is named for R&B rather than for one small tag.

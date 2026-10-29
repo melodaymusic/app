@@ -20,7 +20,7 @@ public sealed record ShapeCoverLayers(uint Ground, string Overlay, IReadOnlyList
 
 public sealed partial class ShapeCovers
 {
-    private const int Version = 7;
+    private const int Version = 8;
     private const float ViewBox = 480;
     private const int MaskCells = 48;
 

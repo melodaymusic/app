@@ -10,6 +10,14 @@ Lucide (icons)
   Licensed under the ISC License.
   Full licence: Assets/LUCIDE-LICENSE.txt, and https://lucide.dev/license
 
+Shape Icons (cover shapes in Assets/Shapes)
+  Shape Icons by SVGBackgrounds.com: https://www.svgbackgrounds.com
+  Shape Icons by shapes.gallery: https://shapes.gallery
+
+Genre Essentials covers (Assets/Genres)
+  Based on Apple Music's genre artwork, redesigned in the Meloday palette.
+  Apple Music is a trademark of Apple Inc.
+
 projectM 4.1.8 (music visualization engine, dynamically linked and unmodified)
   Copyright 2003-2026 projectM Team and contributors.
   GNU Lesser General Public License, version 2.1 or later.

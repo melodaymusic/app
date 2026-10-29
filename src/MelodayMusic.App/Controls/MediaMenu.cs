@@ -214,7 +214,7 @@ public static class MediaMenu
 
     public static MenuFlyoutItem Danger(MenuFlyoutItem item)
     {
-        var red = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["MelodayDangerBrush"];
+        var red = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["MelodayDangerTextBrush"];
         item.Foreground = red;
         item.FontWeight = Microsoft.UI.Text.FontWeights.Bold;
         foreach (var key in new[] { "MenuFlyoutItemForeground", "MenuFlyoutItemForegroundPointerOver", "MenuFlyoutItemForegroundPressed" })

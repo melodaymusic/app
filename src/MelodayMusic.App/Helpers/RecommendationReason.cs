@@ -37,7 +37,7 @@ public static class RecommendationReason
             return "Why this song? You rated it highly." + tagged;
 
         if (tag is { Length: > 0 })
-            return $"Why this song? Plex tags it as {tag}, a useful signal for matching it with similar music.";
+            return $"Why this song? Plex tags it as {tag}.";
 
         return "Why this song? It is part of your Plex library and listening history.";
     }

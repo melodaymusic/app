@@ -167,11 +167,11 @@ public sealed partial class SettingsViewModel : ObservableObject
     public double EnginePercent => Analysis.Summary.Total > 0 ? Math.Min(100, 100.0 * App.Services.GetRequiredService<MelodayEngine>().Count / Analysis.Summary.Total) : 0;
     public string EngineCoverage => Analysis.InventoryKnown
         ? $"{EnginePercent:0.0}% - {App.Services.GetRequiredService<MelodayEngine>().Count:N0} of {Analysis.Summary.Total:N0} tracks have ME sound profiles"
-        : "Checking saved ME sound profiles...";
+        : "Checking saved ME sound profiles…";
     public double AnalysisPercent => Analysis.Summary.Percent;
     public string AnalysisProgress => Analysis.InventoryKnown
         ? $"{AnalysisPercent:0.0}% of tracks analysed"
-        : "Checking saved analysis...";
+        : "Checking saved analysis…";
     public string AnalysisCoverage => Analysis.InventoryKnown
         ? $"{Analysis.Summary.Complete:N0} of {Analysis.Summary.Total:N0} tracks - {Analysis.Summary.Partial:N0} partially analysed"
         : "Counting your library and checking this computer's saved results";

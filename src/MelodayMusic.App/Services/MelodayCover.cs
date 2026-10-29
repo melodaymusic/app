@@ -101,10 +101,12 @@ public static class MelodayCover
     internal static float? DrawTitleBottomLeft(CanvasDrawingSession ds, string title, float size, Microsoft.Extensions.Logging.ILogger log) =>
         string.IsNullOrWhiteSpace(title) ? null : DrawLabel(ds, title, size, size, log);
 
+    internal const string FilePrefix = "cover-v12-";
+
     public static async Task<string?> RenderAsync(MelodayPeriod period, string title, DateTime now, Microsoft.Extensions.Logging.ILogger log)
     {
         Directory.CreateDirectory(AppPaths.Meloday);
-        var path = Path.Combine(AppPaths.Meloday, $"cover-v11-{now:yyyyMMdd-HHmmss}.png");
+        var path = Path.Combine(AppPaths.Meloday, $"{FilePrefix}{now:yyyyMMdd-HHmmss}.png");
         var drawn = await RenderToAsync(period, title, path, log).ConfigureAwait(false);
         if (drawn is null) return null;
         foreach (var old in Directory.EnumerateFiles(AppPaths.Meloday, "cover-*.png"))

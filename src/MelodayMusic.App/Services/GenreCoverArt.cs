@@ -11,7 +11,7 @@ namespace MelodayMusic.Services;
 
 public static class GenreCoverArt
 {
-    private const int Version = 5;
+    private const int Version = 6;
     private const float Size = 1000;
 
     public static async Task<string?> RenderAsync(GenreCover genre, ILogger log)

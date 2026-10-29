@@ -298,7 +298,7 @@
                             <controls:LucideIcon Icon="LayoutList" VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Sections" Style="{StaticResource MelodayBodyText}" />
-                                <TextBlock Text="Drag or use the arrows to reorder; switch a section off to hide it. Sections marked with the Meloday wave are curated by Meloday" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="Drag or use the arrows to reorder; switch a section off to hide it. Sections marked with the Meloday wave are curated by Meloday." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             </StackPanel>
                             <Button Grid.Column="2" Style="{StaticResource MelodaySecondaryButtonStyle}" Content="Reset" Click="OnResetHome" VerticalAlignment="Center"
                                     AutomationProperties.Name="Reset Home sections" />
@@ -329,9 +329,9 @@
                                                     <ColumnDefinition Width="Auto" />
                                                     <ColumnDefinition Width="*" />
                                                 </Grid.ColumnDefinitions>
-                                                <BitmapIcon UriSource="ms-appx:///Assets/MelodayMusic-symbol.png" ShowAsMonochrome="True" Width="22" Height="10"
-                                                            Foreground="{ThemeResource MelodayTextPrimaryBrush}" VerticalAlignment="Center"
-                                                            Visibility="{x:Bind CuratedVisibility}" ToolTipService.ToolTip="Curated by Meloday" />
+                                                <controls:MelodayMark Width="22" Height="10"
+                                                                      Foreground="{ThemeResource MelodayTextPrimaryBrush}" VerticalAlignment="Center"
+                                                                      Visibility="{x:Bind CuratedVisibility}" ToolTipService.ToolTip="Curated by Meloday" />
                                                 <TextBlock Grid.Column="1" Text="{x:Bind Title}" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" TextWrapping="WrapWholeWords" />
                                             </Grid>
                                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -1168,7 +1168,7 @@
                         <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="12">
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Tag moods from the Meloday Engine" Style="{StaticResource MelodayBodyText}" />
-                                <TextBlock Text="Adds the moods ME hears clearly to your songs in Plex, so Plexamp and other Plex apps can use them. Moods your songs already have stay, the field is locked so Plex keeps them, and Meloday remembers exactly what it added so it can take it all back out. Nothing is written until you ask. To try a few albums first, right-click an album and choose Tag Moods in Plex." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="Adds the moods ME hears clearly to your songs in Plex, so Plexamp and other Plex apps can use them. Existing moods are kept, and the field is locked so Plex doesn't overwrite them. Meloday records what it adds, so you can remove it all later. Nothing is written until you ask. To try a few albums first, right-click an album and choose Tag Moods in Plex." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Text="{x:Bind ViewModel.MoodTagStatus, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             </StackPanel>
                             <controls:ActionWrapPanel Spacing="8">
@@ -1202,7 +1202,9 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Meloday Music" Style="{StaticResource MelodayBodyText}" />
                                 <TextBlock Text="{x:Bind ViewModel.Version}" Style="{StaticResource MelodaySecondaryText}" />
-                                <TextBlock Text="Designed by one person and built with the help of AI coding tools. The Live station artwork was made with AI tools, and the Genre Essentials covers are recreations of Apple Music's genre artwork in Meloday's colours."
+                                <TextBlock Text="Designed by one person and built with the help of AI coding tools. The Live station artwork was made with AI tools."
+                                           Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="Genre Essentials covers: based on Apple Music's genre artwork, redesigned in the Meloday palette."
                                            Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
                                     <Run Text="Typeface: Nunito by Vernon Adams, under the SIL Open Font License 1.1." />
@@ -1210,6 +1212,11 @@
                                 <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
                                     <Run Text="Icons: Lucide, Copyright Lucide Icons and Contributors, under the" />
                                     <Hyperlink NavigateUri="https://lucide.dev/license">ISC License</Hyperlink><Run Text="." />
+                                </TextBlock>
+                                <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
+                                    <Run Text="Cover shapes: Shape Icons by" />
+                                    <Hyperlink NavigateUri="https://www.svgbackgrounds.com">SVGBackgrounds.com</Hyperlink><Run Text=" and Shape Icons by" />
+                                    <Hyperlink NavigateUri="https://shapes.gallery">shapes.gallery</Hyperlink><Run Text="." />
                                 </TextBlock>
                             </StackPanel>
                             <Button Grid.Column="2" Style="{StaticResource MelodaySecondaryButtonStyle}" Content="Open Log Folder" Command="{x:Bind ViewModel.OpenLogsCommand}" VerticalAlignment="Center" />

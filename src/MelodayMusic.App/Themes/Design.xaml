@@ -9,6 +9,7 @@
             <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#70FFFFFF" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#F4F2EE" />
             <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
+            <SolidColorBrush x:Key="MelodayDangerTextBrush" Color="#F47C7C" />
             <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
             <Color x:Key="SystemAccentColor">#D98A1C</Color>
             <Color x:Key="SystemAccentColorLight1">#E69B35</Color>
@@ -63,6 +64,7 @@
             <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#70000000" />
             <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#1B1A1D" />
             <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
+            <SolidColorBrush x:Key="MelodayDangerTextBrush" Color="#C42B30" />
             <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
             <Color x:Key="SystemAccentColor">#C77912</Color>
             <Color x:Key="SystemAccentColorLight1">#D98A1C</Color>
@@ -83,7 +85,7 @@
             <SolidColorBrush x:Key="MelodayDividerBrush" Color="#14000000" />
             <SolidColorBrush x:Key="MelodayTextPrimaryBrush" Color="#1B1A1D" />
             <SolidColorBrush x:Key="MelodayTextSecondaryBrush" Color="#5E5A55" />
-            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="#77736D" />
+            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="#6E6A64" />
             <SolidColorBrush x:Key="MelodayChipSelectedBrush" Color="#14000000" />
             <SolidColorBrush x:Key="MelodayPlaceholderBrush" Color="#E6E3DE" />
             <SolidColorBrush x:Key="MelodayPlaceholderIconBrush" Color="#A6A19A" />
@@ -114,6 +116,7 @@
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <SolidColorBrush x:Key="MelodayDangerBrush" Color="{ThemeResource SystemColorHighlightColor}" />
+            <SolidColorBrush x:Key="MelodayDangerTextBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="{ThemeResource SystemColorHighlightTextColor}" />
             <SolidColorBrush x:Key="MelodayAccentBrush" Color="{ThemeResource SystemColorHighlightColor}" />
             <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="{ThemeResource SystemColorHighlightColor}" />

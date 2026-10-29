@@ -14,7 +14,7 @@ public sealed partial class RadioPage : Page
         var intelligence = App.Services.GetRequiredService<Services.MusicIntelligence>();
         SonicAdventureButton.IsEnabled = intelligence.IsAvailable;
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SonicAdventureButton,
-            intelligence.IsAvailable ? "A journey powered by " + intelligence.Name : "Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
+            intelligence.IsAvailable ? "A path from one song to another, using " + intelligence.Name : "Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
     }
 
     public RadioViewModel ViewModel { get; }
@@ -25,7 +25,7 @@ public sealed partial class RadioPage : Page
         var intelligence = App.Services.GetRequiredService<Services.MusicIntelligence>();
         SonicAdventureButton.IsEnabled = intelligence.IsAvailable;
         ToolTipService.SetToolTip(SonicAdventureButton, intelligence.IsAvailable
-            ? "A journey powered by " + intelligence.Name : "Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
+            ? "A path from one song to another, using " + intelligence.Name :"Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
         await ViewModel.EnsureLoadedAsync(App.Services.GetRequiredService<ShellViewModel>().LibraryVersion);
     }
 
@@ -44,7 +44,7 @@ public sealed partial class RadioPage : Page
             Microsoft.Extensions.Logging.LoggerExtensions.LogWarning(
                 App.Services.GetRequiredService<Microsoft.Extensions.Logging.ILogger<RadioPage>>(), ex, "Radio dialog failed");
             App.Services.GetRequiredService<Services.NotificationService>().ShowError(
-                "Couldn’t open radio", "Please try again. Your current playback has been kept.");
+                "Couldn't open radio", "Please try again. Your current playback has been kept.");
         }
         finally { _dialogOpen = false; }
     }

@@ -18,7 +18,7 @@ public sealed record CoverPhoto(string Artist, string Path);
 /// </summary>
 public static class MadePlaylistCover
 {
-    private const int Version = 7;
+    private const int Version = 8;
     private static string Folder => Path.Combine(AppPaths.Root, "made");
 
     public static async Task<string?> RenderAsync(PlaylistRecipe recipe, CoverPhoto? photo, ILogger log)

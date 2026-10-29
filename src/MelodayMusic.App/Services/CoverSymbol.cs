@@ -1,8 +1,8 @@
 using MelodayMusic.Core.Artwork;
 using MelodayMusic.Core.Covers;
 using Microsoft.Graphics.Canvas;
+using Microsoft.Graphics.Canvas.Svg;
 using Windows.Foundation;
-using Windows.Graphics.DirectX;
 using Windows.UI;
 
 namespace MelodayMusic.Services;
@@ -31,30 +31,15 @@ internal static class CoverSymbol
         return count == 0 ? 0 : (uint)((r / count) << 16 | (g / count) << 8 | (b / count));
     }
 
-    internal static uint InkFor(CanvasRenderTarget target) => CoverInk.Symbol(Under(target, Width * 226f / 512));
+    internal static uint InkFor(CanvasRenderTarget target) => CoverInk.Symbol(Under(target, Height));
 
-    internal static async Task DrawAsync(CanvasRenderTarget target, uint? ink = null, string? badge = null)
+    internal static Task DrawAsync(CanvasRenderTarget target, uint? ink = null, string? badge = null)
     {
-        using var source = await CanvasBitmap.LoadAsync(target.Device,
-            Path.Combine(AppContext.BaseDirectory, "Assets", "MelodayMusic-symbol.png"));
-        var sourceWidth = (int)source.SizeInPixels.Width;
-        var sourceHeight = (int)source.SizeInPixels.Height;
-        var height = Width * sourceHeight / sourceWidth;
-        var pixels = source.GetPixelBytes();
-        var colour = ink ?? CoverInk.Symbol(Under(target, height));
-        for (var i = 0; i < pixels.Length; i += 4)
-        {
-            var alpha = pixels[i + 3];
-            pixels[i] = (byte)((colour & 255) * alpha / 255);
-            pixels[i + 1] = (byte)(((colour >> 8) & 255) * alpha / 255);
-            pixels[i + 2] = (byte)(((colour >> 16) & 255) * alpha / 255);
-        }
-        using var symbol = CanvasBitmap.CreateFromBytes(target.Device, pixels, sourceWidth, sourceHeight,
-            DirectXPixelFormat.B8G8R8A8UIntNormalized);
+        var colour = ink ?? CoverInk.Symbol(Under(target, Height));
+        using var symbol = CanvasSvgDocument.LoadFromXml(target.Device, MelodaySymbol.Xml(colour));
         using var ds = target.CreateDrawingSession();
-        ds.DrawImage(symbol, new Rect(Left, Top, Width, height),
-            new Rect(0, 0, sourceWidth, sourceHeight), 1, CanvasImageInterpolation.HighQualityCubic);
-        if (string.IsNullOrEmpty(badge)) return;
+        ds.DrawSvg(symbol, new Size(Width, Height), Left, Top);
+        if (string.IsNullOrEmpty(badge)) return Task.CompletedTask;
         using var format = new Microsoft.Graphics.Canvas.Text.CanvasTextFormat
         {
             FontFamily = MelodayCover.Font, FontSize = BadgeSize, FontWeight = Microsoft.UI.Text.FontWeights.Black,
@@ -63,7 +48,8 @@ internal static class CoverSymbol
         using var layout = new Microsoft.Graphics.Canvas.Text.CanvasTextLayout(ds, badge, format, 1000, 200);
         var bounds = layout.DrawBounds;
         var x = Left + Width + BadgeGap - (float)bounds.X;
-        var y = Top + height / 2 - (float)(bounds.Y + bounds.Height / 2);
+        var y = Top + Height / 2 -(float)(bounds.Y + bounds.Height / 2);
         ds.DrawTextLayout(layout, x, y, Color.FromArgb(255, (byte)(colour >> 16), (byte)(colour >> 8), (byte)colour));
+        return Task.CompletedTask;
     }
 }
