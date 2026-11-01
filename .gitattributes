@@ -1,2 +1,5 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Checked by hash at load, so keep the exact bytes on every checkout
+src/MelodayMusic.App/Assets/Engine/descriptors.json -text
