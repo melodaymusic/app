@@ -7,8 +7,16 @@
     IsTabStop="False">
 
     <Grid>
-        <controls:SkeletonView x:Name="Skeleton" Visibility="Collapsed" VerticalAlignment="Top" helpers:Anim.Appear="True" />
-        <ProgressRing x:Name="Spinner" IsActive="False" Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,48" />
+        <StackPanel VerticalAlignment="Top" Spacing="12">
+            <TextBlock x:Name="SlowNote" Text="Still loading from your Plex server…" Style="{StaticResource MelodaySecondaryText}"
+                       Visibility="Collapsed" helpers:Anim.Appear="True" />
+            <controls:SkeletonView x:Name="Skeleton" Visibility="Collapsed" helpers:Anim.Appear="True" />
+        </StackPanel>
+        <StackPanel x:Name="SpinnerPanel" Visibility="Collapsed" Spacing="12" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,48">
+            <ProgressRing x:Name="Spinner" IsActive="False" Width="32" Height="32" />
+            <TextBlock x:Name="SpinnerNote" Text="Still loading from your Plex server…" Style="{StaticResource MelodaySecondaryText}"
+                       Visibility="Collapsed" HorizontalAlignment="Center" helpers:Anim.Appear="True" />
+        </StackPanel>
 
         <StackPanel x:Name="ErrorPanel" Visibility="Collapsed" Spacing="12" MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24,48"
                     helpers:Anim.Appear="True">

@@ -3,8 +3,8 @@ using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Radio;
-using MelodayMusic.Core.Taste;
 using MelodayMusic.Core.Services;
+using MelodayMusic.Core.Taste;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.Services;

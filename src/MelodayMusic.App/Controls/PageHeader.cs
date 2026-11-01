@@ -57,7 +57,9 @@ public sealed partial class PageHeader : Grid
 
     private void ApplyWidth(double width)
     {
-        var narrow = width > 0 && width < Services.UiScale.Size(NarrowWidth);
+        _actions.Measure(new Windows.Foundation.Size(double.PositiveInfinity, double.PositiveInfinity));
+        var crowded = _actions.Visibility == Visibility.Visible && _actions.DesiredSize.Width > width * 0.55;
+        var narrow = width > 0 && (width < Services.UiScale.Size(NarrowWidth) || crowded);
         if (_laidOut && narrow == _narrow) return;
         _laidOut = true;
         _narrow = narrow;

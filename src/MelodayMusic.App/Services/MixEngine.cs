@@ -28,6 +28,20 @@ public sealed class MixEngine : IPlaybackEngine
     private double _leadFrom = 1, _leadEaseFrom;
     private BeatMixPlan? _mix;
     private long _mixFrames;
+    private IReadOnlyList<double> _scheduledEdges = [], _edges = [];
+    // The next song is silent and paused until its entry.
+    private volatile bool _waiting;
+    // Until the handover the outgoing song is still the one playing as far as anyone outside can tell: its position,
+    // its length, and any seek belong to it.
+    private volatile bool _handedOver = true;
+    private long _handoverFrames;
+    // An outgoing song let go mid-mix (a seek on the next song) fades out over this rather than stopping dead.
+    private const double ReleaseSeconds = 0.4;
+    private Deck? _releasing;
+    private long _releaseLeft, _releaseLength;
+    private float _releaseFrom;
+    private readonly MixLevels _levels = new();
+    private Riser? _riser;
     private bool _playing;
     private double _volume = 1;
     private bool _muted;
@@ -45,7 +59,7 @@ public sealed class MixEngine : IPlaybackEngine
     {
         get
         {
-            var deck = _current;
+            var deck = Heard;
             if (deck is null) return TimeSpan.Zero;
             var heard = deck.ContentSeconds - (_output?.QueuedSeconds ?? 0) * deck.Voice.Rate;
             return TimeSpan.FromSeconds(Math.Max(0, heard));
@@ -68,7 +82,9 @@ public sealed class MixEngine : IPlaybackEngine
         return _tap.CopyHeardStereo(destination, (long)((_output?.QueuedSeconds ?? 0) * _rate));
     }
 
-    public TimeSpan? NaturalDuration => _current?.Duration;
+    private Deck? Heard => !_handedOver && _outgoing is { } outgoing ? outgoing : _current;
+
+    public TimeSpan? NaturalDuration => Heard?.Duration;
     public bool CanSeek => _current?.CanSeek ?? false;
 
     public double Volume
@@ -117,6 +133,13 @@ public sealed class MixEngine : IPlaybackEngine
         lock (_gate)
         {
             CancelScheduledLocked();
+            if (!_handedOver) UndoMixLocked("called off: another song was opened");
+            else if (_mix is not null) LogMixEnd("cut short: another song was opened");
+            DropReleasingLocked();
+            _edges = [];
+            _waiting = false;
+            // Whoever opened this song has already made it the one playing.
+            _handedOver = true;
             if (crossfading && crossfade is not null)
             {
                 _outgoing?.Dispose();
@@ -125,6 +148,7 @@ public sealed class MixEngine : IPlaybackEngine
                 deck.Voice.Gain = 0;
                 _mix = new BeatMixPlan { StartAt = TimeSpan.Zero, IncomingStart = startPosition, Shape = crossfade };
                 _mixFrames = 0;
+                _levels.Start();
             }
             else
             {
@@ -176,9 +200,14 @@ public sealed class MixEngine : IPlaybackEngine
             CancelScheduledLocked();
             _outgoing?.Dispose();
             _outgoing = null;
+            if (_mix is not null) LogMixEnd("cut short: playback stopped");
+            DropReleasingLocked();
             _current?.Dispose();
             _current = null;
             _mix = null;
+            _waiting = false;
+            _handedOver = true;
+            _riser?.Reset();
             _limiter?.Reset();
         }
         if (_output is { } output)
@@ -194,11 +223,75 @@ public sealed class MixEngine : IPlaybackEngine
         lock (_gate)
         {
             CancelScheduledLocked();
-            FinishMixLocked();
+            if (!_handedOver) UndoMixLocked("called off by a seek before the handover");
+            else ReleaseOutgoingLocked();
             _current?.Seek(position);
             _limiter?.Reset();
         }
         _output?.Flush();
+    }
+
+    // A seek before the handover belongs to the outgoing song, which is still the one playing, so the mix is called off.
+    private void UndoMixLocked(string why)
+    {
+        if (_outgoing is not { } outgoing) return;
+        LogMixEnd(why);
+        _current?.Dispose();
+        _current = outgoing;
+        _outgoing = null;
+        _mix = null;
+        _waiting = false;
+        _handedOver = true;
+        _riser?.Reset();
+        Settle(outgoing);
+    }
+
+    // A seek after the handover belongs to the next song. The outgoing one may still be sounding under it, so it fades
+    // out quickly instead of stopping dead, and the next song drops its mix effects.
+    private void ReleaseOutgoingLocked()
+    {
+        if (_mix is null) return;
+        LogMixEnd("cut short by a seek on the next song, the outgoing one faded out");
+        DropReleasingLocked();
+        if (_outgoing is { } outgoing)
+        {
+            _releasing = outgoing;
+            _releaseFrom = outgoing.Voice.Gain;
+            _releaseLength = _releaseLeft = (long)(ReleaseSeconds * _rate);
+        }
+        _outgoing = null;
+        _mix = null;
+        _waiting = false;
+        _riser?.Reset();
+        if (_current is { } deck) Settle(deck);
+    }
+
+    private void DropReleasingLocked()
+    {
+        _releasing?.Dispose();
+        _releasing = null;
+        _releaseLeft = 0;
+    }
+
+    private void LogMixEnd(string how)
+    {
+        if (!_levels.Active) return;
+        var at = _mixFrames / (double)_rate;
+        var style = _mix?.Style;
+        var levels = _levels.Finish();
+        _dispatcher.TryEnqueue(() => _log.LogInformation("Mix ({Style}) {How} at {At:0.0} s; levels each second in dBFS, {Levels}", style, how, at, levels));
+    }
+
+    private static void Settle(Deck deck)
+    {
+        deck.Voice.Gain = 1;
+        deck.Voice.Cutoff = 0;
+        deck.Voice.LowCutoff = 0;
+        deck.Voice.EchoSend = 0;
+        deck.Voice.ReverbSend = 0;
+        deck.Voice.Roll = 0;
+        deck.Voice.Rate = 1;
+        deck.Voice.Bands = BandGains.Full;
     }
 
     public void UpdateSystemInfo(NowPlayingInfo? info) { }
@@ -218,6 +311,7 @@ public sealed class MixEngine : IPlaybackEngine
             CancelScheduledLocked();
             _prepared = deck;
             _scheduled = plan;
+            _scheduledEdges = MixTimeline.Edges(plan);
             _leadFrom = _current.Voice.Rate;
             _leadEaseFrom = Math.Max(_current.ContentSeconds, (plan.StartAt - plan.LeadIn).TotalSeconds);
         }
@@ -242,18 +336,17 @@ public sealed class MixEngine : IPlaybackEngine
     private void FinishMixLocked()
     {
         if (_mix is null) return;
+        if (!_handedOver)
+        {
+            _handedOver = true;
+            Announce();
+        }
+        LogMixEnd("finished");
         _outgoing?.Dispose();
         _outgoing = null;
         _mix = null;
-        if (_current is { } deck)
-        {
-            deck.Voice.Gain = 1;
-            deck.Voice.Cutoff = 0;
-            deck.Voice.LowCutoff = 0;
-            deck.Voice.EchoWet = 0;
-            deck.Voice.Rate = 1;
-            deck.Voice.Bands = BandGains.Full;
-        }
+        _waiting = false;
+        if (_current is { } deck) Settle(deck);
     }
 
     private void EnsureOutput()
@@ -270,6 +363,7 @@ public sealed class MixEngine : IPlaybackEngine
             _log.LogDebug("Using 48 kHz: {Message}", ex.Message);
         }
         _limiter = new Limiter(_rate, Channels);
+        _riser = new Riser(_rate, Channels);
         _output = new WasapiRender(_rate, Channels, OutputBufferMs, Render);
         _output.RanDry += () =>
         {
@@ -309,6 +403,7 @@ public sealed class MixEngine : IPlaybackEngine
                         var step = (1 - deck.Voice.Rate) * Math.Min(1, n / (double)_rate / 0.7);
                         deck.Voice.Rate = Math.Abs(1 - deck.Voice.Rate) < 0.0005 ? 1 : deck.Voice.Rate + step;
                     }
+                    if (_mix is not null && UntilEdge() is > 0 and var untilEdge) n = (int)Math.Min(n, untilEdge);
                     var made1 = RenderSlice(buffer, offset + done * Channels, n);
                     if (made1 < n)
                     {
@@ -332,7 +427,6 @@ public sealed class MixEngine : IPlaybackEngine
     private long _lastRenderAt;
     private int _gcs0, _gcs1, _gcs2;
     private TimeSpan _gcPause;
-    private long _lateCount;
 
     private long WatchRender()
     {
@@ -346,7 +440,6 @@ public sealed class MixEngine : IPlaybackEngine
                 var pause = GC.GetTotalPauseDuration();
                 _log.LogInformation("[perf] audio thread ran late: {Gap:0} ms between fills (priority {Priority}); GCs since last late fill: gen0 {G0}, gen1 {G1}, gen2 {G2}, paused {Pause:0} ms",
                     gap, Thread.CurrentThread.Priority, g0 - _gcs0, g1 - _gcs1, g2 - _gcs2, (pause - _gcPause).TotalMilliseconds);
-                _lateCount++;
             }
         }
         _gcs0 = GC.CollectionCount(0); _gcs1 = GC.CollectionCount(1); _gcs2 = GC.CollectionCount(2);
@@ -397,35 +490,77 @@ public sealed class MixEngine : IPlaybackEngine
                 outgoing.Voice.Rate = plan.OutRate;
                 outgoing.Voice.Bands = first.OutBands;
             }
-            incoming.Voice.Cutoff = plan.BassSwap is null ? 0 : BeatMix.BassCut;
-            incoming.Voice.LowCutoff = plan.Style == MixStyle.Filter ? BeatMix.FilterOpening : 0;
+            incoming.Voice.Cutoff = first.InCutoff;
+            incoming.Voice.LowCutoff = first.InLowPass;
             incoming.Voice.Gain = 0;
         }
-        _dispatcher.TryEnqueue(() => MixStarted?.Invoke(this, EventArgs.Empty));
+        _edges = _scheduledEdges;
+        _scheduledEdges = [];
+        _waiting = _mix?.InDelay > TimeSpan.Zero;
+        _handoverFrames = _mix is { } mix ? (long)(MixTimeline.Handover(mix).TotalSeconds * _rate) : 0;
+        _handedOver = _handoverFrames <= 0;
+        _levels.Start();
+        if (_handedOver) Announce();
+    }
+
+    private void Announce() => _dispatcher.TryEnqueue(() => MixStarted?.Invoke(this, EventArgs.Empty));
+
+    // Frames until the next moment of the mix that has to land on an exact sample, or 0 if none is left.
+    private long UntilEdge()
+    {
+        long until = 0;
+        foreach (var edge in _edges)
+        {
+            var at = (long)Math.Ceiling(edge * _rate - 1e-6);
+            if (at > _mixFrames && (until == 0 || at - _mixFrames < until)) until = at - _mixFrames;
+        }
+        return until;
     }
 
     private int RenderSlice(float[] buffer, int offset, int frames)
     {
         if (_scratch.Length < frames * Channels) _scratch = new float[frames * Channels];
+        if (_releasing is not null) ReleaseSlice(buffer, offset, frames);
+        var waiting = false;
         if (_mix is { } plan)
         {
             var moment = MixTimeline.At(plan, TimeSpan.FromSeconds(_mixFrames / (double)_rate));
-            if (_outgoing is { } outgoing && !moment.OutgoingDone)
+            waiting = moment.InWaiting;
+            if (_waiting && !waiting)
             {
-                outgoing.Voice.Gain = (float)moment.OutGain;
-                outgoing.Voice.Cutoff = moment.OutCutoff;
-                outgoing.Voice.EchoDelay = plan.EchoDelay.TotalSeconds;
-                outgoing.Voice.EchoWet = moment.OutEcho;
-                outgoing.Voice.Rate = moment.OutRate;
-                outgoing.Voice.Bands = moment.OutBands;
-                outgoing.Read(_scratch, frames);
-                Add(buffer, offset, frames);
+                _waiting = false;
+                _current?.Voice.RiseFromSilence();
             }
-            else if (_outgoing is not null)
+            if (!_handedOver && _mixFrames >= _handoverFrames)
             {
-                _outgoing.Dispose();
-                _outgoing = null;
+                _handedOver = true;
+                Announce();
             }
+            if (_outgoing is { } outgoing)
+            {
+                if (!moment.OutgoingDone)
+                {
+                    outgoing.Voice.Gain = (float)moment.OutGain;
+                    outgoing.Voice.Cutoff = moment.OutCutoff;
+                    outgoing.Voice.EchoDelay = plan.EchoDelay.TotalSeconds;
+                    outgoing.Voice.EchoSend = moment.OutEcho;
+                    outgoing.Voice.ReverbSend = moment.OutReverb;
+                    outgoing.Voice.Roll = moment.OutRoll;
+                    outgoing.Voice.Rate = moment.OutRate;
+                    outgoing.Voice.Bands = moment.OutBands;
+                    outgoing.Read(_scratch, frames);
+                    Add(buffer, offset, frames);
+                    _levels.Add(_scratch, frames * Channels, outgoing: true);
+                }
+                else
+                {
+                    // Only once its fade and any echo or reverb tail are over.
+                    outgoing.Dispose();
+                    _outgoing = null;
+                }
+            }
+            if (_riser is { } riser && (moment.Riser > 0 || riser.IsSounding))
+                riser.Process(buffer, offset, frames, moment.Riser, moment.RiserHz);
             if (_current is { } incoming)
             {
                 incoming.Voice.Gain = (float)moment.InGain;
@@ -437,14 +572,74 @@ public sealed class MixEngine : IPlaybackEngine
             _mixFrames += frames;
             if (moment.Finished) FinishMixLocked();
         }
-        if (_current is { } deck)
+        if (_current is { } deck && !waiting)
         {
             var got = deck.Read(_scratch, frames);
             Add(buffer, offset, frames);
+            if (_levels.Active) _levels.Add(_scratch, frames * Channels, outgoing: false);
             if (deck.Ended) _dispatcher.TryEnqueue(OnCurrentEnded);
             if (got < frames && _mix is null && !deck.Ended && !deck.DecoderDone) return got;
         }
+        if (_levels.Active) _levels.Advance(frames, _rate, Channels);
         return frames;
+    }
+
+    private void ReleaseSlice(float[] buffer, int offset, int frames)
+    {
+        var deck = _releasing!;
+        _releaseLeft = Math.Max(0, _releaseLeft - frames);
+        deck.Voice.Gain = _releaseFrom * _releaseLeft / Math.Max(1, _releaseLength);
+        deck.Read(_scratch, frames);
+        Add(buffer, offset, frames);
+        if (_releaseLeft > 0) return;
+        deck.Dispose();
+        _releasing = null;
+    }
+
+    // Each deck's level through a mix, one figure a second, for the log: what the mix really did, beyond what it planned.
+    private sealed class MixLevels
+    {
+        private readonly List<int> _out = [], _in = [];
+        private double _outSum, _inSum;
+        private long _frames;
+
+        public bool Active { get; private set; }
+
+        public void Start()
+        {
+            _out.Clear();
+            _in.Clear();
+            _outSum = _inSum = 0;
+            _frames = 0;
+            Active = true;
+        }
+
+        public void Add(float[] samples, int count, bool outgoing)
+        {
+            if (!Active) return;
+            double sum = 0;
+            for (var i = 0; i < count; i++) sum += samples[i] * (double)samples[i];
+            if (outgoing) _outSum += sum;
+            else _inSum += sum;
+        }
+
+        public void Advance(int frames, int rate, int channels)
+        {
+            _frames += frames;
+            if (_frames < rate) return;
+            _out.Add(Db(_outSum / (_frames * channels)));
+            _in.Add(Db(_inSum / (_frames * channels)));
+            _outSum = _inSum = 0;
+            _frames = 0;
+        }
+
+        public string Finish()
+        {
+            Active = false;
+            return $"outgoing [{string.Join(' ', _out)}], next [{string.Join(' ', _in)}]";
+        }
+
+        private static int Db(double meanSquare) => meanSquare <= 1e-12 ? -120 : (int)Math.Round(10 * Math.Log10(meanSquare));
     }
 
     private void Add(float[] buffer, int offset, int frames)

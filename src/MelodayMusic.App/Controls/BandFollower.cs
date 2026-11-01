@@ -1,9 +1,7 @@
 namespace MelodayMusic.Controls;
 
 /// <summary>
-/// Follows slices of the spectrum the way a picture should move to them: each slice is measured against its own recent loudest,
-/// so quiet songs move as much as loud ones, and a hit (a slice jumping above its recent average) counts for far more than a held sound.
-/// Rises at once, falls back gently.
+/// Normalises each spectrum band against its own recent peak and average, so visuals follow hits rather than overall loudness.
 /// </summary>
 internal sealed class BandFollower(int count)
 {

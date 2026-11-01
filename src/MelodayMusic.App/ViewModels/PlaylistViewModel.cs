@@ -1,11 +1,9 @@
-using Microsoft.Extensions.DependencyInjection;
-using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Helpers;
-using MelodayMusic.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.ViewModels;

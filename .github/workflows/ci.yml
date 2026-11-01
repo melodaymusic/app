@@ -23,6 +23,16 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
+      - name: Cache the audio model
+        uses: actions/cache@v4
+        with:
+          path: src/MelodayMusic.App/Assets/Engine/audio.onnx
+          key: meloday-engine-9533ed82
+
+      - name: Download the audio model
+        shell: pwsh
+        run: ./tools/engine/download.ps1
+
       - name: Restore
         run: dotnet restore MelodayMusic.sln -p:Platform=x64
 

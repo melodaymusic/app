@@ -163,6 +163,7 @@ public static class UiScale
 
         N("MelodaySectionSpacing", Size(48, 32));
         N("MelodayPlayerHeight", Size(80, 72));
+        d["MelodayRadiusPlayer"] = new CornerRadius(Size(80, 72) / 2);
         var bar = TopInset;
         N("MelodayTopBarHeight", TopBarHeight);
         d["MelodayTitleBarInset"] = new Thickness(0, TitleBarHeight, 0, 0);

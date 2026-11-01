@@ -109,6 +109,15 @@ public sealed partial class PlayerViewModel : ObservableObject
     public bool HasNext => _player.HasNext;
     public bool HasPrevious => _player.HasPrevious;
     public string? StreamDescription => _player.StreamDescription;
+
+    public bool HasMixCue => _player.Mixing is not null;
+    public bool MixStarted => _player.Mixing is { Started: true };
+    public string MixOverline => MixStarted ? "MIXING INTO" : "MIXING NEXT";
+    public string? MixNextTitle => _player.Mixing?.Next.Title;
+    public string? MixNextThumb => _player.Mixing?.Next.DisplayThumb;
+    public string? MixStatus => _player.Mixing?.Status;
+    public double MixProgress => _player.Mixing?.Progress ?? 0;
+    public string MixCueName => _player.Mixing is { } cue ? $"{(cue.Started ? "Mixing into" : "Mixing next:")} {cue.Next.Title}, {cue.Status}" : string.Empty;
     public string AlbumYearText => Track is { Year: > 0 } t ? $"{t.AlbumTitle} · {t.Year}" : Album;
     public string UpNextSummary => UpNext.Count == 0 ? "Nothing queued" : $"{UpNext.Count} {(UpNext.Count == 1 ? "track" : "tracks")} · {Format.LongDuration(TimeSpan.FromMilliseconds(UpNext.Sum(i => i.Track.DurationMs)))}";
     public bool HasUpNext => UpNext.Count > 0;
@@ -333,6 +342,16 @@ public sealed partial class PlayerViewModel : ObservableObject
                 break;
             case nameof(PlayerService.StreamDescription):
                 OnPropertyChanged(nameof(StreamDescription));
+                break;
+            case nameof(PlayerService.Mixing):
+                OnPropertyChanged(nameof(HasMixCue));
+                OnPropertyChanged(nameof(MixStarted));
+                OnPropertyChanged(nameof(MixOverline));
+                OnPropertyChanged(nameof(MixNextTitle));
+                OnPropertyChanged(nameof(MixNextThumb));
+                OnPropertyChanged(nameof(MixStatus));
+                OnPropertyChanged(nameof(MixProgress));
+                OnPropertyChanged(nameof(MixCueName));
                 break;
         }
     }

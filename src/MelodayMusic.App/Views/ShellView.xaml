@@ -28,6 +28,27 @@
                 <TextBlock Grid.Column="1" Text="{x:Bind Label}" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
             </Grid>
         </DataTemplate>
+        <DataTemplate x:Key="CompactNavTemplate" x:DataType="local:NavItem">
+            <Grid Height="40" HorizontalAlignment="Center" ToolTipService.ToolTip="{x:Bind Label}">
+                <Grid Visibility="{x:Bind helpers:Format.CollapsedIf(HasPicture), Mode=OneWay}">
+                    <controls:LucideIcon Icon="{x:Bind Icon}" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" VerticalAlignment="Center"
+                                         Foreground="{ThemeResource MelodayTextPrimaryBrush}"
+                                         Visibility="{x:Bind helpers:Format.CollapsedIf(IsSelected), Mode=OneWay}" />
+                    <controls:LucideIcon Icon="{x:Bind Icon}" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" VerticalAlignment="Center" Foreground="{ThemeResource MelodayAccentBrush}"
+                                         Visibility="{x:Bind IsSelected, Mode=OneWay}" />
+                </Grid>
+                <PersonPicture Width="26" Height="26" VerticalAlignment="Center" ProfilePicture="{x:Bind Picture, Mode=OneWay}"
+                               DisplayName="{x:Bind PictureName}" Visibility="{x:Bind HasPicture, Mode=OneWay}" />
+            </Grid>
+        </DataTemplate>
+        <DataTemplate x:Key="CompactPinnedTemplate" x:DataType="models:MediaItem">
+            <Grid Height="40" HorizontalAlignment="Center" ToolTipService.ToolTip="{x:Bind Title}">
+                <controls:ArtworkImage Width="{StaticResource MelodayArtNav}" Height="{StaticResource MelodayArtNav}" DecodeSize="48"
+                                       ArtworkCornerRadius="{x:Bind helpers:Format.NavArtRadius((models:MediaItem))}"
+                                       PlaceholderIcon="{x:Bind helpers:Format.PlaceholderIcon((models:MediaItem))}"
+                                       SourcePath="{x:Bind helpers:Format.NavThumb((models:MediaItem))}" VerticalAlignment="Center" />
+            </Grid>
+        </DataTemplate>
         <DataTemplate x:Key="PinnedNavTemplate" x:DataType="models:MediaItem">
             <Grid ColumnSpacing="12" Height="40">
                 <Grid.ColumnDefinitions>
@@ -49,12 +70,12 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="240" />
+            <ColumnDefinition x:Name="RailColumn" Width="240" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <Border x:Name="RailGlass" Canvas.ZIndex="1" Margin="16,50,8,16" Background="{ThemeResource MelodayPlayerAcrylicBrush}"
-                BorderBrush="{ThemeResource MelodayHairlineBrush}" BorderThickness="1" CornerRadius="{StaticResource MelodayRadiusGlass}">
+                BorderBrush="{ThemeResource MelodayGlassRimBrush}" BorderThickness="1" CornerRadius="{StaticResource MelodayRadiusGlass}">
         <Grid><Grid.RowDefinitions><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
         <ScrollViewer x:Name="RailScroll" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Auto" HorizontalScrollMode="Disabled"
                       HorizontalScrollBarVisibility="Disabled" IsTabStop="False" SizeChanged="OnRailScrollSizeChanged">
@@ -80,12 +101,12 @@
                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="12,0,10,0" Margin="0,12,0,2" Height="28"
                     CornerRadius="{StaticResource MelodayRadiusControl}" Click="OnLibraryHeaderClick"
                     AutomationProperties.Name="Library" AutomationProperties.AutomationId="LibraryHeader">
-                <Grid>
+                <Grid x:Name="LibraryHeaderGrid">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Text="Library" Style="{StaticResource MelodayOverlineText}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="LibraryLabel" Text="Library" Style="{StaticResource MelodayOverlineText}" VerticalAlignment="Center" />
                     <controls:LucideIcon Grid.Column="1" Icon="ChevronDown" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}"
                                          Foreground="{ThemeResource MelodayTextSecondaryBrush}" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
                         <controls:LucideIcon.RenderTransform>
@@ -105,14 +126,14 @@
                     Foreground="{ThemeResource MelodayTextPrimaryBrush}" FontWeight="Medium" Click="OnPinnedHeaderClick"
                     Visibility="{x:Bind Home.HasPinned, Mode=OneWay}"
                     AutomationProperties.Name="Pinned" AutomationProperties.AutomationId="PinnedHeader">
-                <Grid ColumnSpacing="12">
+                <Grid x:Name="PinnedHeaderGrid" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <controls:LucideIcon Icon="Pin" Width="{StaticResource MelodayIconL}" Height="{StaticResource MelodayIconL}" VerticalAlignment="Center" />
-                    <TextBlock Grid.Column="1" Text="Pinned" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
+                    <TextBlock x:Name="PinnedLabel" Grid.Column="1" Text="Pinned" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
                     <controls:LucideIcon x:Name="PinnedChevron" Grid.Column="2" Icon="ChevronDown" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}"
                                          Foreground="{ThemeResource MelodayTextSecondaryBrush}"
                                          HorizontalAlignment="Right" VerticalAlignment="Center" RenderTransformOrigin="0.5,0.5">
@@ -183,17 +204,6 @@
                                         <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#B3AFA8" />
                                         <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#C9C5BE" />
                                         <SolidColorBrush x:Key="TextControlButtonForeground" Color="#B3AFA8" />
-                                    </ResourceDictionary>
-                                    <ResourceDictionary x:Key="Light">
-                                        <AcrylicBrush x:Key="TextControlBackground" TintColor="#FFFFFF" TintOpacity="0.45" TintLuminosityOpacity="0.7" FallbackColor="#F7F6F4" />
-                                        <AcrylicBrush x:Key="TextControlBackgroundPointerOver" TintColor="#FFFFFF" TintOpacity="0.55" TintLuminosityOpacity="0.75" FallbackColor="#FFFFFF" />
-                                        <AcrylicBrush x:Key="TextControlBackgroundFocused" TintColor="#FFFFFF" TintOpacity="0.65" TintLuminosityOpacity="0.8" FallbackColor="#FFFFFF" />
-                                        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#80FFFFFF" />
-                                        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#99FFFFFF" />
-                                        <SolidColorBrush x:Key="TextControlForeground" Color="#1B1A1D" />
-                                        <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#5E5A55" />
-                                        <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#4A4642" />
-                                        <SolidColorBrush x:Key="TextControlButtonForeground" Color="#5E5A55" />
                                     </ResourceDictionary>
                                     <ResourceDictionary x:Key="HighContrast">
                                         <SolidColorBrush x:Key="TextControlBackground" Color="{ThemeResource SystemColorWindowColor}" />

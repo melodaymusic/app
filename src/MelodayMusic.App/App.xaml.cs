@@ -128,7 +128,6 @@ public partial class App : Application
         // The session raises this from whatever thread its plex.tv call finished on; only the queue is safe to touch from there.
         var ui = _window.DispatcherQueue;
         Services.GetRequiredService<PlexSession>().ProfileChanged += (_, _) => ui.TryEnqueue(() => _window?.Restart());
-        ApplyTheme(Services.GetRequiredService<SettingsStore>().Current.Theme);
         _window.Activate();
         _ = Services.GetRequiredService<ShellViewModel>().StartAsync();
         Services.GetRequiredService<MelodayService>();
@@ -142,10 +141,7 @@ public partial class App : Application
         Services.GetRequiredService<TrendingService>();
         Services.GetRequiredService<BackgroundAudioAnalysis>();
         ImportLogosFromCommandLine();
-        RunUiSmoke();
     }
-
-    partial void RunUiSmoke();
 
     private void ImportLogosFromCommandLine()
     {
@@ -166,11 +162,6 @@ public partial class App : Application
         void OnState(object? sender, EventArgs e) => Run();
         session.StateChanged += OnState;
         Run();
-    }
-
-    public static void ApplyTheme(AppTheme theme)
-    {
-        MainWindow?.ApplyTheme(theme);
     }
 
     private static IServiceProvider ConfigureServices()
@@ -233,7 +224,7 @@ public partial class App : Application
         services.AddSingleton<PlexPass>();
         services.AddSingleton(_ => new Core.Meloday.DupeStore(AppPaths.MelodayDupes));
         services.AddSingleton(sp => new MelodayService(
-            sp.GetRequiredService<Core.Services.PlexSession>(), sp.GetRequiredService<PlexPass>(), sp.GetRequiredService<MusicIntelligence>(), sp.GetRequiredService<Dislikes>(),
+            sp.GetRequiredService<Core.Services.PlexSession>(), sp.GetRequiredService<MusicIntelligence>(), sp.GetRequiredService<Dislikes>(),
             sp.GetRequiredService<Core.Settings.SettingsStore>(), sp.GetRequiredService<Core.Meloday.DupeStore>(), sp.GetRequiredService<Core.Mutes.MuteStore>(),
             new Core.Security.ProtectedSecret(AppPaths.OpenAiKey, "OpenAI", sp.GetRequiredService<ILogger<Core.Security.ProtectedSecret>>()),
             sp.GetRequiredService<TasteService>(), sp.GetRequiredService<ILogger<MelodayService>>()));

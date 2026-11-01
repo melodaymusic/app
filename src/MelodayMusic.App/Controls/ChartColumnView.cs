@@ -41,6 +41,13 @@ public sealed partial class ChartColumnView : UserControl
     {
         _rows.Children.Clear();
         if (Column is not { } column) return;
+        if (column.IsPlaceholder)
+        {
+            var skeleton = new SkeletonView { Kind = SkeletonKind.ChartColumn, Round = column.IsRound };
+            skeleton.SetActive(true);
+            _rows.Children.Add(skeleton);
+            return;
+        }
         foreach (var entry in column.Entries) _rows.Children.Add(Row(entry));
     }
 

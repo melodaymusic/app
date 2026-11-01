@@ -3,8 +3,8 @@ using System.Text;
 using MelodayMusic.Core.Audio;
 using MelodayMusic.Core.Playback;
 using Microsoft.Graphics.Canvas;
-using Windows.Graphics.DirectX;
 using Windows.Foundation;
+using Windows.Graphics.DirectX;
 
 namespace MelodayMusic.Controls;
 

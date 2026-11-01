@@ -1,6 +1,6 @@
+using System.Text.Json;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
-using System.Text.Json;
 
 namespace MelodayMusic.Core.LastFm;
 

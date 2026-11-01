@@ -1,5 +1,5 @@
-using MelodayMusic.Helpers;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;

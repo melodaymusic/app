@@ -1,7 +1,7 @@
 using System.Text.Json;
 using MelodayMusic.Core;
-using MelodayMusic.Core.Mixes;
 using MelodayMusic.Core.Meloday;
+using MelodayMusic.Core.Mixes;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Playlists;
 using MelodayMusic.Core.Plex;
@@ -213,7 +213,9 @@ public sealed class MadePlaylistService : IDisposable
         var snapshot = _engine.Snapshot();
         if (snapshot.Count < Minimum)
         {
-            Status = $"Made by Meloday playlists appear once the Meloday Engine has analysed {Minimum:N0} of your songs ({snapshot.Count:N0} so far).";
+            Status = _analysis.Learning
+                ? $"Made by Meloday playlists appear once the Meloday Engine has analysed {Minimum:N0} of your songs ({snapshot.Count:N0} so far)."
+                : $"Made by Meloday playlists need the Meloday Engine to know {Minimum:N0} of your songs ({snapshot.Count:N0} so far). Turn on learning under Settings > Audio Analysis.";
             return null;
         }
         var disliked = await _dislikes.GetAsync().ConfigureAwait(false);
@@ -251,7 +253,9 @@ public sealed class MadePlaylistService : IDisposable
         await AddGenresAsync(client, edition, disliked.Eligible, now).ConfigureAwait(false);
         if (edition.Tracks.Count == 0)
         {
-            Status = "The Meloday Engine hasn't found enough songs for any moment yet. It keeps learning in the background.";
+            Status = _analysis.Learning
+                ? "The Meloday Engine hasn't found enough songs for any moment yet. It keeps learning in the background."
+                : "The Meloday Engine hasn't found enough songs for any moment yet, and learning is turned off under Settings > Audio Analysis.";
             return null;
         }
         return edition;

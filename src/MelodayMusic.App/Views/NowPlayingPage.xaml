@@ -26,6 +26,34 @@
 
                 <controls:VisualizerView x:Name="Visualizer" CornerRadius="{StaticResource MelodayRadiusLargeArtwork}" VerticalAlignment="Center" Visibility="Collapsed" />
 
+                <Border x:Name="MixCard" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="16" Padding="8,8,16,8" CornerRadius="16"
+                        Background="{ThemeResource MelodayOverlayGlassBrush}" BorderBrush="{StaticResource MelodayOnColorEdgeBrush}" BorderThickness="1"
+                        Visibility="{x:Bind Player.HasMixCue, Mode=OneWay}" helpers:Anim.Appear="True"
+                        AutomationProperties.AutomationId="MixCue" AutomationProperties.Name="{x:Bind Player.MixCueName, Mode=OneWay}">
+                    <Grid ColumnSpacing="12" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <controls:ArtworkImage Width="48" Height="48" DecodeSize="96" ArtworkCornerRadius="8" PlaceholderIcon="Music"
+                                               SourcePath="{x:Bind Player.MixNextThumb, Mode=OneWay}" />
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                            <TextBlock Text="{x:Bind Player.MixOverline, Mode=OneWay}" Style="{StaticResource MelodayOverlineText}" Foreground="{StaticResource MelodayOnColorTertiaryBrush}" />
+                            <TextBlock Text="{x:Bind Player.MixNextTitle, Mode=OneWay}" Style="{StaticResource MelodayBodyStrongText}" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" />
+                            <TextBlock Text="{x:Bind Player.MixStatus, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" Foreground="{StaticResource MelodayOnColorBodyBrush}"
+                                       TextTrimming="CharacterEllipsis" MaxLines="1" Typography.NumeralAlignment="Tabular" />
+                        </StackPanel>
+                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="1" Value="{x:Bind Player.MixProgress, Mode=OneWay}"
+                                     Foreground="{StaticResource MelodayOnColorPrimaryBrush}" Background="{StaticResource MelodayOnColorFillBrush}"
+                                     Visibility="{x:Bind Player.MixStarted, Mode=OneWay}" AutomationProperties.Name="Mix progress" />
+                    </Grid>
+                </Border>
+
                 <StackPanel x:Name="Info" Grid.Column="1" Width="460" VerticalAlignment="Center" Spacing="4">
                     <TextBlock Text="{x:Bind Player.LiveLabel, Mode=OneWay}" Style="{StaticResource MelodayOverlineText}" Foreground="{ThemeResource MelodayAccentTextBrush}"
                                Visibility="{x:Bind Player.IsLive, Mode=OneWay}" AutomationProperties.AutomationId="NowPlayingLive" />

@@ -68,7 +68,7 @@ public sealed partial class MusicBrainzClient(HttpClient http, string version)
             using var timeout = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeout.CancelAfter(TimeSpan.FromSeconds(20));
             using var request = new HttpRequestMessage(HttpMethod.Get, "https://musicbrainz.org/ws/2/" + path);
-            request.Headers.UserAgent.ParseAdd($"MelodayMusic/{version} (https://github.com/myplexscripts/melodaymusic)");
+            request.Headers.UserAgent.ParseAdd($"MelodayMusic/{version} (https://github.com/melodaymusic)");
             using var response = await http.SendAsync(request, timeout.Token).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             return await response.Content.ReadFromJsonAsync<JsonElement>(timeout.Token).ConfigureAwait(false);

@@ -4,9 +4,7 @@ using Windows.Foundation;
 namespace MelodayMusic.Controls;
 
 /// <summary>
-/// Columns across the whole picture, each a chain of rounded pills listening to its own part of the sound (bass at the left):
-/// a column's pills stretch and light up with its part, rush along as it gets louder and jump on every beat.
-/// Wider pictures (full screen) get more columns.
+/// Columns of rounded pills, one per frequency band (bass at the left), that stretch, light up and jump on the beat.
 /// </summary>
 internal sealed class PillarsPainter : IVisualPainter
 {

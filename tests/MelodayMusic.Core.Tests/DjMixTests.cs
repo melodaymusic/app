@@ -91,9 +91,9 @@ public class DjMixTests
     {
         var plan = BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0), Steady(124, 0, 45, 7, _ => -8))!;
         Assert.Equal(MixStyle.EqBlend, plan.Style);
-        var early = MixTimeline.At(plan, plan.Shape.Overlap * 0.2);
+        var early = MixTimeline.At(plan, plan.Landing * 0.35);
         Assert.True(early.InBands.High > 0.5 && early.InBands.MidCentre == 0 && early.InBands.Low == 0);
-        var late = MixTimeline.At(plan, plan.Shape.Overlap * 0.7);
+        var late = MixTimeline.At(plan, plan.Landing + plan.Beat / 4);
         Assert.Equal(1, late.InBands.Low);
         Assert.Equal(0, late.OutBands.Low);
         Assert.Equal(0, late.OutCutoff);
@@ -108,7 +108,7 @@ public class DjMixTests
         var middle = MixTimeline.At(plan, plan.Shape.Overlap / 2);
         Assert.Equal(BandGains.VoiceOnly, middle.OutBands);
         Assert.Equal(BandGains.Full, middle.InBands);
-        Assert.Equal(1, middle.OutGain, 3);
+        Assert.Equal(1, middle.OutGain / middle.Trim, 3);
     }
 
     [Fact]
@@ -118,7 +118,7 @@ public class DjMixTests
             new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(170)), new VocalSpan(TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(150)))!;
         Assert.Equal(MixStyle.VocalIn, plan.Style);
         Assert.Equal(BandGains.VoiceOnly, MixTimeline.At(plan, TimeSpan.Zero).InBands);
-        Assert.Equal(BandGains.Full, MixTimeline.At(plan, plan.Shape.Overlap * 0.9).InBands);
+        Assert.Equal(BandGains.Full, MixTimeline.At(plan, plan.Landing).InBands);
     }
 
     [Fact]
@@ -127,9 +127,14 @@ public class DjMixTests
         var outgoing = Steady(124, 140, 200, 0, t => t < 185 ? -3 : -12);
         var plan = BeatMix.Plan(Loudness(196), outgoing, Steady(80, 0, 45, 0))!;
         Assert.Equal(MixStyle.Cut, plan.Style);
-        Assert.InRange(plan.StartAt.TotalSeconds, 184, 186.5);
-        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - plan.StartAt.TotalSeconds) < 1e-6);
-        Assert.True(plan.Shape.Overlap.TotalSeconds < 0.1);
+        var cut = (plan.StartAt + plan.InDelay).TotalSeconds;
+        Assert.InRange(cut, 184, 186.5);
+        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - cut) < 1e-6);
+        Assert.Equal(outgoing.BeatPeriod, plan.InDelay.TotalSeconds, 6);
+        Assert.True((plan.Shape.Overlap - plan.InDelay).TotalSeconds < 0.1);
+        Assert.True(MixTimeline.At(plan, plan.InDelay).OutReverb > 0.9 * BeatMix.CutReverb, "the last beat is thrown into the reverb");
+        Assert.True(MixTimeline.At(plan, plan.InDelay - TimeSpan.FromMilliseconds(5)).InWaiting);
+        Assert.False(MixTimeline.At(plan, plan.Shape.Overlap).OutgoingDone, "the splash rings on after the cut");
         Assert.Equal(MixStyle.Echo, BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0), Steady(80, 0, 45, 0))!.Style);
     }
 
@@ -144,17 +149,20 @@ public class DjMixTests
             BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0), Steady(124, 0, 45, 7, _ => -8),
                 new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(170)), new VocalSpan(TimeSpan.FromSeconds(6), TimeSpan.FromSeconds(150)))!,
             BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0, t => t < 185 ? -3 : -12), Steady(80, 0, 45, 0))!,
+            BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0, _ => -7), Steady(124, 0, 45, 6))!,
+            BeatMix.Plan(Loudness(196), Steady(124, 140, 200, 0), Steady(80, 0, 45, 0, _ => -10))!,
         };
-        Assert.Equal([MixStyle.EqBlend, MixStyle.VocalOut, MixStyle.VocalIn, MixStyle.Cut], plans.Select(p => p.Style));
+        Assert.Equal([MixStyle.EqBlend, MixStyle.VocalOut, MixStyle.VocalIn, MixStyle.Cut, MixStyle.Build, MixStyle.Wash], plans.Select(p => p.Style));
         foreach (var plan in plans)
         {
             var a = new DeckVoice(Rate, 2, Tone(220, 0.3, 110));
             var b = new DeckVoice(Rate, 2, Tone(330, -0.2, 82)) { Gain = 0 };
             const double lead = 2;
-            var total = (int)((lead + plan.Shape.Overlap.TotalSeconds + plan.RampBack.TotalSeconds + 3) * Rate);
+            var total = (int)((lead + plan.Shape.Overlap.TotalSeconds + plan.RampBack.TotalSeconds + plan.Tail.TotalSeconds + 3) * Rate);
             var output = new float[total * 2];
             var slice = new float[256 * 2];
             var leadFrames = (int)(lead * Rate);
+            var waited = false;
             for (var at = 0; at < total; at += 256)
             {
                 var n = Math.Min(256, total - at);
@@ -171,8 +179,22 @@ public class DjMixTests
                     a.Cutoff = moment.OutCutoff;
                     a.Bands = moment.OutBands;
                     a.Rate = moment.OutRate;
+                    a.EchoDelay = plan.EchoDelay.TotalSeconds;
+                    a.EchoSend = moment.OutEcho;
+                    a.ReverbSend = moment.OutReverb;
+                    a.Roll = moment.OutRoll;
                     a.Read(slice, n);
                     for (var i = 0; i < n * 2; i++) output[at * 2 + i] += slice[i];
+                }
+                if (moment.InWaiting)
+                {
+                    waited = true;
+                    continue;
+                }
+                if (waited)
+                {
+                    waited = false;
+                    b.RiseFromSilence();
                 }
                 b.Gain = (float)moment.InGain;
                 b.Cutoff = moment.InCutoff;

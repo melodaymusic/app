@@ -1,9 +1,6 @@
-using System.Collections.ObjectModel;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
-using MelodayMusic.Services;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace MelodayMusic.ViewModels;
 

@@ -23,6 +23,12 @@ public sealed class ChartColumn(IReadOnlyList<ChartEntry> entries)
 {
     public const int Size = 5;
     public IReadOnlyList<ChartEntry> Entries { get; } = entries;
+    public bool IsPlaceholder { get; private init; }
+    public bool IsRound { get; private init; }
+
+    /// <summary>Stand-ins Home shows while a chart loads, so the rail keeps its place instead of appearing late.</summary>
+    public static IReadOnlyList<ChartColumn> Placeholders(bool round, int count = 4) =>
+        Enumerable.Range(0, count).Select(_ => new ChartColumn([]) { IsPlaceholder = true, IsRound = round }).ToList();
 
     public static IReadOnlyList<ChartColumn> From(IEnumerable<MelodayMusic.Core.Models.MediaItem> items,
         IReadOnlyDictionary<string, MelodayMusic.Core.LastFm.ChartPosition> positions) =>

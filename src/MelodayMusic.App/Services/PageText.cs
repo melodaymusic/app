@@ -12,14 +12,11 @@ public static class PageText
     public static void Install(ResourceDictionary design)
     {
         Installed.Clear();
-        foreach (var (theme, dark) in new[] { ("Dark", true), ("Light", false) })
+        if (!design.ThemeDictionaries.TryGetValue("Dark", out var value) || value is not ResourceDictionary dictionary) return;
+        foreach (var (key, secondary) in new[] { ("MelodayTextSecondaryBrush", true), ("MelodayTextTertiaryBrush", false) })
         {
-            if (!design.ThemeDictionaries.TryGetValue(theme, out var value) || value is not ResourceDictionary dictionary) continue;
-            foreach (var (key, secondary) in new[] { ("MelodayTextSecondaryBrush", true), ("MelodayTextTertiaryBrush", false) })
-            {
-                if (dictionary.TryGetValue(key, out var existing) && existing is SolidColorBrush brush)
-                    Installed.Add((dark, secondary, brush, brush.Color));
-            }
+            if (dictionary.TryGetValue(key, out var existing) && existing is SolidColorBrush brush)
+                Installed.Add((true, secondary, brush, brush.Color));
         }
     }
 

@@ -4,7 +4,6 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using MelodayMusic.Core.Companion;
 using MelodayMusic.Core.Models;
-using MelodayMusic.Core.Playback;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Settings;

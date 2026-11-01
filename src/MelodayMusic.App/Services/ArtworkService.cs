@@ -1,8 +1,8 @@
 using MelodayMusic.Core.Caching;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Core.Services;
 using Windows.Graphics.Imaging;
 using Windows.Storage;
-using MelodayMusic.Core.Services;
 
 namespace MelodayMusic.Services;
 

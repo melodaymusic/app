@@ -12,7 +12,7 @@
     <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
                   AutomationProperties.AutomationId="PageScroller">
         <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySectionSpacing}">
-            <controls:PageHeader Eyebrow="{x:Bind ViewModel.Greeting, Mode=OneWay}" Title="{x:Bind ViewModel.HeaderTitle, Mode=OneWay}">
+            <controls:PageHeader Title="{x:Bind ViewModel.Greeting, Mode=OneWay}">
                 <StackPanel HorizontalAlignment="Right" Spacing="2" AutomationProperties.AutomationId="TodaysListening" AutomationProperties.Name="Today's listening">
                     <TextBlock x:Name="ListeningLabel" Text="Today's listening" Style="{StaticResource MelodayOverlineText}" HorizontalAlignment="Right" />
                     <TextBlock x:Name="ListeningTime" Text="{x:Bind ViewModel.TodayListening, Mode=OneWay}" Style="{StaticResource MelodayDisplayText}" HorizontalAlignment="Right" />
@@ -84,7 +84,7 @@
                 </ItemsControl>
             </Grid>
 
-            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
+            <controls:PageStateView SkeletonKind="Rows" IsLoading="{x:Bind ViewModel.ShowSkeleton, Mode=OneWay}"
                                     ErrorMessage="{x:Bind ViewModel.ErrorMessage, Mode=OneWay}"
                                     IsEmpty="{x:Bind ViewModel.IsEmpty, Mode=OneWay}"
                                     EmptyText="No music in this library."
@@ -99,7 +99,7 @@
                 <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:MediaRow">
                         <controls:MediaRowControl Header="{x:Bind Title}" Subheader="{x:Bind Subtitle}" ItemsSource="{x:Bind Items}" SeeAllCommand="{x:Bind SeeAllCommand}" PlayAllCommand="{x:Bind PlayAllCommand}"
-                                                  CardStyle="{x:Bind CardStyle}" IsChart="{x:Bind IsChart}" CanReorder="{x:Bind CanReorder}" ItemsReordered="OnRowReordered" />
+                                                  CardStyle="{x:Bind CardStyle}" CanReorder="{x:Bind CanReorder}" ItemsReordered="OnRowReordered" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>

@@ -20,12 +20,7 @@ public sealed partial class QueuePanel : UserControl
     private void OnSaveQueue(object sender, RoutedEventArgs e)
     {
         var tracks = App.Services.GetRequiredService<Services.PlayerService>().Queue.Items.Select(i => i.Track).ToList();
-        if (tracks.Count > 0) _ = PlaylistDialogs.NewAsync(tracks);
-    }
-
-    private void OnRemoveClick(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is QueueItemViewModel item) Player.RemoveCommand.Execute(item);
+        if (tracks.Count > 0) _ = PlaylistDialogs.FromQueueAsync(tracks);
     }
 
     private void OnRowDoubleTapped(object sender, DoubleTappedRoutedEventArgs e)

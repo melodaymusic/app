@@ -1,13 +1,13 @@
-using Microsoft.Extensions.DependencyInjection;
-using MelodayMusic.Core.Playlists;
 using System.Collections.Concurrent;
 using MelodayMusic.Core.Audio;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Mixes;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Core.Playlists;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Taste;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.Services;
@@ -46,7 +46,6 @@ public sealed class MixService
 
     private readonly PlexSession _session;
     private readonly Dislikes _dislikes;
-    private readonly PlexPass _pass;
     private readonly MusicIntelligence _intelligence;
     private readonly LocalRadio _local;
     private readonly AudioAnalysisService _audio;
@@ -63,14 +62,13 @@ public sealed class MixService
     private IReadOnlyList<HistoryPlay> _history = [];
     private DateTime _historyAt;
 
-    public MixService(PlexSession session, Dislikes dislikes, PlexPass pass, MusicIntelligence intelligence, LocalRadio local, AudioAnalysisService audio,
+    public MixService(PlexSession session, Dislikes dislikes, MusicIntelligence intelligence, LocalRadio local, AudioAnalysisService audio,
         TasteService taste, MelodayEngine engine, ILogger<MixService> log)
     {
         _engine = engine;
         _taste = taste;
         _session = session;
         _dislikes = dislikes;
-        _pass = pass;
         _intelligence = intelligence;
         intelligence.Changed += (_, _) => Clear();
         _local = local;

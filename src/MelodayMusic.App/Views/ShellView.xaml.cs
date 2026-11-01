@@ -1,15 +1,13 @@
-using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Input;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Input;
+using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
 
@@ -54,8 +52,10 @@ public sealed partial class ShellView : UserControl
     [
         new() { Label = "Settings", Icon = "Settings", Page = typeof(SettingsPage) },
     ];
+    private readonly NavItem _chartsItem = new() { Label = "Charts", Icon = "TrendingUp", Page = typeof(ChartsPage) };
     private readonly NavItem _trendsItem = new() { Label = "Trends", Icon = "ChartColumn", Page = typeof(TrendsPage) };
     private readonly ListeningService _listening;
+    private readonly LastFmService _lastFm;
     private bool _syncingSearch;
 
     public ShellView()
@@ -67,6 +67,7 @@ public sealed partial class ShellView : UserControl
         _player = App.Services.GetRequiredService<PlayerViewModel>();
         _panels = App.Services.GetRequiredService<PanelService>();
         _listening = App.Services.GetRequiredService<ListeningService>();
+        _lastFm = App.Services.GetRequiredService<LastFmService>();
         InitializeComponent();
         _panels.PropertyChanged += (_, _) => ApplyQueue();
         var stage = App.Services.GetRequiredService<StageService>();
@@ -80,6 +81,14 @@ public sealed partial class ShellView : UserControl
 
         LibraryList.ItemsSource = _library;
         FooterList.ItemsSource = _footer;
+        var search = App.Services.GetRequiredService<SearchViewModel>();
+        search.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName != nameof(SearchViewModel.Query) || SearchBox.Text == search.Query) return;
+            _syncingSearch = true;
+            SearchBox.Text = search.Query;
+            _syncingSearch = false;
+        };
         ApplyTrendsShown();
         ShowAccountPicture();
         PlayerBar.CastShadowOnto(ContentFrame);
@@ -95,6 +104,7 @@ public sealed partial class ShellView : UserControl
         {
             if ((e.PreviousSize.Width >= WideQueueWidth) != (e.NewSize.Width >= WideQueueWidth))
                 DispatcherQueue.TryEnqueue(ApplyQueue);
+            ApplyRail(e.NewSize.Width);
         };
         ContentSurface.AddHandler(PointerPressedEvent, new PointerEventHandler(OnContentPressed), true);
         AddKeyboardShortcuts();
@@ -103,6 +113,26 @@ public sealed partial class ShellView : UserControl
     }
 
     private const double WideQueueWidth = 1600;
+    private const double CompactRailWidth = 1000;
+    private bool? _compactRail;
+
+    // Below CompactRailWidth the sidebar shows icons only, with each label as a tooltip.
+    private void ApplyRail(double width)
+    {
+        var compact = width > 0 && width < UiScale.Size(CompactRailWidth);
+        if (compact == _compactRail) return;
+        _compactRail = compact;
+        RailColumn.Width = new GridLength(compact ? 96 : 240);
+        var nav = (DataTemplate)Resources[compact ? "CompactNavTemplate" : "WideNavTemplate"];
+        NavList.ItemTemplate = LibraryList.ItemTemplate = FooterList.ItemTemplate = nav;
+        PinnedList.ItemTemplate = (DataTemplate)Resources[compact ? "CompactPinnedTemplate" : "PinnedNavTemplate"];
+        var label = compact ? Visibility.Collapsed : Visibility.Visible;
+        LibraryHeader.Visibility = LibraryLabel.Visibility = PinnedLabel.Visibility = PinnedChevron.Visibility = label;
+        LibraryHeaderGrid.HorizontalAlignment = PinnedHeaderGrid.HorizontalAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch;
+        ToolTipService.SetToolTip(PinnedHeader, compact ? "Pinned" : null);
+        ToolTipService.SetToolTip(LibrarySectionHeader, compact ? "Library" : null);
+    }
+
     private readonly PanelService _panels;
     private bool _queueOpen => _panels.Open != SidePanel.None;
 
@@ -129,6 +159,8 @@ public sealed partial class ShellView : UserControl
         Shell.PropertyChanged += OnShellChanged;
         _listening.ShownChanged -= OnTrendsShownChanged;
         _listening.ShownChanged += OnTrendsShownChanged;
+        _lastFm.TrendingChanged -= OnTrendsShownChanged;
+        _lastFm.TrendingChanged += OnTrendsShownChanged;
         DispatcherQueue.TryEnqueue(Microsoft.UI.Dispatching.DispatcherQueuePriority.Low, () =>
         {
             if (IsLoaded && App.MainWindow?.IsIntroVisible != true) NavList.Focus(FocusState.Pointer);
@@ -151,23 +183,26 @@ public sealed partial class ShellView : UserControl
         _navigation.Navigated -= OnNavigated;
         Shell.PropertyChanged -= OnShellChanged;
         _listening.ShownChanged -= OnTrendsShownChanged;
+        _lastFm.TrendingChanged -= OnTrendsShownChanged;
     }
 
     private void OnTrendsShownChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(ApplyTrendsShown);
 
+    // Charts and Trends only appear while they have something to show: a Last.fm chart that's on, or enough listening history.
     private void ApplyTrendsShown()
     {
-        var shown = _listening.TrendsShown;
-        if (shown == _items.Contains(_trendsItem) && NavList.ItemsSource is not null) return;
-        if (!shown) _items.Remove(_trendsItem);
-        else if (!_items.Contains(_trendsItem))
-        {
-            var at = _items.FindIndex(i => i.Page == typeof(RadioPage)) + 1;
-            _items.Insert(Math.Clamp(at, 0, _items.Count), _trendsItem);
-        }
+        var charts = _lastFm.TrendingOn || _lastFm.TrendingArtistsOn;
+        var trends = _listening.TrendsShown;
+        if (charts == _items.Contains(_chartsItem) && trends == _items.Contains(_trendsItem) && NavList.ItemsSource is not null) return;
+        _items.Remove(_chartsItem);
+        _items.Remove(_trendsItem);
+        var at = Math.Clamp(_items.FindIndex(i => i.Page == typeof(RadioPage)) + 1, 0, _items.Count);
+        if (trends) _items.Insert(at, _trendsItem);
+        if (charts) _items.Insert(at, _chartsItem);
         NavList.ItemsSource = null;
         NavList.ItemsSource = _items;
-        if (_navigation.CurrentPage == typeof(TrendsPage) && !shown) _navigation.NavigateRoot(typeof(HomePage));
+        if (_navigation.CurrentPage == typeof(TrendsPage) && !trends || _navigation.CurrentPage == typeof(ChartsPage) && !charts)
+            _navigation.NavigateRoot(typeof(HomePage));
         else if (IsLoaded) OnNavigated(this, null);
     }
 

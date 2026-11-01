@@ -62,7 +62,6 @@ public sealed partial class SettingsViewModel : ObservableObject
 
     public IReadOnlyList<string> QualityOptions { get; } = ["Original quality (transcode only when needed)", "Always transcode to MP3"];
     public IReadOnlyList<int> BitrateOptions { get; } = [128, 192, 256, 320];
-    public IReadOnlyList<string> ThemeOptions { get; } = ["Use Windows setting", "Light", "Dark"];
     public IReadOnlyList<string> InsecureConnectionOptions { get; } = ["Never", "On same network", "Always"];
     [ObservableProperty] public partial int InsecureConnectionIndex { get; set; }
     public string InsecureConnectionNote => InsecureConnectionIndex switch
@@ -99,7 +98,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     public double CrossfadeMinimum => Core.Playback.Crossfade.MinSeconds;
     public double CrossfadeMaximum => Core.Playback.Crossfade.MaxSeconds;
     public string CrossfadeText => $"{CrossfadeSeconds:0} s";
-    [ObservableProperty] public partial int ThemeIndex { get; set; }
     [ObservableProperty] public partial bool MotionEnabled { get; set; } = true;
     public string MotionNote => new Windows.UI.ViewManagement.UISettings().AnimationsEnabled
         ? ""
@@ -140,6 +138,7 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
     private BackgroundAudioAnalysis Analysis => App.Services.GetRequiredService<BackgroundAudioAnalysis>();
     private MusicIntelligence Intelligence => App.Services.GetRequiredService<MusicIntelligence>();
+    private static PlexPass Plex => App.Services.GetRequiredService<PlexPass>();
     public IReadOnlyList<string> AnalysisPaceOptions { get; } = ["Background", "Power through"];
     public int AnalysisPaceIndex
     {
@@ -147,27 +146,30 @@ public sealed partial class SettingsViewModel : ObservableObject
         set { Analysis.SetFastMode(value == 1); OnPropertyChanged(); OnPropertyChanged(nameof(AnalysisPaceNote)); }
     }
     public string AnalysisPaceNote => Analysis.FastMode
-        ? "Faster analysis, using more CPU and network bandwidth. Sampling quality is unchanged."
-        : "Lower CPU and network use. Sampling quality is unchanged.";
-    public IReadOnlyList<string> MusicEngineOptions { get; } = ["Meloday Engine (Experimental)", "Plex Sonic Analysis"];
-    public int MusicEngineIndex
+        ? "Finishes sooner, mostly while you're away from your PC: it analyses several songs at once until you're back, then goes one at a time. It slows down on battery and during full-screen games or films."
+        : "One song at a time with short breaks, so you won't notice it.";
+    public bool LearnLibrary
     {
-        get => Intelligence.IsMeloday ? 0 : 1;
+        get => Intelligence.IsLearning;
         set
         {
-            Intelligence.Select(value == 1 ? Core.Audio.MusicEngineKind.Plex : Core.Audio.MusicEngineKind.Meloday);
-            OnPropertyChanged(); OnPropertyChanged(nameof(MusicEngineNote));
+            if (value == Intelligence.IsLearning) return;
+            Intelligence.SetLearning(value);
+            OnPropertyChanged(); OnPropertyChanged(nameof(LearnLibraryNote));
             _ = App.Services.GetRequiredService<HomeViewModel>().RefreshAsync();
         }
     }
-    public string MusicEngineNote => Intelligence.IsMeloday
-        ? "ME uses its own local sound profiles. It never uses Plex sonic results. While analysis grows, ordinary mixes and radio can use library tags and listening history."
-        : Intelligence.IsAvailable ? "Uses Plex Sonic Analysis for sound similarity. ME continues learning in the background so you can switch and compare."
-        : "Plex Sonic Analysis requires Plex Pass. Choose Meloday Engine to use local sound analysis without it.";
+    public string LearnLibraryNote => Intelligence.IsLearning
+        ? Plex.IsAvailable
+            ? "Listens to each song on this PC so it can find songs that sound alike and say why. Your Plex Pass fills in for songs it hasn't learned yet."
+            : "Listens to each song on this PC so it can find songs that sound alike and say why. It learns in the background; progress is saved."
+        : Plex.IsAvailable
+            ? "Off. Sonic Radio and Sonic Adventure use your Plex server's analysis instead. Find Your Mood, By Energy, For Every Moment and Search by sound use only what's already learned."
+            : "Off. Sound-based features use only what's already learned. Without Plex Pass, nothing else can fill in.";
     public double EnginePercent => Analysis.Summary.Total > 0 ? Math.Min(100, 100.0 * App.Services.GetRequiredService<MelodayEngine>().Count / Analysis.Summary.Total) : 0;
     public string EngineCoverage => Analysis.InventoryKnown
-        ? $"{EnginePercent:0.0}% - {App.Services.GetRequiredService<MelodayEngine>().Count:N0} of {Analysis.Summary.Total:N0} tracks have ME sound profiles"
-        : "Checking saved ME sound profiles…";
+        ? $"{EnginePercent:0.0}% · {App.Services.GetRequiredService<MelodayEngine>().Count:N0} of {Analysis.Summary.Total:N0} songs"
+        : "Checking what it has already learned…";
     public double AnalysisPercent => Analysis.Summary.Percent;
     public string AnalysisProgress => Analysis.InventoryKnown
         ? $"{AnalysisPercent:0.0}% of tracks analysed"
@@ -234,7 +236,12 @@ public sealed partial class SettingsViewModel : ObservableObject
         {
             _lastFmAwaitingApproval = false;
             OnPropertyChanged(nameof(LastFmButtonText));
-            LastFmStatus = ex is Core.LastFm.LastFmException { Code: 10 or 26 } ? "Last.fm didn't accept that API key." : $"Couldn't reach Last.fm: {ex.Message}";
+            LastFmStatus = ex switch
+            {
+                Core.LastFm.LastFmException { Code: 10 or 26 } => "Last.fm didn't accept that API key.",
+                Core.LastFm.LastFmException => $"Last.fm said: {ex.Message.TrimEnd('.')}. Try again in a moment.",
+                _ => "Couldn't reach Last.fm. Check your internet connection and try again.",
+            };
             return false;
         }
     }
@@ -556,7 +563,6 @@ public sealed partial class SettingsViewModel : ObservableObject
     }
 
     public string AccountName => _session.Account?.Name ?? "Not signed in";
-    public string PlexPassStatus => "Plex Pass: " + App.Services.GetRequiredService<PlexPass>().Status;
 
     public string AccountDetail => _session.ProfileUuid is not null && _session.Owner is { } owner
         ? $"Plex Home profile · signed in as {owner.Name}"
@@ -603,7 +609,6 @@ public sealed partial class SettingsViewModel : ObservableObject
         MuteCustomDays = c.MuteCustomDays;
         RefreshMuted();
         CrossfadeSeconds = c.CrossfadeSeconds;
-        ThemeIndex = (int)c.Theme;
         MotionEnabled = c.Motion;
         OnPropertyChanged(nameof(MotionNote));
         ShowArtistLogos = c.ShowArtistLogos;
@@ -618,7 +623,8 @@ public sealed partial class SettingsViewModel : ObservableObject
         HasAiKey = _meloday.HasAiKey;
         OnPropertyChanged(nameof(AccountName));
         OnPropertyChanged(nameof(AccountDetail));
-        OnPropertyChanged(nameof(PlexPassStatus));
+        OnPropertyChanged(nameof(LearnLibrary));
+        OnPropertyChanged(nameof(LearnLibraryNote));
         OnPropertyChanged(nameof(ConnectionText));
         OnPropertyChanged(nameof(ServerVersion));
         _loading = false;
@@ -765,14 +771,6 @@ public sealed partial class SettingsViewModel : ObservableObject
             _loading = false;
             _notifications.ShowInfo("Couldn't change startup", "Windows didn't allow this change. Try again.");
         }
-    }
-
-    partial void OnThemeIndexChanged(int value)
-    {
-        if (_loading || value < 0) return;
-        _settings.Current.Theme = (AppTheme)value;
-        _settings.Save();
-        App.ApplyTheme(_settings.Current.Theme);
     }
 
     partial void OnMotionEnabledChanged(bool value)

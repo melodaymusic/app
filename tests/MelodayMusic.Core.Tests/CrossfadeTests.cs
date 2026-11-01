@@ -94,7 +94,8 @@ public class AutoMixTests
         var incoming = Song(i => i < 2 ? -40 : -12);
         Assert.Equal(4, AutoMix.LeadIn(incoming, Length).TotalSeconds, 0.01);
         Assert.Equal(TimeSpan.Zero, AutoMix.LeadIn(Song(_ => -12), Length));
-        Assert.Equal(TimeSpan.Zero, AutoMix.LeadIn(Song(i => i < 10 ? -40 : -12), Length));
+        Assert.Equal(12, AutoMix.LeadIn(Song(i => i < 6 ? -40 : -12), Length).TotalSeconds, 0.01);
+        Assert.Equal(TimeSpan.Zero, AutoMix.LeadIn(Song(i => i < 12 ? -40 : -12), Length));
     }
 
     [Fact]

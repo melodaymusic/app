@@ -53,7 +53,7 @@ Meloday Engine words: LAION CLAP music text encoder (offline only; not shipped)
   ONNX conversion: https://huggingface.co/muzaiten/clap-htsat-base-onnx, revision d4d4372c9894b975ec118589b4f4328103796e15, CC0-1.0.
   text.onnx SHA-256 069e323e309284ae9aca6587b884afcd38f943fa1cba260823f4673b18f09a26;
   tokenizer.json SHA-256 2bb1a22cfbe25b8e5a232b7fc4d7fc5073923b45724a5f813b00811bb6620f66.
-  The app ships only Assets/Engine/descriptors.json: text vectors for a fixed vocabulary, computed offline by tools/engine/vocabulary.
+  The app ships only Assets/Engine/descriptors.json: text vectors for a fixed vocabulary, computed offline.
   The text tower and tokenizer derive from RoBERTa-base (https://github.com/facebookresearch/fairseq,
   https://huggingface.co/FacebookAI/roberta-base), Copyright (c) Facebook, Inc. and its affiliates, MIT License:
   Assets/Engine/ROBERTA-LICENSE.txt.

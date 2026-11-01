@@ -1,8 +1,8 @@
+using System.Collections.Concurrent;
 using MelodayMusic.Core.Audio;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Settings;
-using System.Collections.Concurrent;
 
 namespace MelodayMusic.Services;
 
@@ -17,7 +17,9 @@ public sealed class MusicIntelligence
     private readonly ConcurrentDictionary<(string Scope, string From, string To), double> _plexDistances = new();
     public event EventHandler? DistancesAvailable;
     public event EventHandler? Changed;
-    public MusicEngineKind Kind => _settings.Current.MusicEngine;
+    // Plex takes over only when learning is off and Plex Pass is available; otherwise it fills in for unlearned songs.
+    public MusicEngineKind Kind => IsLearning || !_pass.IsAvailable ? MusicEngineKind.Meloday : MusicEngineKind.Plex;
+    public bool IsLearning => _settings.Current.LearnLibrary;
     public bool IsMeloday => Kind == MusicEngineKind.Meloday;
     public bool CanUsePlex => !IsMeloday && _pass.IsAvailable;
     public bool IsAvailable => IsMeloday || _pass.IsAvailable;
@@ -26,12 +28,29 @@ public sealed class MusicIntelligence
     public MusicIntelligence(SettingsStore settings, PlexSession session, PlexPass pass, MelodayEngine engine, AudioAnalysisService analysis)
     { _settings = settings; _session = session; _pass = pass; _engine = engine; _analysis = analysis; }
 
-    public void Select(MusicEngineKind kind)
+    public void SetLearning(bool learn)
     {
-        if (kind == Kind) return;
-        _settings.Current.MusicEngine = kind;
+        if (learn == IsLearning) return;
+        var kind = Kind;
+        _settings.Current.LearnLibrary = learn;
         _settings.Save();
-        Changed?.Invoke(this, EventArgs.Empty);
+        if (kind != Kind) Changed?.Invoke(this, EventArgs.Empty);
+        LearningChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public event EventHandler? LearningChanged;
+
+    private bool FillsIn => IsMeloday && _pass.IsAvailable;
+
+    private async Task<IReadOnlyList<T>> PlexSimilarAsync<T>(Core.Plex.PlexServerClient client, string ratingKey, int limit, double maxDistance,
+        string scope, MusicEngineKind kind, CancellationToken ct) where T : MediaItem
+    {
+        var plex = _pass.IsAvailable ? await client.GetSonicallySimilarAsync<T>(ratingKey, limit, maxDistance, ct).ConfigureAwait(false) : [];
+        if (scope != _engine.Scope || kind != Kind) return [];
+        foreach (var track in plex.OfType<Track>().Where(t => t.SonicDistance is >= 0))
+            _plexDistances[(scope, ratingKey, track.RatingKey)] = track.SonicDistance!.Value;
+        if (_plexDistances.Count > 100000) _plexDistances.Clear();
+        return plex;
     }
 
     public async Task<IReadOnlyList<T>> SimilarAsync<T>(string ratingKey, int limit = 20, double maxDistance = 0.3,
@@ -40,15 +59,7 @@ public sealed class MusicIntelligence
         var kind = Kind;
         var scope = _engine.Scope;
         if (_session.Client is not { } client) return [];
-        if (kind == MusicEngineKind.Plex)
-        {
-            var plex = _pass.IsAvailable ? await client.GetSonicallySimilarAsync<T>(ratingKey, limit, maxDistance, ct).ConfigureAwait(false) : [];
-            if (scope != _engine.Scope || kind != Kind) return [];
-            foreach (var track in plex.OfType<Track>().Where(t => t.SonicDistance is >= 0))
-                _plexDistances[(scope, ratingKey, track.RatingKey)] = track.SonicDistance!.Value;
-            if (_plexDistances.Count > 100000) _plexDistances.Clear();
-            return plex;
-        }
+        if (kind == MusicEngineKind.Plex) return await PlexSimilarAsync<T>(client, ratingKey, limit, maxDistance, scope, kind, ct).ConfigureAwait(false);
         var items = await client.GetItemsAsync([ratingKey], ct).ConfigureAwait(false);
         var seed = items.FirstOrDefault();
         if (seed is null || scope != _engine.Scope || kind != Kind) return [];
@@ -65,7 +76,7 @@ public sealed class MusicIntelligence
             if (seed is Track t) _analysis.RequestPriority([t]);
             else if (seed is Album album) _analysis.RequestPriority(await client.GetAlbumTracksAsync(album.RatingKey, ct).ConfigureAwait(false));
             else if (seed is Artist artist) _analysis.RequestPriority(await client.GetArtistTracksAsync(artist.RatingKey, ct).ConfigureAwait(false));
-            return [];
+            return FillsIn ? await PlexSimilarAsync<T>(client, ratingKey, limit, maxDistance, scope, kind, ct).ConfigureAwait(false) : [];
         }
         var results = await SearchAsync(() =>
         {
@@ -92,12 +103,12 @@ public sealed class MusicIntelligence
         var kind = Kind;
         var scope = _engine.Scope;
         if (_session.Client is not { } client || _session.Section is not { } section) return [];
-        if (kind == MusicEngineKind.Plex)
+        if (kind == MusicEngineKind.Meloday) _analysis.RequestPriority([start, end]);
+        if (kind == MusicEngineKind.Plex || FillsIn && !Knows(start, end))
         {
             var plex = _pass.IsAvailable ? await client.GetSonicAdventureAsync(section.Key, start.RatingKey, end.RatingKey, ct).ConfigureAwait(false) : [];
             return scope == _engine.Scope && kind == Kind ? plex : [];
         }
-        _analysis.RequestPriority([start, end]);
         var snapshot = _engine.Snapshot();
         var vectors = snapshot.Where(p => p.Key == start.RatingKey || p.Key == end.RatingKey || allowed?.Invoke(p.Value.Track) != false)
             .ToDictionary(p => p.Key, p => p.Value.Vector);
@@ -105,9 +116,11 @@ public sealed class MusicIntelligence
         return scope != _engine.Scope || kind != Kind ? [] : path.Select(k => snapshot[k].Track).ToArray();
     }
 
+    private bool Knows(Track start, Track end) => _engine.Knows(start) && _engine.Knows(end);
+
     public async Task<IReadOnlyList<Track>> StretchAsync(Track start, Track end, int count, Func<Track, bool> allowed, CancellationToken ct = default)
     {
-        if (Kind == MusicEngineKind.Plex)
+        if (Kind == MusicEngineKind.Plex || FillsIn && !Knows(start, end))
         {
             var path = await AdventureAsync(start, end, ct, allowed).ConfigureAwait(false);
             var between = path.Skip(1).Take(Math.Max(0, path.Count - 2)).Where(allowed).ToList();
@@ -125,16 +138,14 @@ public sealed class MusicIntelligence
 
     public Func<Track, Track, double?> CaptureDistances()
     {
-        if (!IsMeloday)
-        {
-            var scope = _engine.Scope;
-            return (a, b) => _plexDistances.TryGetValue((scope, a.RatingKey, b.RatingKey), out var distance)
-                || _plexDistances.TryGetValue((scope, b.RatingKey, a.RatingKey), out distance) ? distance : null;
-        }
+        var scope = _engine.Scope;
+        double? Plex(Track a, Track b) => _plexDistances.TryGetValue((scope, a.RatingKey, b.RatingKey), out var distance)
+            || _plexDistances.TryGetValue((scope, b.RatingKey, a.RatingKey), out distance) ? distance : null;
+        if (!IsMeloday) return Plex;
         var profiles = _engine.Snapshot();
         return (a, b) =>
         {
-            if (!profiles.TryGetValue(a.RatingKey, out var left) || !profiles.TryGetValue(b.RatingKey, out var right)) return null;
+            if (!profiles.TryGetValue(a.RatingKey, out var left) || !profiles.TryGetValue(b.RatingKey, out var right)) return Plex(a, b);
             var value = MusicSimilarity.Cosine(left.Vector, right.Vector);
             return double.IsFinite(value) ? 1 - value : null;
         };

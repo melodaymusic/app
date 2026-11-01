@@ -44,7 +44,7 @@ public static class AutoMix
 
     public static readonly TimeSpan ShortestOverlap = TimeSpan.FromSeconds(0.5);
     public static readonly TimeSpan LongestOverlap = TimeSpan.FromSeconds(20);
-    public static readonly TimeSpan LongestLeadIn = TimeSpan.FromSeconds(8);
+    public static readonly TimeSpan LongestLeadIn = TimeSpan.FromSeconds(20);
     public static readonly TimeSpan QuickestRise = TimeSpan.FromSeconds(0.4);
     public static readonly TimeSpan LongestFadeAway = TimeSpan.FromSeconds(3);
     private static readonly TimeSpan Step = TimeSpan.FromSeconds(0.25);
@@ -125,6 +125,26 @@ public static class AutoMix
         if (first <= 0) return TimeSpan.Zero;
         var at = duration / track.Levels.Count * first;
         return at > LongestLeadIn ? TimeSpan.Zero : at;
+    }
+
+    // Where a song stops being itself, judged against its whole length: the end of its last two seconds within drop dB of its
+    // usual level. A song's own analysis only hears its last minute, which a long quiet outro can fill.
+    public static TimeSpan? LiveEnd(TrackLoudness? track, TimeSpan duration, double drop)
+    {
+        if (track is not { Levels.Count: >= 16 } || duration <= TimeSpan.Zero) return null;
+        var levels = track.Levels;
+        var step = duration / levels.Count;
+        var sounding = levels.Where(l => l > SilenceDb).OrderBy(l => l).ToList();
+        if (sounding.Count == 0) return null;
+        var usual = sounding[(int)(sounding.Count * 0.7)];
+        var span = Math.Max(1, (int)Math.Round(TimeSpan.FromSeconds(2) / step));
+        for (var i = levels.Count - span; i >= 0; i--)
+        {
+            var power = 0.0;
+            for (var k = i; k < i + span; k++) power += Math.Pow(10, Math.Max(levels[k], SilenceDb - 30) / 10);
+            if (10 * Math.Log10(power / span) >= usual - drop) return step * (i + span);
+        }
+        return null;
     }
 
     public static double LevelFor(TrackLoudness? track) =>

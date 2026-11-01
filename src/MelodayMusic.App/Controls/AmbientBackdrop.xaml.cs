@@ -65,7 +65,6 @@ public sealed partial class AmbientBackdrop : UserControl
     {
         BaseLayer.Background = new SolidColorBrush(Helpers.ThemeColors.Get("MelodayWindowBrush", ActualTheme, Color.FromArgb(255, 0x12, 0x11, 0x14)));
         DimLayer.Background = new SolidColorBrush(Helpers.ThemeColors.Get("MelodayAmbientDimBrush", ActualTheme, Color.FromArgb(0xA8, 0x10, 0x10, 0x13)));
-        HeaderLayer.Opacity = ActualTheme == ElementTheme.Light ? 0.5 : 1;
         ShowFill();
     }
 
@@ -78,8 +77,7 @@ public sealed partial class AmbientBackdrop : UserControl
             FillLayer.Opacity = 0;
             return;
         }
-        var darkText = ActualTheme == ElementTheme.Light && !_ambient.ForceDark;
-        var fill = DominantColor.ForPageFill(rgb, darkText);
+        var fill = DominantColor.ForPageFill(rgb, darkText: false);
         FillLayer.Background = new SolidColorBrush(Color.FromArgb(255, (byte)(fill >> 16), (byte)(fill >> 8), (byte)fill));
         FillLayer.Opacity = 1;
     }
@@ -95,7 +93,6 @@ public sealed partial class AmbientBackdrop : UserControl
                 _ = ShowPageAsync(_ambient.PagePalette);
                 break;
             case nameof(AmbientService.PageFill):
-            case nameof(AmbientService.ForceDark):
                 ShowFill();
                 break;
             case nameof(AmbientService.HeaderPalette):
@@ -126,7 +123,7 @@ public sealed partial class AmbientBackdrop : UserControl
         var file = palette is null ? null : await _artwork.GetUltraBlurImageAsync(palette, RenderWidth, RenderHeight);
         if (version != _headerVersion) return;
         HeaderLayer.SourceFile = file;
-        HeaderShade.Opacity = file is not null && ActualTheme != ElementTheme.Light ? 1 : 0;
+        HeaderShade.Opacity = file is not null ? 1 : 0;
     }
 
     private async Task ShowPageAsync(ArtworkPalette? palette)

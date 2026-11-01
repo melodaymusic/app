@@ -3,11 +3,8 @@ using MelodayMusic.Core.Artwork;
 namespace MelodayMusic.Core.Covers;
 
 /// <summary>
-/// Picks the colour for a photo cover's edge bars: the colour that best stands for the photo, snapped to the Meloday palette.
-/// Mid-tone pixels only; colours are clustered in Lab; saturated, striking hues and big clusters score highest; small vivid
-/// accents and colours also found round the edges (the background, away from the face) get a lift; skin tones lose out.
-/// A grey photo takes its accent colour if it has one, otherwise a palette neutral of the opposite brightness; a photo of one hue
-/// takes the opposite hue so the bars stand out from it.
+/// Picks a photo cover's edge-bar colour: the photo's most characteristic hue (clustered in Lab, skin tones down-weighted),
+/// snapped to the Meloday palette.
 /// </summary>
 public static class PhotoColour
 {

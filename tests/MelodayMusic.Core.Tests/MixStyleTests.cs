@@ -62,17 +62,14 @@ public class MixStyleTests
     [Fact]
     public void An_echo_repeats_the_sound_after_its_delay_and_each_repeat_is_quieter()
     {
-        var first = true;
+        // The first slice is silent so the send has settled by the time the click arrives.
+        var calls = 0;
         var voice = new DeckVoice(Rate, 1, (into, frames) =>
         {
             for (var i = 0; i < frames; i++) into[i] = 0;
-            if (first)
-            {
-                into[0] = 0.8f;
-                first = false;
-            }
+            if (calls++ == 1) into[0] = 0.8f;
             return frames;
-        }) { EchoWet = 1, EchoDelay = 0.2 };
+        }) { EchoSend = 1, EchoDelay = 0.2 };
         var output = new float[Rate];
         var slice = new float[256];
         for (var at = 0; at < Rate; at += 256)
@@ -82,10 +79,12 @@ public class MixStyleTests
             Array.Copy(slice, 0, output, at, n);
         }
         var delay = (int)(0.2 * Rate);
-        Assert.Equal(0.8f, output[0], 3);
-        Assert.Equal(0.4f, output[2 * delay], 2);
-        Assert.Equal(0.2f, output[3 * delay], 2);
-        Assert.True(output[delay] > 0.5f, "the first repeat is heard");
+        double Energy(int from) => output.Skip(from - 50).Take(2000).Sum(x => (double)x * x);
+        Assert.Equal(0.8f, output[256], 3);
+        Assert.Equal(0.8f, output[256 + delay], 3);
+        Assert.True(Energy(256 + 2 * delay) < 0.5 * Energy(256 + delay), "the second repeat is quieter");
+        Assert.True(Energy(256 + 3 * delay) < 0.5 * Energy(256 + 2 * delay), "the third repeat is quieter still");
+        Assert.True(Energy(256 + 2 * delay) > 0, "the second repeat is heard");
     }
 
     [Fact]
@@ -108,12 +107,12 @@ public class MixStyleTests
     }
 
     [Fact]
-    public void A_pair_that_fits_perfectly_is_blended_long_and_other_matched_pairs_get_a_filter_sweep_and_unmatched_ones_an_echo()
+    public void Matching_keys_get_an_eq_blend_clashing_ones_a_filter_rise_and_far_tempos_an_echo()
     {
         var outgoing = Steady(124, 140, 200, 0);
         var fit = BeatMix.Plan(Loudness(190), outgoing, Steady(124, 0, 45, 0),
             new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)))!;
-        Assert.Equal(MixStyle.Blend, fit.Style);
+        Assert.Equal(MixStyle.EqBlend, fit.Style);
 
         var clash = BeatMix.Plan(Loudness(190), outgoing, Steady(124, 0, 45, 6))!;
         Assert.True(clash.BeatMatched);
@@ -133,23 +132,30 @@ public class MixStyleTests
         var plan = BeatMix.Plan(Loudness(190), Steady(124, 140, 200, 0), Steady(124, 0, 45, 6))!;
         Assert.Equal(MixStyle.Filter, plan.Style);
         var start = MixTimeline.At(plan, TimeSpan.Zero);
-        var swap = MixTimeline.At(plan, plan.BassSwap!.Value);
+        var landing = MixTimeline.At(plan, plan.Landing);
         var end = MixTimeline.At(plan, plan.Shape.Overlap - TimeSpan.FromMilliseconds(10));
-        Assert.Equal(BeatMix.FilterOpening, start.InLowPass, 0);
-        Assert.True(MixTimeline.At(plan, plan.Shape.InFade).InLowPass == 0);
-        Assert.True(swap.OutCutoff < 50);
+        // Clashing keys never meet: only the next song's top end plays under the outgoing one until the landing.
+        Assert.Equal(BandGains.HighsOnly, start.InBands);
+        Assert.Equal(BandGains.Full, landing.InBands);
+        Assert.Equal(0, start.OutCutoff);
+        Assert.Equal(BeatMix.BassCut, landing.OutCutoff, 0);
         Assert.True(end.OutCutoff > 0.9 * BeatMix.FilterTop);
-        Assert.True(MixTimeline.At(plan, plan.BassSwap!.Value + (plan.Shape.Overlap - plan.BassSwap.Value) / 2).OutCutoff is > 100 and < BeatMix.FilterTop);
+        Assert.True(MixTimeline.At(plan, plan.Landing - plan.Sweep / 2).OutCutoff is > 10 and < BeatMix.BassCut);
+        Assert.True(end.OutReverb > 0, "the thinned-out song rings off into the room");
     }
 
     [Fact]
-    public void An_echo_out_builds_as_the_outgoing_song_fades()
+    public void An_echo_out_throws_the_last_beat_as_the_next_song_lands()
     {
         var plan = BeatMix.Plan(Loudness(190), Steady(124, 140, 200, 0), Steady(80, 0, 45, 0))!;
         Assert.Equal(MixStyle.Echo, plan.Style);
         Assert.Equal(0, MixTimeline.At(plan, TimeSpan.Zero).OutEcho);
+        Assert.True(MixTimeline.At(plan, TimeSpan.Zero).InWaiting, "the next song waits for the landing");
+        var lastBeat = MixTimeline.At(plan, plan.Landing - plan.Beat / 4);
+        Assert.Equal(1, lastBeat.OutGain / lastBeat.Trim, 3);
         var end = MixTimeline.At(plan, plan.Shape.Overlap);
         Assert.True(end.OutEcho > 0.9 * BeatMix.EchoAmount);
+        Assert.False(MixTimeline.At(plan, plan.Landing).InWaiting);
     }
 
     [Fact]
@@ -180,7 +186,9 @@ public class MixStyleTests
                     a.Gain = (float)moment.OutGain;
                     a.Cutoff = moment.OutCutoff;
                     a.EchoDelay = plan.EchoDelay.TotalSeconds;
-                    a.EchoWet = moment.OutEcho;
+                    a.EchoSend = moment.OutEcho;
+                    a.ReverbSend = moment.OutReverb;
+                    a.Roll = moment.OutRoll;
                     a.Read(slice, n);
                     for (var i = 0; i < n * 2; i++) output[at * 2 + i] += slice[i];
                 }

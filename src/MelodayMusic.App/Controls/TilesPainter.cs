@@ -5,10 +5,7 @@ using Windows.UI;
 namespace MelodayMusic.Controls;
 
 /// <summary>
-/// A patchwork of tiles packed on a grid that fills the whole picture, with a wave of the music sweeping across it:
-/// where the wave and the sound are strong, tiles round off, shrink or light up, and their stripes run inwards.
-/// Each tile listens to the part of the sound at its place along the wave (bass at the start, treble at the end).
-/// The look changes with every song and every so often within one.
+/// A grid of tiles with a wave of the music sweeping across it; each tile reacts to the band at its place along the wave.
 /// </summary>
 internal sealed class TilesPainter : IVisualPainter
 {

@@ -18,7 +18,6 @@ public sealed class LibraryActions
     private readonly PinStore _pins;
     private readonly MixService _mixes;
     private readonly Dislikes _dislikes;
-    private readonly PlexPass _pass;
     private readonly MusicIntelligence _intelligence;
     private readonly MelodayService _meloday;
     private readonly LocalRadio _localRadio;
@@ -29,7 +28,7 @@ public sealed class LibraryActions
     private readonly ILogger _log;
 
     public LibraryActions(PlexSession session, PlayerService player, NavigationService navigation, NotificationService notifications,
-        PinStore pins, MixService mixes, Dislikes dislikes, PlexPass pass, MusicIntelligence intelligence, MelodayService meloday, LocalRadio localRadio, Core.Home.RecentStore recents, StaticCovers covers, LiveRadio live, ILogger<LibraryActions> log)
+        PinStore pins, MixService mixes, Dislikes dislikes, MusicIntelligence intelligence, MelodayService meloday, LocalRadio localRadio, Core.Home.RecentStore recents, StaticCovers covers, LiveRadio live, ILogger<LibraryActions> log)
     {
         _recents = recents;
         _covers = covers;
@@ -40,7 +39,6 @@ public sealed class LibraryActions
         };
         _localRadio = localRadio;
         _meloday = meloday;
-        _pass = pass;
         _intelligence = intelligence;
         _mixes = mixes;
         _dislikes = dislikes;
@@ -452,41 +450,6 @@ public sealed class LibraryActions
         catch (Exception ex) when (ex is PlexException or IOException)
         {
             _log.LogInformation("The new playlist's description or cover wasn't set: {Message}", ex.Message);
-        }
-    }
-
-    public async Task<Playlist?> CreateSmartPlaylistAsync(string title, Core.Playlists.SmartFilter filter)
-    {
-        if (_session.Client is not { } client || _session.Section is not { } section) return null;
-        try
-        {
-            var created = await client.CreateSmartPlaylistAsync(title, section.Key, filter);
-            if (created is not null) await DressPlaylistAsync(client, created.RatingKey, title, null, null);
-            _notifications.ShowSuccess("Smart playlist created", title);
-            PlaylistsChanged?.Invoke(this, EventArgs.Empty);
-            return created;
-        }
-        catch (PlexException ex)
-        {
-            Report(ex, "Couldn't create the smart playlist");
-            return null;
-        }
-    }
-
-    public async Task<bool> UpdateSmartPlaylistAsync(Playlist playlist, string title, string sectionKey, Core.Playlists.SmartFilter filter)
-    {
-        if (_session.Client is not { } client) return false;
-        try
-        {
-            await client.UpdateSmartPlaylistAsync(playlist.RatingKey, sectionKey, filter);
-            if (title != playlist.Title) await client.EditPlaylistAsync(playlist.RatingKey, title, playlist.Summary);
-            PlaylistsChanged?.Invoke(this, EventArgs.Empty);
-            return true;
-        }
-        catch (PlexException ex)
-        {
-            Report(ex, "Couldn't save the smart playlist");
-            return false;
         }
     }
 

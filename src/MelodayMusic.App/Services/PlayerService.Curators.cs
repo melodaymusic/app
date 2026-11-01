@@ -1,9 +1,9 @@
-using Microsoft.Extensions.Logging;
-using MelodayMusic.Core.Meloday;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Playback;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.Services;
 

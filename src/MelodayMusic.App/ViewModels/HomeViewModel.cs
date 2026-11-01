@@ -21,7 +21,6 @@ public sealed class MediaRow
     public required IReadOnlyList<object> Items { get; init; }
     public CardStyle CardStyle { get; init; } = CardStyle.Tile;
     public string? Identifier { get; init; }
-    public bool IsChart => Identifier is "trending" or "trending.artists";
     public ICommand? SeeAllCommand { get; init; }
     public ICommand? PlayAllCommand { get; init; }
     public bool CanReorder { get; init; }
@@ -64,6 +63,8 @@ public sealed partial class HomeViewModel : ViewModelBase
         StationService stations, Core.Home.RecentStore recents, Core.Home.ListeningClock listening, StaticCovers covers,
         TrendingService trending, ILogger<HomeViewModel> log) : base(session, log)
     {
+        PropertyChanged += (_, e) => { if (e.PropertyName == nameof(IsLoading)) ShowSkeleton = IsLoading && Rows.Count == 0; };
+        Rows.CollectionChanged += (_, _) => ShowSkeleton = IsLoading && Rows.Count == 0;
         _trending = trending;
         _recents = recents;
         _listening = listening;
@@ -103,6 +104,7 @@ public sealed partial class HomeViewModel : ViewModelBase
     }
 
     public ObservableCollection<MediaRow> Rows { get; } = [];
+    [ObservableProperty] public partial bool ShowSkeleton { get; private set; }
     public ObservableCollection<MediaItem> Pinned { get; } = [];
 
     [ObservableProperty] public partial string Greeting { get; private set; } = "Good evening";
@@ -114,7 +116,6 @@ public sealed partial class HomeViewModel : ViewModelBase
     [ObservableProperty] public partial string FeaturedMeta { get; private set; } = string.Empty;
     public ObservableCollection<MediaItem> JumpBackIn { get; } = [];
     [ObservableProperty] public partial string TodayListening { get; private set; } = "0m";
-    [ObservableProperty] public partial string HeaderTitle { get; private set; } = "Jump back in";
 
     private void UpdateListening() => TodayListening = Core.Home.ListeningClock.Describe(_listening.Today);
     [ObservableProperty] public partial bool HasPinned { get; private set; }
@@ -193,11 +194,9 @@ public sealed partial class HomeViewModel : ViewModelBase
             var hubs = SafeAsync(client.GetSectionHubsAsync(sk, 16));
             var mixes = _mixes.GetMixesAsync();
             var stations = _stations.GetCatalogAsync();
-            var trending = _trending.GetAsync();
-            var trendingArtists = _trending.GetArtistsAsync();
 
             await Task.WhenAll(recentlyPlayed, recentlyAdded, mostPlayedArtists, mostPlayedAlbums, playlists, collections, hubs);
-            var extras = Task.WhenAll(mixes, stations, trending, trendingArtists);
+            var extras = Task.WhenAll(mixes, stations);
             if (!extras.IsCompleted && await Task.WhenAny(extras, Task.Delay(250)) != extras)
                 _ = extras.ContinueWith(_ => _dispatcher.TryEnqueue(async () => await LoadCoreAsync(quiet: true)), TaskScheduler.Default);
 
@@ -235,19 +234,6 @@ public sealed partial class HomeViewModel : ViewModelBase
                     id: "artist.mixes", style: CardStyle.ColourBoard);
             }
 
-            if (trending.IsCompletedSuccessfully && trending.Result is { InLibrary.Count: > 0 } chart)
-                Add("Last.fm Top 100 Tracks", ChartColumn.From(chart.InLibrary, _trending.Positions), new RelayCommand(() => _navigation.Navigate(typeof(TrendingPage))), id: "trending",
-                    style: CardStyle.ChartColumns,
-                    playAll: new AsyncRelayCommand(async () =>
-                    {
-                        if (await _trending.GetAsync() is { } latest)
-                            await App.Services.GetRequiredService<PlayerService>().PlayTracksAsync(latest.InLibrary);
-                    }));
-            if (trendingArtists.IsCompletedSuccessfully && trendingArtists.Result is { Count: > 0 } artists)
-                Add("Last.fm Trending Artists", ChartColumn.From(artists, _trending.ArtistPositions), new RelayCommand(() => _navigation.Navigate(typeof(TrendingPage), "artists")), id: "trending.artists",
-                    style: CardStyle.ChartColumns,
-                    playAll: new AsyncRelayCommand(async () => await _trending.PlayArtistsAsync(await _trending.GetArtistsAsync())));
-
             if (stations.IsCompletedSuccessfully && stations.Result.Stations.Count > 0)
                 Add("Live", stations.Result.Stations, SeeAll(typeof(RadioPage), null), "Always on: tune in and join mid-song",
                     id: "stations", style: CardStyle.SquareBoard);
@@ -278,6 +264,7 @@ public sealed partial class HomeViewModel : ViewModelBase
                 .Select(r => previous.TryGetValue(r.Identifier!, out var old) && SameContents(old, r) ? old : r)
                 .ToList();
 
+            ApplyLayout();
             await EnsureContextualRowsAsync(_loadedVersion);
             await EnsureDiscoveryRowAsync(_loadedVersion);
             ApplyLayout();
@@ -290,7 +277,6 @@ public sealed partial class HomeViewModel : ViewModelBase
     private ICommand SeeAll(Type page, string? sort) => new RelayCommand(() => _navigation.Navigate(page, sort));
 
     partial void OnFeaturedChanged(MediaItem? value) => ShowFeatured = value is not null && _layout.ShowJumpBackIn;
-    partial void OnShowFeaturedChanged(bool value) => HeaderTitle = value ? "Jump back in" : "Home";
 
     private void ApplyLayout()
     {
@@ -300,7 +286,6 @@ public sealed partial class HomeViewModel : ViewModelBase
         var catalog = new List<(string Id, string Title)> { (PinnedId, _pinnedRow.Title) };
         catalog.AddRange(ContextualCatalog);
         catalog.AddRange(_defaultRows.Select(r => (r.Identifier!, r.Title)));
-        catalog.AddRange([("trending", "Last.fm Top 100 Tracks"), ("trending.artists", "Last.fm Trending Artists")]);
         _layout.UpdateCatalog(catalog.DistinctBy(r => r.Id).ToList());
         var byId = all.ToDictionary(r => r.Identifier!);
         var visible = _layout.VisibleOrder(all.Select(r => r.Identifier!).ToList())
@@ -489,17 +474,5 @@ public sealed partial class HomeViewModel : ViewModelBase
             _ => o.ToString() ?? string.Empty,
         };
         return a.Title == b.Title && a.Subtitle == b.Subtitle && a.CardStyle == b.CardStyle && a.Items.Select(Key).SequenceEqual(b.Items.Select(Key));
-    }
-
-    private static IEnumerable<object> Interleave(IEnumerable<BoardItem> a, IEnumerable<BoardItem> b)
-    {
-        using var ea = a.GetEnumerator();
-        using var eb = b.GetEnumerator();
-        bool hasA = ea.MoveNext(), hasB = eb.MoveNext();
-        while (hasA || hasB)
-        {
-            if (hasA) { yield return ea.Current; hasA = ea.MoveNext(); }
-            if (hasB) { yield return eb.Current; hasB = eb.MoveNext(); }
-        }
     }
 }

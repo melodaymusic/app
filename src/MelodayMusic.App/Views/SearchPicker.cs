@@ -1,5 +1,4 @@
 using MelodayMusic.Core.Models;
-using MelodayMusic.Core.Plex;
 using MelodayMusic.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;

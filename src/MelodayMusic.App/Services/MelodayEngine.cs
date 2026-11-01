@@ -26,6 +26,7 @@ public sealed class MelodayEngine : IDisposable
     private InferenceSession? _model;
     private readonly object _modelGate = new();
     private DateTimeOffset _modelUsed;
+    private int _borrowed;
     private bool _verified;
     private readonly Timer _modelIdle;
     private static readonly TimeSpan ModelIdle = TimeSpan.FromMinutes(2);
@@ -144,36 +145,13 @@ public sealed class MelodayEngine : IDisposable
         catch (Exception ex) when (ex is IOException or JsonException or UnauthorizedAccessException) { return null; }
     }
 
+    // Audio is read outside the lock; the shared model runs concurrently and is released only when unused.
     public EngineProfile? Analyse(Track track, string scope, Func<double, float[]> read, CancellationToken ct)
     {
         ct.ThrowIfCancellationRequested();
-        lock (_modelGate)
-        {
-            _modelUsed = DateTimeOffset.UtcNow;
-            return AnalyseLocked(track, scope, read, ct);
-        }
-    }
-
-    private EngineProfile? AnalyseLocked(Track track, string scope, Func<double, float[]> read, CancellationToken ct)
-    {
-        if (_model is null)
-        {
-            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Engine", "audio.onnx");
-            if (!_verified)
-            {
-                using var stream = File.OpenRead(path);
-                if (Convert.ToHexString(SHA256.HashData(stream)) != ModelHash) throw new InvalidDataException("ME model integrity check failed");
-                _verified = true;
-            }
-            OrtEnv.Instance().DisableTelemetryEvents();
-            using var options = new SessionOptions { IntraOpNumThreads = 1, InterOpNumThreads = 1,
-                ExecutionMode = ExecutionMode.ORT_SEQUENTIAL, GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
-            _model = new InferenceSession(path, options);
-            _log.LogInformation("ME loaded pinned CLAP music model with one CPU worker");
-        }
         var latest = Math.Max(0, track.Duration.TotalSeconds - 10);
         var offsets = new[] { latest * 0.15, latest * 0.5, latest * 0.85 }.Distinct().ToArray();
-        var vectors = new List<float[]>();
+        var windows = new List<float[]>();
         double squares = 0, peak = 0, seconds = 0;
         long count = 0;
         foreach (var offset in offsets)
@@ -191,19 +169,65 @@ public sealed class MelodayEngine : IDisposable
             count += samples.Length; seconds += samples.Length / 48000.0;
             for (var i = 0; i < window.Length; i++)
                 window[i] = (short)(Math.Clamp(samples[i % samples.Length], -1, 1) * 32767) / 32767f;
-            var tensor = new DenseTensor<float>(window, [1, 480000]);
-            using var output = _model.Run([NamedOnnxValue.CreateFromTensor("waveform", tensor)]);
-            var vector = MusicSimilarity.Normalize(output.First().AsTensor<float>().ToArray());
-            if (vector.Length != 512) throw new InvalidDataException("ME model returned an invalid profile");
-            vectors.Add(vector);
+            windows.Add(window);
         }
-        ct.ThrowIfCancellationRequested();
-        var mean = MusicSimilarity.Normalize(Enumerable.Range(0, 512).Select(i => vectors.Average(v => v[i])));
-        if (mean.Length != 512) return null;
-        Error = null;
-        return new(track, scope, Revision, mean, offsets, seconds,
-            20 * Math.Log10(Math.Max(1e-9, Math.Sqrt(squares / Math.Max(1, count)))),
-            20 * Math.Log10(Math.Max(1e-9, peak)), DateTimeOffset.UtcNow);
+        var model = Borrow();
+        try
+        {
+            var vectors = new List<float[]>();
+            foreach (var window in windows)
+            {
+                ct.ThrowIfCancellationRequested();
+                var tensor = new DenseTensor<float>(window, [1, 480000]);
+                using var output = model.Run([NamedOnnxValue.CreateFromTensor("waveform", tensor)]);
+                var vector = MusicSimilarity.Normalize(output.First().AsTensor<float>().ToArray());
+                if (vector.Length != 512) throw new InvalidDataException("ME model returned an invalid profile");
+                vectors.Add(vector);
+            }
+            ct.ThrowIfCancellationRequested();
+            var mean = MusicSimilarity.Normalize(Enumerable.Range(0, 512).Select(i => vectors.Average(v => v[i])));
+            if (mean.Length != 512) return null;
+            Error = null;
+            return new(track, scope, Revision, mean, offsets, seconds,
+                20 * Math.Log10(Math.Max(1e-9, Math.Sqrt(squares / Math.Max(1, count)))),
+                20 * Math.Log10(Math.Max(1e-9, peak)), DateTimeOffset.UtcNow);
+        }
+        finally
+        {
+            lock (_modelGate)
+            {
+                _borrowed--;
+                _modelUsed = DateTimeOffset.UtcNow;
+            }
+        }
+    }
+
+    private InferenceSession Borrow()
+    {
+        lock (_modelGate)
+        {
+            _model ??= LoadModel();
+            _borrowed++;
+            _modelUsed = DateTimeOffset.UtcNow;
+            return _model;
+        }
+    }
+
+    private InferenceSession LoadModel()
+    {
+        var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Engine", "audio.onnx");
+        if (!_verified)
+        {
+            using var stream = File.OpenRead(path);
+            if (Convert.ToHexString(SHA256.HashData(stream)) != ModelHash) throw new InvalidDataException("ME model integrity check failed");
+            _verified = true;
+        }
+        OrtEnv.Instance().DisableTelemetryEvents();
+        using var options = new SessionOptions { IntraOpNumThreads = 1, InterOpNumThreads = 1,
+            ExecutionMode = ExecutionMode.ORT_SEQUENTIAL, GraphOptimizationLevel = GraphOptimizationLevel.ORT_ENABLE_ALL };
+        var model = new InferenceSession(path, options);
+        _log.LogInformation("ME loaded pinned CLAP music model; each song it analyses uses one CPU worker");
+        return model;
     }
 
     public async Task KeepAsync(EngineProfile profile, CancellationToken ct)
@@ -240,7 +264,7 @@ public sealed class MelodayEngine : IDisposable
     {
         lock (_modelGate)
         {
-            if (_model is null || DateTimeOffset.UtcNow - _modelUsed < ModelIdle) return;
+            if (_model is null || _borrowed > 0 || DateTimeOffset.UtcNow - _modelUsed < ModelIdle) return;
             _model.Dispose();
             _model = null;
             _log.LogInformation("ME let its model go while idle");

@@ -81,7 +81,6 @@ public sealed class PlexTvClient
             Email = dto.Email,
             Thumb = dto.Thumb,
             HasPlexPass = dto.Subscription?.Active == true || dto.Roles?.Contains("plexpass", StringComparer.OrdinalIgnoreCase) == true,
-            PlexPassPlan = dto.Subscription?.Active == true ? dto.Subscription.Plan : null,
         };
     }
 

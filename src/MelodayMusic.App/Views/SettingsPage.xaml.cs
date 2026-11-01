@@ -57,7 +57,7 @@ public sealed partial class SettingsPage : Page
     private void OnSettingsSizeChanged(object sender, SizeChangedEventArgs e)
     {
         if (SectionNav is null || SettingsScroller is null || CompactSectionNav is null) return;
-        var compact = e.NewSize.Width < Services.UiScale.Size(600);
+        var compact = e.NewSize.Width < Services.UiScale.Size(820);
         SectionNav.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
         CompactSectionNav.Visibility = compact ? Visibility.Visible : Visibility.Collapsed;
         SettingsLayoutRoot.ColumnDefinitions[0].Width = compact ? new GridLength(0) : new GridLength(168);
@@ -69,7 +69,7 @@ public sealed partial class SettingsPage : Page
     private int _switch;
 
     private UIElement[] Groups => [AppearanceGroup, BackgroundGroup, GeneralGroup, YourListeningGroup, StorageGroup, HomeGroup,
-        AccountGroup, PlexPassGroup, LibraryGroup, LastFmGroup, MusicBrainzGroup, ListenBrainzGroup, ServicesGroup, ListeningGroup, PlaybackGroup,
+        AccountGroup, LibraryGroup, LastFmGroup, MusicBrainzGroup, ListenBrainzGroup, ServicesGroup, ListeningGroup, PlaybackGroup,
         TasteGroup, MelodayGroup, LiveRadioGroup, AnalysisGroup, DupesGroup, MutingGroup, ArtistGroup, AboutGroup];
 
     private static string SectionKey(string? key) => key switch
@@ -143,7 +143,6 @@ public sealed partial class SettingsPage : Page
         Show(StorageGroup, "general");
         Show(HomeGroup, "home");
         Show(AccountGroup, "connections");
-        Show(PlexPassGroup, "connections");
         Show(LibraryGroup, "connections");
         Show(LastFmGroup, "connections");
         Show(MusicBrainzGroup, "connections");
@@ -164,7 +163,6 @@ public sealed partial class SettingsPage : Page
 
     public SettingsViewModel ViewModel { get; }
     private void OnQuit(object sender, RoutedEventArgs e) => App.MainWindow?.Quit();
-    private async void OnCompareMusicEngines(object sender, RoutedEventArgs e) => await MusicEngineComparisonDialog.ShowAsync(XamlRoot);
 
     public Services.HomeLayoutService Layout { get; }
 

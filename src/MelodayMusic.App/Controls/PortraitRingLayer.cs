@@ -1,7 +1,6 @@
 using MelodayMusic.Core.Covers;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 
 namespace MelodayMusic.Controls;

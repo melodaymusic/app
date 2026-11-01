@@ -1,10 +1,8 @@
-using MelodayMusic.Helpers;
-using MelodayMusic.Controls;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -36,7 +34,7 @@ public sealed partial class PlaylistPage : Page
     private void UpdateWash()
     {
         if (ViewModel.Playlist is { } playlist && ReferenceEquals(Frame?.Content, this))
-            _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(playlist, playlist.DisplayThumb,
+            _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(playlist.DisplayThumb,
                 () => ReferenceEquals(Frame?.Content, this) && ReferenceEquals(playlist, ViewModel.Playlist));
     }
 

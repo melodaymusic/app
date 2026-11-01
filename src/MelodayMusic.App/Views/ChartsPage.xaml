@@ -1,0 +1,21 @@
+<Page
+    x:Class="MelodayMusic.Views.ChartsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:MelodayMusic.Controls"
+    NavigationCacheMode="Enabled"
+    Background="Transparent">
+
+    <ScrollViewer x:Name="Scroller" VerticalScrollBarVisibility="Auto" HorizontalScrollMode="Disabled" HorizontalScrollBarVisibility="Disabled"
+                  AutomationProperties.AutomationId="PageScroller">
+        <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySectionSpacing}">
+            <controls:PageHeader Title="Charts" Subtitle="Last.fm's charts, matched to your library. Updates every six hours." />
+
+            <controls:PageStateView x:Name="State" SkeletonKind="None" EmptyIcon="TrendingUp"
+                                    EmptyText="None of Last.fm's chart music is in your library yet." RetryRequested="OnRetry" />
+
+            <controls:MediaRowControl x:Name="TracksRow" Header="Top 100 Tracks" CardStyle="ChartColumns" Visibility="Collapsed" />
+            <controls:MediaRowControl x:Name="ArtistsRow" Header="Trending Artists" CardStyle="ChartColumns" Visibility="Collapsed" />
+        </StackPanel>
+    </ScrollViewer>
+</Page>

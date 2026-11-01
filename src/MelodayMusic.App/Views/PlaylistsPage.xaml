@@ -19,9 +19,6 @@
                 <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnNewPlaylist" AutomationProperties.AutomationId="NewPlaylistButton">
                     <controls:IconLabel Icon="Plus" Text="New Playlist" />
                 </Button>
-                <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnNewSmartPlaylist" AutomationProperties.AutomationId="NewSmartPlaylistButton">
-                    <controls:IconLabel Icon="Sparkles" Text="New Smart Playlist" />
-                </Button>
                 <controls:LayoutToggle x:Name="Layout" PageKey="playlists" />
                 <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
             </controls:ActionWrapPanel>

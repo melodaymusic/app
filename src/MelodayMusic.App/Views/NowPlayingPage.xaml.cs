@@ -1,12 +1,10 @@
-using MelodayMusic.Services;
 using System.ComponentModel;
-using MelodayMusic.Helpers;
+using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
 using Windows.System;
 
@@ -38,7 +36,6 @@ public sealed partial class NowPlayingPage : Page
         Panels.PropertyChanged += OnPanelsChanged;
         SyncLyricsButton();
         UpdateVisibility();
-        Ambient.ForceDark = true;
         _ = UpdateBackdropAsync();
         _visualizer.PropertyChanged += OnVisualizerChanged;
         _stage.PropertyChanged += OnVisualizerChanged;
@@ -142,6 +139,10 @@ public sealed partial class NowPlayingPage : Page
         Visualizer.Width = art;
         Visualizer.Height = art;
         Visualizer.HorizontalAlignment = Cover.HorizontalAlignment;
+        // The mix card sits inside the artwork's bottom edge, however the artwork is placed.
+        MixCard.MaxWidth = Math.Max(0, art - 32);
+        MixCard.HorizontalAlignment = Cover.HorizontalAlignment;
+        MixCard.Margin = Cover.HorizontalAlignment == HorizontalAlignment.Center ? new Thickness(16) : new Thickness(16, 16, 0, 16);
         Layout.Margin = new Thickness(SidePadding, 0, SidePadding, 0);
     }
 

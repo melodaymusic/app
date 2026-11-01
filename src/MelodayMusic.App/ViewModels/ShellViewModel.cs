@@ -1,10 +1,10 @@
-using Microsoft.Extensions.DependencyInjection;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MelodayMusic.Core.Caching;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Settings;
 using MelodayMusic.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using Windows.Networking.Connectivity;

@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using MelodayMusic.Controls;
-using MelodayMusic.Helpers;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -207,7 +207,6 @@ public sealed partial class ArtistPage : Page
         base.OnNavigatedTo(e);
         _active = true;
         _ambient.Wash = null;
-        _ambient.ForceDark = true;
         _ambient.PageFill = _fill;
         _ambient.PagePalette = _fill is null ? _palette : null;
         Accent.SourceChanged += OnAccentChanged;

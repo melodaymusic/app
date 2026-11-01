@@ -5,7 +5,6 @@ using MelodayMusic.Core;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
-using MelodayMusic.Core.Settings;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 

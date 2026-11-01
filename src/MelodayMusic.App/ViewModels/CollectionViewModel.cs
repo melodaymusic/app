@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
-using MelodayMusic.Helpers;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.ViewModels;

@@ -161,17 +161,6 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <controls:LucideIcon Icon="Palette" VerticalAlignment="Center" />
-                            <TextBlock Grid.Column="1" Text="Theme" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="2" MinWidth="180" VerticalAlignment="Center" ItemsSource="{x:Bind ViewModel.ThemeOptions}"
-                                      SelectedIndex="{x:Bind ViewModel.ThemeIndex, Mode=TwoWay}" AutomationProperties.Name="Theme" />
-                        </Grid>
-                        <Grid Style="{StaticResource MelodayGroupRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
                             <controls:LucideIcon Icon="Wind" VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Motion" Style="{StaticResource MelodayBodyText}" />
@@ -344,7 +333,7 @@
                                                 <controls:LucideIcon Icon="ChevronDown" Width="{StaticResource MelodayIconS}" Height="{StaticResource MelodayIconS}" />
                                             </Button>
                                             <ToggleSwitch IsOn="{x:Bind IsShown, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
-                                                          AutomationProperties.Name="{x:Bind ShowLabel}" IsEnabled="{x:Bind IsAvailable}" ToolTipService.ToolTip="{x:Bind AvailabilityNote}" />
+                                                          AutomationProperties.Name="{x:Bind ShowLabel}" />
                                             </StackPanel>
                                         </Grid>
                                     </DataTemplate>
@@ -479,36 +468,6 @@
                 </Border>
             </StackPanel>
 
-<StackPanel x:Name="PlexPassGroup" Style="{StaticResource MelodayGroupStyle}">
-                <TextBlock Text="Plex Pass" Style="{StaticResource MelodayGroupHeaderText}" />
-                <Border Style="{StaticResource MelodayGroupListStyle}">
-                    <StackPanel Style="{StaticResource MelodayGroupRowsStyle}">
-                        <Grid Style="{StaticResource MelodayGroupRowStyle}">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <controls:PlexPassBadge VerticalAlignment="Center" />
-                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                                <TextBlock Text="{x:Bind ViewModel.PlexPassStatus, Mode=OneWay}" Style="{StaticResource MelodayBodyText}" />
-                                <TextBlock Text="Everything in Meloday Music works without Plex Pass. Each layer below adds to the one before it."
-                                           Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
-                            </StackPanel>
-                            <HyperlinkButton Grid.Column="2" Content="About Plex Pass" NavigateUri="https://www.plex.tv/plex-pass/" VerticalAlignment="Center" />
-                        </Grid>
-                        <Grid Style="{StaticResource MelodayGroupRowStyle}">
-                        <StackPanel Spacing="16">
-                            <controls:SoundLayers />
-                            <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords"
-                                       Text="With the Meloday Engine selected under Audio Analysis, Meloday doesn't use any of Plex's sonic features. Sound Check and AutoMix's timing need the loudness analysis your Plex server runs, which is turned on in its Library settings." />
-                            <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Content="Compare the sound options" Click="OnCompareMusicEngines" />
-                        </StackPanel>
-                        </Grid>
-                    </StackPanel>
-                </Border>
-            </StackPanel>
-
 <StackPanel x:Name="LastFmGroup" Style="{StaticResource MelodayGroupStyle}">
     <TextBlock Text="Last.fm" Style="{StaticResource MelodayGroupHeaderText}" />
     <Border Style="{StaticResource MelodayGroupListStyle}">
@@ -524,10 +483,25 @@
                     <Button Content="Remove Connection" Style="{StaticResource MelodaySecondaryButtonStyle}" Command="{x:Bind ViewModel.DisconnectLastFmCommand}"
                         Visibility="{x:Bind ViewModel.LastFmHasApiKey, Mode=OneWay}" AutomationProperties.AutomationId="DisconnectLastFm" />
                 </controls:ActionWrapPanel>
-                <TextBlock Text="Choose chart rails in Home settings." Style="{StaticResource MelodaySecondaryText}" Visibility="{x:Bind ViewModel.LastFmHasApiKey, Mode=OneWay}" />
                 <TextBlock Text="{x:Bind ViewModel.LastFmStatus, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords"
                     Visibility="{x:Bind helpers:Format.VisibleIfText(ViewModel.LastFmStatus), Mode=OneWay}" />
             </StackPanel></Grid>
+            <Grid Style="{StaticResource MelodayGroupRowStyle}" ColumnSpacing="12" Visibility="{x:Bind ViewModel.LastFmHasApiKey, Mode=OneWay}">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Top 100 Tracks" Style="{StaticResource MelodayBodyText}" />
+                    <TextBlock Text="The most-played songs on Last.fm that are in your library. Shown in Charts." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.LastFmTrending, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" AutomationProperties.Name="Show Last.fm Top 100 Tracks in Charts" AutomationProperties.AutomationId="LastFmTrendingToggle" />
+            </Grid>
+            <Grid Style="{StaticResource MelodayGroupRowStyle}" ColumnSpacing="12" Visibility="{x:Bind ViewModel.LastFmHasApiKey, Mode=OneWay}">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Trending Artists" Style="{StaticResource MelodayBodyText}" />
+                    <TextBlock Text="The artists at the top of Last.fm's chart that are in your library. Shown in Charts." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                </StackPanel>
+                <ToggleSwitch Grid.Column="1" IsOn="{x:Bind ViewModel.LastFmTrendingArtists, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0" VerticalAlignment="Center" AutomationProperties.Name="Show Last.fm Trending Artists in Charts" AutomationProperties.AutomationId="LastFmTrendingArtistsToggle" />
+            </Grid>
             <Grid Style="{StaticResource MelodayGroupRowStyle}" Visibility="{x:Bind helpers:Format.CollapsedIf(ViewModel.LastFmConnected), Mode=OneWay}"><StackPanel Spacing="12">
                 <TextBlock Text="Connect Your Account" Style="{StaticResource MelodayBodyText}" />
                 <TextBlock Text="For scrobbling. Your shared secret is stored encrypted on this PC." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
@@ -1028,6 +1002,8 @@
                                 <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords"
                                            Text="Applies to recommendations and radio. Manually selected music still plays."
                                            AutomationProperties.AutomationId="MuteLengthNote" />
+                                <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords"
+                                           Text="{x:Bind ViewModel.MuteLengthSummary, Mode=OneWay}" AutomationProperties.AutomationId="MuteLengthSummary" />
                             </StackPanel>
                             <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
                                 <ComboBox MinWidth="160" VerticalAlignment="Center" ItemsSource="{x:Bind ViewModel.MuteLengthOptions}"
@@ -1039,8 +1015,6 @@
                                            AutomationProperties.Name="Days to mute" AutomationProperties.AutomationId="MuteCustomDays" />
                             </StackPanel>
                         </Grid>
-                        <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" Margin="16,0,16,12"
-                                   Text="{x:Bind ViewModel.MuteLengthSummary, Mode=OneWay}" AutomationProperties.AutomationId="MuteLengthSummary" />
                     </StackPanel>
                 </Border>
 
@@ -1086,45 +1060,33 @@
             </StackPanel>
 
 <StackPanel x:Name="AnalysisGroup" Style="{StaticResource MelodayGroupStyle}">
-                <TextBlock Text="Sound options" Style="{StaticResource MelodayGroupHeaderText}" />
+                <TextBlock Text="Meloday Engine" Style="{StaticResource MelodayGroupHeaderText}" />
                 <Border Style="{StaticResource MelodayGroupListStyle}">
                     <StackPanel Style="{StaticResource MelodayGroupRowsStyle}">
                         <Grid Style="{StaticResource MelodayGroupRowStyle}">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                             <controls:LucideIcon Icon="Sparkles" VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="How Meloday understands your music" Style="{StaticResource MelodayBodyText}" />
-                                <TextBlock Text="See what the Meloday Engine and Plex Sonic Analysis each do, and what Plex is always used for." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="Let the Meloday Engine learn your library" Style="{StaticResource MelodayBodyText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="{x:Bind ViewModel.LearnLibraryNote, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             </StackPanel>
-                            <Button Grid.Column="2" Content="Compare" Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnCompareMusicEngines"
-                                    VerticalAlignment="Center" AutomationProperties.Name="Compare music engine options" />
+                            <ToggleSwitch Grid.Column="2" IsOn="{x:Bind ViewModel.LearnLibrary, Mode=TwoWay}" OnContent="" OffContent="" MinWidth="0"
+                                          AutomationProperties.Name="Let the Meloday Engine learn your library" AutomationProperties.AutomationId="LearnLibraryToggle" />
                         </Grid>
-                    </StackPanel>
-                </Border>
-                <TextBlock Text="Audio Analysis" Style="{StaticResource MelodayGroupHeaderText}" />
-                <Border Style="{StaticResource MelodayGroupListStyle}">
-                    <StackPanel Style="{StaticResource MelodayGroupRowsStyle}">
                         <Grid Style="{StaticResource MelodayGroupRowStyle}">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <TextBlock Text="Music engine" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
-                            <ComboBox Grid.Column="1" ItemsSource="{x:Bind ViewModel.MusicEngineOptions}" SelectedIndex="{x:Bind ViewModel.MusicEngineIndex, Mode=TwoWay}" MinWidth="220" AutomationProperties.Name="Music engine" />
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <controls:LucideIcon Icon="Gauge" VerticalAlignment="Center" />
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+                                <TextBlock Text="Pace" Style="{StaticResource MelodayBodyText}" />
+                                <TextBlock Text="{x:Bind ViewModel.AnalysisPaceNote, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                            </StackPanel>
+                            <ComboBox Grid.Column="2" ItemsSource="{x:Bind ViewModel.AnalysisPaceOptions}" SelectedIndex="{x:Bind ViewModel.AnalysisPaceIndex, Mode=TwoWay}" MinWidth="180" VerticalAlignment="Center" AutomationProperties.Name="Analysis pace" />
                         </Grid>
-                        <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="8">
-                              <TextBlock Text="{x:Bind ViewModel.MusicEngineNote, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
-                          </StackPanel>
-                          <Grid Style="{StaticResource MelodayGroupRowStyle}">
-                              <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                              <TextBlock Text="Analysis pace" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" />
-                              <ComboBox Grid.Column="1" ItemsSource="{x:Bind ViewModel.AnalysisPaceOptions}" SelectedIndex="{x:Bind ViewModel.AnalysisPaceIndex, Mode=TwoWay}" MinWidth="220" AutomationProperties.Name="Analysis pace" />
-                          </Grid>
-                          <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="8">
-                              <TextBlock Text="{x:Bind ViewModel.AnalysisPaceNote, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
-                          </StackPanel>
                         <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="10">
-                            <TextBlock Text="ME sound profiles" Style="{StaticResource MelodayBodyText}" />
-                            <ProgressBar Minimum="0" Maximum="100" Value="{x:Bind ViewModel.EnginePercent, Mode=OneWay}" AutomationProperties.Name="ME sound profile coverage" />
+                            <TextBlock Text="Songs learned" Style="{StaticResource MelodayBodyText}" />
+                            <ProgressBar Minimum="0" Maximum="100" Value="{x:Bind ViewModel.EnginePercent, Mode=OneWay}" AutomationProperties.Name="Songs the Meloday Engine has learned" />
                             <TextBlock Text="{x:Bind ViewModel.EngineCoverage, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
-                            <TextBlock Text="Analyses up to three samples per song, entirely on this computer." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                            <TextBlock Text="It listens to three short samples of each song, entirely on this PC. Learning a big library takes a while the first time; after that only new songs are learned." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
@@ -1138,8 +1100,8 @@
                             <TextBlock Text="{x:Bind ViewModel.AnalysisStatus, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                         </StackPanel>
                         <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="4">
-                            <TextBlock Text="Always learning" Style="{StaticResource MelodayBodyText}" />
-                            <TextBlock Text="Runs while Meloday is open, including in the tray. Pauses during buffering, energy saver and metered connections." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                            <TextBlock Text="When it runs" Style="{StaticResource MelodayBodyText}" />
+                            <TextBlock Text="While Meloday is open, including in the tray. Pauses during buffering, energy saver and metered connections. With learning turned off, only songs you play are checked." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             <TextBlock Text="Progress is saved automatically. Opening and ending samples complete transition analysis." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                         </StackPanel>
                     </StackPanel>
@@ -1202,7 +1164,7 @@
                             <StackPanel Grid.Column="1" VerticalAlignment="Center">
                                 <TextBlock Text="Meloday Music" Style="{StaticResource MelodayBodyText}" />
                                 <TextBlock Text="{x:Bind ViewModel.Version}" Style="{StaticResource MelodaySecondaryText}" />
-                                <TextBlock Text="Designed by one person and built with the help of AI coding tools. The Live station artwork was made with AI tools."
+                                <TextBlock Text="Meloday Music was built using AI tools."
                                            Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Text="Genre Essentials covers: based on Apple Music's genre artwork, redesigned in the Meloday palette."
                                            Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />

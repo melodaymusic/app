@@ -5,9 +5,9 @@
     xmlns:controls="using:MelodayMusic.Controls"
     xmlns:helpers="using:MelodayMusic.Helpers">
 
-    <Grid x:Name="Pill" controls:QueueDrag.IsTarget="True" MaxWidth="940" Height="{StaticResource MelodayPlayerHeight}" Padding="12,0,12,0" ColumnSpacing="16"
-          CornerRadius="{StaticResource MelodayRadiusGlass}" Background="{ThemeResource MelodayPlayerAcrylicBrush}"
-          BorderBrush="{ThemeResource MelodayHairlineBrush}" BorderThickness="1">
+    <Grid x:Name="Pill" controls:QueueDrag.IsTarget="True" MaxWidth="940" Height="{StaticResource MelodayPlayerHeight}" Padding="20,0,20,0" ColumnSpacing="16"
+          CornerRadius="{StaticResource MelodayRadiusPlayer}" Background="{ThemeResource MelodayPlayerAcrylicBrush}"
+          BorderBrush="{ThemeResource MelodayGlassRimBrush}" BorderThickness="1">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition x:Name="InfoColumn" Width="*" MinWidth="180" />
@@ -115,7 +115,6 @@
                 </StackPanel>
             </StackPanel>
             <StackPanel x:Name="Tools" Orientation="Horizontal" VerticalAlignment="Center">
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                 <Button x:Name="VolumeFlyoutButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Visibility="Collapsed"
                     ToolTipService.ToolTip="Volume" AutomationProperties.Name="Volume">
                 <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
@@ -131,26 +130,18 @@
                     </Flyout>
                 </Button.Flyout>
             </Button>
-                <Button x:Name="MiniPlayerButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
-                        Click="OnMiniPlayer" ToolTipService.ToolTip="Mini player (Ctrl+Shift+M)" AutomationProperties.Name="Mini player" AutomationProperties.AutomationId="MiniPlayerButton">
-                    <controls:LucideIcon Icon="PictureInPicture2" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
-                </Button>
-                <controls:CastButton x:Name="CastToggle" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <controls:CastButton x:Name="CastToggle" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" Visibility="Collapsed" />
                 <controls:CuratorButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
                 <controls:StationFeedbackButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
-                <ToggleButton x:Name="LyricsToggle" Style="{StaticResource MelodayIconToggleStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
-                          Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
-                          ToolTipService.ToolTip="Lyrics (Ctrl+Shift+L)" AutomationProperties.Name="Lyrics" AutomationProperties.AutomationId="LyricsButton">
-                <controls:LucideIcon Icon="MessageSquareQuote" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
-            </ToggleButton>
+                <Button x:Name="MoreButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                        Click="OnMore" Tag="SidePanelToggle" ToolTipService.ToolTip="More options" AutomationProperties.Name="More options" AutomationProperties.AutomationId="PlayerMoreButton">
+                    <controls:LucideIcon Icon="Ellipsis" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
+                </Button>
                 <ToggleButton x:Name="QueueToggle" Style="{StaticResource MelodayIconToggleStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
                           Checked="OnPanelToggleChanged" Unchecked="OnPanelToggleChanged" Tag="SidePanelToggle"
                           ToolTipService.ToolTip="Queue (Ctrl+Q)" AutomationProperties.Name="Queue" AutomationProperties.AutomationId="QueueButton">
                 <controls:LucideIcon Icon="ListVideo" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
             </ToggleButton>
-                </StackPanel>
             </StackPanel>
         </StackPanel>
 
@@ -169,7 +160,6 @@
                         <Setter Target="RatingBox.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
-                        <Setter Target="Tools.Orientation" Value="Vertical" />
                         <Setter Target="TimeText.Visibility" Value="Collapsed" />
                         <Setter Target="Pill.ColumnSpacing" Value="12" />
                     </VisualState.Setters>
@@ -180,11 +170,10 @@
                         <Setter Target="RatingBox.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
-                        <Setter Target="Tools.Orientation" Value="Vertical" />
                         <Setter Target="TimeText.Visibility" Value="Collapsed" />
                         <Setter Target="Pill.ColumnSpacing" Value="12" />
-                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
-                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.Padding" Value="16,0,16,0" />
+                        <Setter Target="InfoColumn.MinWidth" Value="140" />
                     </VisualState.Setters>
                 </VisualState>
                 <VisualState x:Name="NarrowState">
@@ -193,11 +182,9 @@
                         <Setter Target="RatingBox.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeRow.Visibility" Value="Collapsed" />
                         <Setter Target="VolumeFlyoutButton.Visibility" Value="Visible" />
-                        <Setter Target="Tools.Orientation" Value="Vertical" />
                         <Setter Target="TimeText.Visibility" Value="Collapsed" />
                         <Setter Target="Pill.ColumnSpacing" Value="8" />
-                        <Setter Target="MiniPlayerButton.Visibility" Value="Collapsed" />
-                        <Setter Target="CastToggle.Visibility" Value="Collapsed" />
+                        <Setter Target="Pill.Padding" Value="16,0,16,0" />
                         <Setter Target="ModeButtons.Visibility" Value="Collapsed" />
                         <Setter Target="InfoColumn.MinWidth" Value="0" />
                         <Setter Target="ArtButton.Visibility" Value="Collapsed" />

@@ -11,7 +11,8 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
     <Border x:Name="Plate" Grid.RowSpan="2" Background="{ThemeResource MelodayHoverOverlayBrush}" />
-    <StackPanel x:Name="Heading" Visibility="Collapsed" Spacing="1" Margin="2,0,2,10" IsHitTestVisible="False">
+    <StackPanel x:Name="Heading" Visibility="Collapsed" Spacing="1" Margin="2,0,2,10" IsHitTestVisible="False"
+                Width="{StaticResource MelodayBillboardWidth}" HorizontalAlignment="Left">
         <TextBlock x:Name="HeadingEyebrow" Style="{StaticResource MelodayOverlineText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" />
         <TextBlock x:Name="HeadingTitle" Style="{StaticResource MelodayHeadlineText}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />
         <TextBlock x:Name="HeadingSubtitle" Style="{StaticResource MelodaySecondaryText}" FontSize="{StaticResource MelodayFontBodyLarge}" TextWrapping="NoWrap" TextTrimming="CharacterEllipsis" MaxLines="1" />

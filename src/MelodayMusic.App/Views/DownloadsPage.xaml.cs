@@ -1,6 +1,5 @@
 using CommunityToolkit.Mvvm.Input;
 using MelodayMusic.Controls;
-using MelodayMusic.Core.Models;
 using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using Microsoft.Extensions.DependencyInjection;

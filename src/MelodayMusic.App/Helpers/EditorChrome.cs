@@ -15,15 +15,13 @@ public static class EditorChrome
     {
         if (item is not FrameworkElement editor || args.NewValue is not true) return;
         Apply(editor);
-        editor.ActualThemeChanged += (_, _) => Apply(editor);
     }
 
     private static void Apply(FrameworkElement editor)
     {
-        var light = editor.ActualTheme == ElementTheme.Light;
-        var edge = new SolidColorBrush(light ? ColorHelper.FromArgb(0x38, 0, 0, 0) : ColorHelper.FromArgb(0x38, 255, 255, 255));
-        var hover = new SolidColorBrush(light ? ColorHelper.FromArgb(0x70, 0, 0, 0) : ColorHelper.FromArgb(0x70, 255, 255, 255));
-        var focus = new SolidColorBrush(light ? ColorHelper.FromArgb(255, 27, 26, 29) : ColorHelper.FromArgb(255, 244, 242, 238));
+        var edge = new SolidColorBrush(ColorHelper.FromArgb(0x38, 255, 255, 255));
+        var hover = new SolidColorBrush(ColorHelper.FromArgb(0x70, 255, 255, 255));
+        var focus = new SolidColorBrush(ColorHelper.FromArgb(255, 244, 242, 238));
         editor.Resources["TextControlBorderThemeThickness"] = new Thickness(1);
         editor.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(1);
         editor.Resources["TextControlBorderBrush"] = edge;

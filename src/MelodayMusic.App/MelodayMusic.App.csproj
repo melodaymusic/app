@@ -29,7 +29,7 @@
     <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.23.2" GeneratePathProperty="true" />
     <!-- Its ONNX Runtime copies would replace the pinned CPU runtime. -->
     <PackageReference Include="Microsoft.WindowsAppSDK.ML" Version="1.8.2223" ExcludeAssets="all" />
-    <Content Include="Assets\**\*.*" Exclude="Assets\Genres\generation-prompts.json;Assets\Genres\verification.json;Assets\Genres\palette.json;Assets\Genres\status.json;Assets\Genres\README.txt" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\**\*.*" CopyToOutputDirectory="PreserveNewest" />
     <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" />
     <Content Include="Native\$(RuntimeIdentifier)\*.dll" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
@@ -43,10 +43,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\MelodayMusic.Core\MelodayMusic.Core.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(MelodayUiSmoke)' == 'true'">
-    <Compile Include="..\..\tools\ui-smoke\RadioSmoke.cs" Link="Testing\RadioSmoke.cs" />
-    <Compile Include="..\..\tools\ui-smoke\PolishSmoke.cs" Link="Testing\PolishSmoke.cs" />
   </ItemGroup>
   <!-- Unpackaged publish leaves out the app's .pri, which holds the compiled XAML. -->
   <Target Name="IncludeAppPriInPublish" AfterTargets="Publish">

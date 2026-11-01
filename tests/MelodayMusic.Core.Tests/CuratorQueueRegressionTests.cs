@@ -1,6 +1,6 @@
+using MelodayMusic.Core.Home;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Playback;
-using MelodayMusic.Core.Home;
 
 namespace MelodayMusic.Core.Tests;
 

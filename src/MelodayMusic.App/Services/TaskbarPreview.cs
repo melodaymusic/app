@@ -11,9 +11,7 @@ using Windows.UI;
 namespace MelodayMusic.Services;
 
 /// <summary>
-/// The picture Windows shows when you point at Meloday Music on the taskbar: while a song is loaded, the artist's backdrop
-/// (or the album cover) with the song and artist over it and a line for how far in it is, in place of a shot of the window.
-/// The Previous / Play-Pause / Next buttons under it are <see cref="TaskbarButtons"/>. With nothing loaded, the usual window shot.
+/// The taskbar thumbnail: the current song over its artwork with a progress line. Buttons are in <see cref="TaskbarButtons"/>.
 /// </summary>
 public sealed class TaskbarPreview
 {

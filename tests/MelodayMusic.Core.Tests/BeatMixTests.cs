@@ -34,26 +34,33 @@ public class BeatMixTests
     {
         var outgoing = Steady(124, 140, 200, key: 0);
         var incoming = Steady(126, 0, 45, key: 7);
-        var plan = BeatMix.Plan(Loudness(196, 7), outgoing, incoming)!;
+        // Not knowing where the voices are, the songs share four bars; knowing they keep apart, eight.
+        Assert.Equal(4, BeatMix.Plan(Loudness(196, 7), outgoing, incoming)!.Bars);
+        var plan = BeatMix.Plan(Loudness(196, 7), outgoing, incoming,
+            new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(150)), new VocalSpan(TimeSpan.FromSeconds(40), TimeSpan.FromSeconds(150)))!;
         Assert.True(plan.BeatMatched);
         Assert.Equal(8, plan.Bars);
         Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - plan.StartAt.TotalSeconds) < 1e-3);
         Assert.InRange((plan.StartAt + plan.Shape.Overlap).TotalSeconds, 196 - 2 * 4 * 60 / 124.0, 196 + 0.5);
-        Assert.Equal((plan.Shape.Overlap / 2).TotalSeconds, plan.BassSwap!.Value.TotalSeconds, 3);
+        // The bass swaps on the landing, the downbeat the outgoing song's last bar ends on.
+        Assert.Equal(plan.Landing.TotalSeconds, (plan.BassSwap!.Value + plan.SwapLength).TotalSeconds, 6);
+        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - (plan.StartAt.TotalSeconds + plan.Landing.TotalSeconds * plan.OutRate)) < 1e-3);
         Assert.Equal(incoming.Downbeats.First(), plan.IncomingStart.TotalSeconds, 6);
     }
 
     [Fact]
-    public void Clashing_keys_blend_briefly_and_far_tempos_cut_on_the_bar()
+    public void Clashing_keys_blend_briefly_and_far_tempos_echo_out_on_the_bar()
     {
         var plan = BeatMix.Plan(Loudness(196, 6), Steady(124, 140, 200, key: 0), Steady(124, 0, 45, key: 6))!;
         Assert.Equal(4, plan.Bars);
         var outgoing = Steady(100, 140, 200);
-        var blend = BeatMix.Plan(Loudness(196, 8), outgoing, Steady(140, 0, 45))!;
-        Assert.False(blend.BeatMatched);
-        Assert.Null(blend.BassSwap);
-        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - blend.StartAt.TotalSeconds) < 1e-3);
-        Assert.InRange(blend.Shape.Overlap.TotalSeconds, 6, 10.5);
+        var echo = BeatMix.Plan(Loudness(196, 8), outgoing, Steady(140, 0, 45))!;
+        Assert.False(echo.BeatMatched);
+        Assert.Null(echo.BassSwap);
+        Assert.Equal(MixStyle.Echo, echo.Style);
+        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - echo.StartAt.TotalSeconds) < 1e-3);
+        Assert.Contains(outgoing.Downbeats, d => Math.Abs(d - (echo.StartAt + echo.Landing).TotalSeconds) < 1e-3);
+        Assert.Equal(echo.Landing, echo.InDelay);
     }
 
     [Fact]
@@ -90,9 +97,9 @@ public class BeatMixTests
             new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)))!;
         Assert.Equal(16, plan.Bars);
         Assert.Contains("perfect fit", plan.Summary);
-        Assert.Equal(plan.Shape.Overlap.TotalSeconds / 2, plan.BassSwap!.Value.TotalSeconds, 3);
-        Assert.Equal(plan.Shape.Overlap.TotalSeconds * 6 / 16, plan.Shape.InFade.TotalSeconds, 3);
-        Assert.Equal(plan.Shape.Overlap.TotalSeconds * 10 / 16, plan.Shape.OutFadeStart.TotalSeconds, 3);
+        Assert.Equal(plan.Landing.TotalSeconds, (plan.BassSwap!.Value + plan.SwapLength).TotalSeconds, 6);
+        Assert.Equal(plan.Beat, plan.Shape.InFade);
+        Assert.Equal(plan.Landing, plan.Shape.OutFadeStart);
         var (outgoingGain, incomingGain) = plan.Shape.Gains(plan.Shape.Overlap / 2);
         Assert.Equal(1, outgoingGain, 6);
         Assert.Equal(1, incomingGain, 6);
@@ -124,13 +131,56 @@ public class BeatMixTests
     }
 
     [Fact]
-    public void A_mismatched_opening_keeps_the_blend_short()
+    public void A_mismatched_opening_still_lets_the_outgoing_song_fade()
     {
         var outgoing = WithEnergy(Steady(124, 140, 200, key: 0), -3);
         var incoming = WithEnergy(Steady(124, 0, 45, key: 7), -20);
         var plan = BeatMix.Plan(Loudness(196, 1), outgoing, incoming,
             new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(176)), new VocalSpan(TimeSpan.FromSeconds(12), TimeSpan.FromSeconds(150)))!;
-        Assert.True(plan.Bars <= 2);
+        Assert.True(plan.Bars >= BeatMix.ShortestBars);
+    }
+
+    [Theory]
+    [InlineData(0, 0, BeatMix.SuitedBars)]
+    [InlineData(0, 7, BeatMix.SuitedBars)]
+    [InlineData(0, 6, BeatMix.ShortestBars)]
+    public void A_tight_loudness_plan_never_rushes_the_outgoing_song_out(int outKey, int inKey, int fewestBars)
+    {
+        // As in a real log: the loudness plan left 0.8 s, and the beat mix used to follow it down to a bar or two.
+        var plan = BeatMix.Plan(Loudness(196, 0.8), WithEnergy(Steady(123.9, 140, 200, key: outKey), -3), WithEnergy(Steady(123.2, 0, 45, key: inKey), -3))!;
+        Assert.True(plan.Bars >= fewestBars, $"{plan.Bars} bars");
+        AssertFades(plan);
+    }
+
+    [Fact]
+    public void Where_two_voices_would_meet_the_outgoing_one_echoes_out_and_the_next_comes_in_after_it()
+    {
+        var plan = BeatMix.Plan(Loudness(196, 0.8), WithEnergy(Steady(123.9, 140, 200, key: 0), -3), WithEnergy(Steady(123.2, 0, 45, key: 0), -3),
+            new VocalSpan(TimeSpan.FromSeconds(10), TimeSpan.FromSeconds(194)), new VocalSpan(TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(150)))!;
+        Assert.Equal(MixStyle.Echo, plan.Style);
+        Assert.True(plan.Throw);
+        var nextVoice = plan.StartAt.TotalSeconds + (plan.InDelay.TotalSeconds + (1 - plan.IncomingStart.TotalSeconds) / plan.TempoRatio) * plan.OutRate;
+        Assert.True(nextVoice >= 194 - 0.3, $"the next voice starts at {nextVoice:0.0} s");
+    }
+
+    private static void AssertFades(BeatMixPlan plan)
+    {
+        var bar = 4 * 60 / 123.9;
+        Assert.True(plan.Shape.Overlap >= TimeSpan.FromSeconds(2 * bar), "the outgoing song plays on for at least two bars");
+        var fading = plan.Shape.Overlap - plan.Shape.OutFadeStart;
+        Assert.True(fading >= TimeSpan.FromSeconds(0.25 * bar), $"{plan.Style}: the outgoing song fades rather than stops");
+    }
+
+    [Fact]
+    public void Far_tempos_still_play_the_outgoing_song_to_its_last_bar()
+    {
+        var outgoing = Steady(127.1, 140, 200);
+        var plan = BeatMix.Plan(Loudness(196, 0.8), outgoing, Steady(99.7, 0, 45))!;
+        Assert.False(plan.BeatMatched);
+        var landing = (plan.StartAt + plan.Landing).TotalSeconds;
+        Assert.InRange(landing, 196 - 4 * 60 / 127.1, 196 + 0.5);
+        var lastBeat = MixTimeline.At(plan, plan.Landing - plan.Beat);
+        Assert.Equal(1, lastBeat.OutGain / lastBeat.Trim, 3);
     }
 
     [Fact]
@@ -145,8 +195,8 @@ public class BeatMixTests
         Assert.InRange(plan.OutRate - 1, 0, BeatMix.MaxStretch);
         Assert.InRange(1 - plan.TempoRatio, 0, BeatMix.MaxStretch);
         Assert.True(plan.LeadIn > TimeSpan.Zero);
-        Assert.Equal(plan.Bars * 4 * 60 / 113.0 / plan.OutRate, plan.Shape.Overlap.TotalSeconds, 3);
-        Assert.Equal(plan.Shape.Overlap.TotalSeconds / 2, plan.BassSwap!.Value.TotalSeconds, 3);
+        Assert.Equal(plan.Bars * 4 * 60 / 113.0 / plan.OutRate, plan.Landing.TotalSeconds, 3);
+        Assert.Equal(plan.Landing.TotalSeconds, (plan.BassSwap!.Value + plan.SwapLength).TotalSeconds, 6);
     }
 
     [Fact]

@@ -4,7 +4,6 @@ using MelodayMusic.Core;
 using MelodayMusic.Core.Covers;
 using MelodayMusic.Core.Meloday;
 using Microsoft.Graphics.Canvas;
-using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.UI;
 using Microsoft.UI.Text;

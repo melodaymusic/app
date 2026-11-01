@@ -3,7 +3,6 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.ViewModels;
@@ -23,12 +22,27 @@ public sealed partial class SearchViewModel : ViewModelBase
     public ObservableCollection<MusicCollection> Collections { get; } = [];
     public ObservableCollection<TagItem> Tags { get; } = [];
     public ObservableCollection<Track> SoundsLike { get; } = [];
+    public ObservableCollection<RelatedSound> RelatedSounds { get; } = [];
+
+    private const int PlaylistLength = 50;
+    private const int RelatedCount = 2;
+    private Core.Audio.SoundQuery? _sound;
 
     [ObservableProperty] public partial string Query { get; set; } = string.Empty;
     [ObservableProperty] public partial bool HasResults { get; private set; }
     [ObservableProperty] public partial bool ShowPrompt { get; private set; } = true;
     [ObservableProperty] public partial MediaItem? TopResult { get; private set; }
     [ObservableProperty] public partial string SoundsLikeTitle { get; private set; } = string.Empty;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task CreateSoundPlaylistAsync()
+    {
+        if (_sound is not { IsEmpty: false } sound) return;
+        var (_, tracks) = await _engine.SearchAsync(sound.Text, PlaylistLength);
+        if (tracks.Count > 0) await Views.PlaylistDialogs.NewAsync(new Core.Meloday.SongSet().AddNew(tracks), SoundsLikeTitle);
+    }
+
+    public void SearchSound(string label) => Query = label;
 
     partial void OnQueryChanged(string value)
     {
@@ -70,9 +84,15 @@ public sealed partial class SearchViewModel : ViewModelBase
         {
             var heardTask = SoundsLikeAsync(query, ct);
             var results = await Client.SearchAsync(query, SectionKey, 12, ct);
-            var (phrase, heard) = await heardTask;
+            var (sound, heard) = await heardTask;
+            var phrase = sound?.Phrase ?? string.Empty;
             if (ct.IsCancellationRequested || version != _searchVersion) return;
             Clear();
+            if (heard.Count > 0 && sound is not null)
+            {
+                _sound = sound;
+                foreach (var term in _engine.Vocabulary?.Related(sound, RelatedCount) ?? []) RelatedSounds.Add(new RelatedSound(term.Label));
+            }
             foreach (var a in results.Artists) Artists.Add(a);
             foreach (var a in results.Albums) Albums.Add(a);
             foreach (var t in results.Tracks) Tracks.Add(t);
@@ -87,16 +107,16 @@ public sealed partial class SearchViewModel : ViewModelBase
         }, showSpinner: true, isCurrent: () => !ct.IsCancellationRequested && version == _searchVersion);
     }
 
-    private async Task<(string Phrase, IReadOnlyList<Track> Tracks)> SoundsLikeAsync(string query, CancellationToken ct)
+    private async Task<(Core.Audio.SoundQuery? Query, IReadOnlyList<Track> Tracks)> SoundsLikeAsync(string query, CancellationToken ct)
     {
         try
         {
             var (words, tracks) = await _engine.SearchAsync(query, 12, ct);
-            return (words?.Phrase ?? string.Empty, new Core.Meloday.SongSet().AddNew(tracks));
+            return (words, new Core.Meloday.SongSet().AddNew(tracks));
         }
         catch (OperationCanceledException)
         {
-            return (string.Empty, []);
+            return (null, []);
         }
     }
 
@@ -119,8 +139,15 @@ public sealed partial class SearchViewModel : ViewModelBase
         Collections.Clear();
         Tags.Clear();
         SoundsLike.Clear();
+        RelatedSounds.Clear();
+        _sound = null;
         SoundsLikeTitle = string.Empty;
         TopResult = null;
         HasResults = false;
     }
+}
+
+public sealed record RelatedSound(string Label)
+{
+    public string Text => $"Sounds like {Label}";
 }

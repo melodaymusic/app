@@ -1,16 +1,6 @@
 using System.Numerics;
-using MelodayMusic.Core.Artwork;
-using MelodayMusic.Core.Audio;
-using MelodayMusic.Core.Lyrics;
-using MelodayMusic.Core.Models;
-using MelodayMusic.Core.Playback;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
-using Microsoft.Graphics.Canvas.Effects;
-using Microsoft.Graphics.Canvas.Geometry;
-using Microsoft.Graphics.Canvas.Text;
-using Microsoft.UI.Text;
-using Windows.UI;
 
 namespace MelodayMusic.Controls;
 

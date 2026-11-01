@@ -13,6 +13,7 @@ public enum SkeletonKind
     Tiles,
     Rows,
     Tracks,
+    ChartColumn,
 }
 
 public sealed partial class SkeletonView : UserControl
@@ -108,8 +109,38 @@ public sealed partial class SkeletonView : UserControl
         {
             SkeletonKind.Rows => BuildRows(),
             SkeletonKind.Tracks => BuildTracks(),
+            SkeletonKind.ChartColumn => BuildChartColumn(Round),
             _ => new SkeletonTiles { Round = Round, MaxRows = 3 },
         });
+    }
+
+    private static UIElement BuildChartColumn(bool round)
+    {
+        var stack = new StackPanel();
+        var art = UiScale.Size(48);
+        for (var i = 0; i < ViewModels.ChartColumn.Size; i++)
+        {
+            var row = new Grid
+            {
+                Height = UiScale.Size(64), ColumnSpacing = UiScale.Size(14), Padding = new Thickness(UiScale.Size(4), 0, UiScale.Size(44), 0),
+                BorderBrush = (Brush)Application.Current.Resources["MelodayDividerBrush"], BorderThickness = new Thickness(0, 1, 0, 0),
+            };
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(UiScale.Size(30)) });
+            row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            row.Children.Add(Block(art, art, round ? art / 2 : 6));
+            var rank = Block(UiScale.Size(14), UiScale.Size(12), 4);
+            rank.HorizontalAlignment = HorizontalAlignment.Center;
+            Grid.SetColumn(rank, 1);
+            row.Children.Add(rank);
+            var lines = new StackPanel { Spacing = 6, VerticalAlignment = VerticalAlignment.Center };
+            lines.Children.Add(Block(UiScale.Size(120 + (i * 41) % 70), UiScale.Size(12), 4));
+            lines.Children.Add(Block(UiScale.Size(70 + (i * 29) % 50), UiScale.Size(10), 4));
+            Grid.SetColumn(lines, 2);
+            row.Children.Add(lines);
+            stack.Children.Add(row);
+        }
+        return stack;
     }
 
     private static UIElement BuildRows()

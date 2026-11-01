@@ -12,8 +12,8 @@ namespace MelodayMusic.Core.Tests;
 public class PlexHomeTests
 {
     private const string Users = """
-        {"id":1,"name":"Busch Home","users":[
-          {"id":11,"uuid":"owner-uuid","title":"dave","username":"dave","friendlyName":"Dave","thumb":"https://plex.tv/users/a/avatar","admin":true,"restricted":false,"guest":false,"protected":true},
+        {"id":1,"name":"Alex's Home","users":[
+          {"id":11,"uuid":"owner-uuid","title":"alex","username":"alex","friendlyName":"Alex","thumb":"https://plex.tv/users/a/avatar","admin":true,"restricted":false,"guest":false,"protected":true},
           {"id":12,"uuid":"kid-uuid","title":"Kid","username":"","thumb":"","admin":false,"restricted":true,"guest":false,"protected":false},
           {"id":13,"uuid":"sam-uuid","title":"sam","friendlyName":"","admin":false,"restricted":false,"protected":true}
         ]}
@@ -22,7 +22,7 @@ public class PlexHomeTests
     private const string LegacyUsers = """
         <?xml version="1.0" encoding="UTF-8"?>
         <MediaContainer friendlyName="myPlex" identifier="com.plexapp.plugins.myplex" machineIdentifier="x" totalSize="2" size="2">
-          <User id="11" uuid="owner-uuid" admin="1" guest="0" restricted="0" protected="1" title="dave" username="dave" email="d@x" thumb="https://plex.tv/users/a/avatar"/>
+          <User id="11" uuid="owner-uuid" admin="1" guest="0" restricted="0" protected="1" title="alex" username="alex" email="d@x" thumb="https://plex.tv/users/a/avatar"/>
           <User id="12" uuid="kid-uuid" admin="0" guest="0" restricted="1" protected="0" title="Kid" username="" email="" thumb=""/>
         </MediaContainer>
         """;
@@ -31,7 +31,7 @@ public class PlexHomeTests
     public void Members_read_from_the_current_api()
     {
         var users = PlexHome.ParseUsers(Users);
-        Assert.Equal(["Dave", "Kid", "sam"], users.Select(u => u.Name));
+        Assert.Equal(["Alex", "Kid", "sam"], users.Select(u => u.Name));
         Assert.True(users[0] is { IsAdmin: true, HasPin: true, Uuid: "owner-uuid", Id: "11" });
         Assert.True(users[1] is { IsManaged: true, HasPin: false, Thumb: null });
         Assert.True(users[2].HasPin);
@@ -42,7 +42,7 @@ public class PlexHomeTests
     {
         var users = PlexHome.ParseUsers(LegacyUsers);
         Assert.Equal(2, users.Count);
-        Assert.True(users[0] is { IsAdmin: true, HasPin: true, Name: "dave" });
+        Assert.True(users[0] is { IsAdmin: true, HasPin: true, Name: "alex" });
         Assert.True(users[1] is { IsManaged: true, Name: "Kid" });
     }
 
@@ -99,7 +99,7 @@ public class PlexHomeTests
     public async Task Switching_keeps_the_members_token_and_asks_the_app_to_start_again_as_them()
     {
         var plex = new FakePlex();
-        var (session, store, folder) = Session(plex, new StoredCredentials { AccountToken = "owner", AccountName = "dave" });
+        var (session, store, folder) = Session(plex, new StoredCredentials { AccountToken = "owner", AccountName = "alex" });
         try
         {
             await session.InitializeAsync();
@@ -187,7 +187,7 @@ public class PlexHomeTests
             if (path == "/api/v2/user")
                 return Task.FromResult(token switch
                 {
-                    "owner" => Json("""{"id":11,"uuid":"owner-uuid","username":"dave","title":"dave"}"""),
+                    "owner" => Json("""{"id":11,"uuid":"owner-uuid","username":"alex","title":"alex"}"""),
                     "kid-token" => Json("""{"id":12,"uuid":"kid-uuid","username":"","title":"Kid"}"""),
                     "sam-token" => Json("""{"id":13,"uuid":"sam-uuid","username":"sam","title":"sam"}"""),
                     _ => new HttpResponseMessage(HttpStatusCode.Unauthorized),

@@ -9,7 +9,6 @@ public sealed class PlexAccount
     public string? Email { get; init; }
     public string? Thumb { get; init; }
     public bool? HasPlexPass { get; init; }
-    public string? PlexPassPlan { get; init; }
     public string Name => string.IsNullOrWhiteSpace(DisplayName) ? Username : DisplayName!;
 }
 

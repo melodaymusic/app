@@ -5,6 +5,7 @@
     xmlns:controls="using:MelodayMusic.Controls"
     xmlns:helpers="using:MelodayMusic.Helpers"
     xmlns:models="using:MelodayMusic.Core.Models"
+    xmlns:vm="using:MelodayMusic.ViewModels"
     NavigationCacheMode="Enabled"
     Background="Transparent">
 
@@ -57,8 +58,39 @@
                 </Grid>
 
                 <StackPanel Spacing="12" helpers:Anim.Appear="True" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.SoundsLike.Count), Mode=OneWay}">
-                    <controls:SectionHeader Title="{x:Bind ViewModel.SoundsLikeTitle, Mode=OneWay}"
-                                            Subtitle="Songs the Meloday Engine hears this way, from their sound alone" />
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <controls:SectionHeader Title="{x:Bind ViewModel.SoundsLikeTitle, Mode=OneWay}"
+                                                Subtitle="Songs the Meloday Engine hears this way, from their sound alone" />
+                        <Button Grid.Column="1" Style="{StaticResource MelodaySecondaryButtonStyle}" VerticalAlignment="Center"
+                                Command="{x:Bind ViewModel.CreateSoundPlaylistCommand}" AutomationProperties.AutomationId="SoundPlaylistButton">
+                            <controls:IconLabel Icon="ListPlus" Text="Create Playlist" />
+                        </Button>
+                    </Grid>
+                    <Grid ColumnSpacing="12" Visibility="{x:Bind helpers:Format.VisibleIfAny(ViewModel.RelatedSounds.Count), Mode=OneWay}">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="You might also like" Style="{StaticResource MelodaySecondaryText}" VerticalAlignment="Center" />
+                        <ItemsControl Grid.Column="1" ItemsSource="{x:Bind ViewModel.RelatedSounds}" IsTabStop="False" AutomationProperties.Name="Related sounds">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <controls:ActionWrapPanel Spacing="8" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:RelatedSound">
+                                    <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Tag="{x:Bind Label}" Click="OnRelatedSoundClick">
+                                        <controls:IconLabel Icon="AudioLines" Text="{x:Bind Text}" />
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </Grid>
                     <ListView ItemsSource="{x:Bind ViewModel.SoundsLike}" Margin="-12,0" SelectionMode="Single"
                               controls:TrackListBehavior.IsEnabled="True" ItemContainerStyle="{StaticResource MelodayTrackItemStyle}"
                               ScrollViewer.VerticalScrollMode="Disabled" AutomationProperties.Name="Songs that sound like the search"

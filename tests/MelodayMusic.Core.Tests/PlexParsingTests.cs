@@ -10,6 +10,14 @@ namespace MelodayMusic.Core.Tests;
 public class PlexParsingTests
 {
     [Fact]
+    public void Null_separated_track_artists_are_joined_with_commas()
+    {
+        var track = PlexMapper.ToTrack(new MetadataDto { RatingKey = "1", Title = "Good Time", OriginalTitle = "Owl City\0Carly Rae Jepsen" });
+        Assert.Equal("Owl City, Carly Rae Jepsen", track.DisplayArtist);
+        Assert.Equal("Owl City", PlexMapper.ToTrack(new MetadataDto { RatingKey = "2", Title = "Fireflies", OriginalTitle = "Owl City" }).DisplayArtist);
+    }
+
+    [Fact]
     public void Lenient_json_accepts_mixed_primitive_types()
     {
         const string json = """

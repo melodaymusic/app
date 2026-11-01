@@ -1,5 +1,6 @@
-using MelodayMusic.Core.Meloday;
 using CommunityToolkit.Mvvm.ComponentModel;
+using MelodayMusic.Core.Audio;
+using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Playback;
 using MelodayMusic.Core.Plex;
@@ -17,6 +18,9 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     private readonly RoutingEngine? routing_;
     private bool _mixHooked;
     private string? _mixFor;
+    private string? _mixLabel;
+    private BeatMixPlan? _mixPlan;
+    private string? _mixFrom;
     private CancellationTokenSource? _mixCts;
 
     private MixEngine? Mixer
@@ -57,6 +61,8 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     private const int ReportIntervalSeconds = 10;
     private const int MaxConsecutiveFailures = 3;
+    // How far ahead a mix has to be planned for the next song to open in time.
+    private static readonly TimeSpan MixLead = TimeSpan.FromSeconds(4);
 
     private readonly IPlaybackEngine _engine;
     private readonly PlexSession _session;
@@ -153,6 +159,9 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     [ObservableProperty] public partial bool HasNext { get; private set; }
     [ObservableProperty] public partial bool HasPrevious { get; private set; }
     [ObservableProperty] public partial string? StreamDescription { get; private set; }
+
+    // The mix the next song comes in on, from shortly before it starts until the next song takes over.
+    [ObservableProperty] public partial MixCue? Mixing { get; private set; }
 
     public bool HasTrack => CurrentTrack is not null;
 
@@ -407,13 +416,16 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         await StartCurrentAsync(autoPlay: true, TimeSpan.Zero);
     }
 
-    public void Seek(TimeSpan position)
+    public void Seek(TimeSpan position, [System.Runtime.CompilerServices.CallerFilePath] string from = "",
+        [System.Runtime.CompilerServices.CallerLineNumber] int line = 0)
     {
         if (CurrentTrack is null || LiveRefuses()) return;
+        _log.LogInformation("Seek from {Position:0.0} s to {Target:0.0} s ({From}:{Line})", Position.TotalSeconds, position.TotalSeconds, Path.GetFileName(from), line);
         if (Mixer is not null && _mixFor is not null)
         {
             _mixFor = null;
-            if (_plan is { } loudness && CurrentTrack is { } playing && NextTrack is { } following && _planTo == following.RatingKey)
+            var loudness = _plan;
+            if (CurrentTrack is { } playing && NextTrack is { } following && _planFrom == playing.RatingKey && _planTo == following.RatingKey)
                 DispatcherQueue.GetForCurrentThread()?.TryEnqueue(() => _ = ScheduleMixAsync(playing, following, loudness));
         }
         if (!_sourceLoaded)
@@ -429,6 +441,8 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         }
         _engine.Seek(position - _transcodeOffset);
         Position = position;
+        // Paused, no tick follows to move the mix card on.
+        UpdateMixCue(position);
         ReportTimeline(IsPlaying ? TimelineState.Playing : TimelineState.Paused);
     }
 
@@ -787,6 +801,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (!_sourceLoaded || CurrentTrack is null) return;
         var pos = CurrentPosition;
         if (Math.Abs((pos - Position).TotalMilliseconds) >= 200) Position = pos;
+        UpdateMixCue(pos);
         if (_engine.NaturalDuration is { } d && !_isTranscoded && Math.Abs((d - Duration).TotalSeconds) > 1.5)
             Duration = d;
 
@@ -915,10 +930,11 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (plan is not null)
             _log.LogInformation("AutoMix: into {Next} at {At:0.0} s, overlapping {Fade:0.0} s (rising over {In:0.0} s, the last song easing from {Out:0.0} s), from {Start:0.0} s",
                 next.Title, plan.StartAt.TotalSeconds, plan.Fade.TotalSeconds, plan.Shape.InFade.TotalSeconds, plan.Shape.OutFadeStart.TotalSeconds, plan.IncomingStart.TotalSeconds);
-        if (plan is not null && Mixer is not null) _ = ScheduleMixAsync(track, next, plan);
+        if (Mixer is not null) _ = ScheduleMixAsync(track, next, plan);
     }
 
-    private async Task ScheduleMixAsync(Track track, Track next, Transition loudness)
+    // Without a loudness plan the songs' own analyses still place a beat-matched mix.
+    private async Task ScheduleMixAsync(Track track, Track next, Transition? loudness)
     {
         _mixCts?.Cancel();
         var cts = new CancellationTokenSource();
@@ -934,15 +950,20 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             await Task.WhenAll(outgoing, incoming, outLoudness, inLoudness);
             if (cts.IsCancellationRequested || CurrentTrack?.RatingKey != track.RatingKey || NextTrack?.RatingKey != next.RatingKey) return;
             var plan = outgoing.Result is { } a && incoming.Result is { } b
-                ? BeatMix.Plan(loudness, a, b, outLoudness.Result?.Vocals, inLoudness.Result?.Vocals)
+                ? BeatMix.Plan(loudness, a, b, outLoudness.Result?.Vocals, inLoudness.Result?.Vocals, Position + MixLead,
+                    AutoMix.LiveEnd(outLoudness.Result, track.Duration, BeatMix.LiveDrop))
                 : null;
-            plan ??= new BeatMixPlan { StartAt = loudness.StartAt, IncomingStart = loudness.IncomingStart, Shape = loudness.Shape, Summary = "no steady beat: loudness plan" };
-            if (Position > plan.StartAt - TimeSpan.FromSeconds(3)) return;
+            if (plan is null && loudness is not null) plan = BeatMix.Fallback(loudness);
+            if (plan is null) return;
+            if (Position > plan.StartAt - MixLead + TimeSpan.FromSeconds(1)) return;
             if (NextSource(next, plan.IncomingStart) is not { } source || Mixer is not { } mixer) return;
             var level = _settings.Current.SoundCheck ? await _transitions.LevelAsync(next) : 1;
             if (await mixer.ScheduleMixAsync(source, plan, level, cts.Token) && !cts.IsCancellationRequested)
             {
                 _mixFor = next.RatingKey;
+                _mixLabel = BeatMix.Label(plan);
+                (_mixPlan, _mixFrom) = (plan, track.RatingKey);
+                UpdateMixCue(Position);
                 _log.LogInformation("AutoMix into {Next}: {Summary}", next.Title, plan.Summary);
             }
         }
@@ -964,6 +985,27 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             : client.BuildDirectPlayUri(next);
     }
 
+    private static readonly TimeSpan CueLead = TimeSpan.FromSeconds(20);
+
+    private void UpdateMixCue(TimeSpan position)
+    {
+        MixCue? cue = null;
+        if (_mixPlan is { } plan && _mixFor is { } key && _mixFrom == CurrentTrack?.RatingKey && NextTrack is { } next && next.RatingKey == key)
+        {
+            var start = plan.StartAt;
+            var landing = start + MixTimeline.Handover(plan) * plan.OutRate;
+            if (position >= start - CueLead && position < landing)
+            {
+                var move = BeatMix.Label(plan);
+                var started = position >= start;
+                var left = (int)Math.Ceiling((start - position).TotalSeconds);
+                cue = new MixCue(next, move, started ? move : $"{move} in {left / 60}:{left % 60:00}",
+                    started && landing > start ? Math.Round(Math.Clamp((position - start) / (landing - start), 0, 1), 3) : 0, started);
+            }
+        }
+        if (cue != Mixing) Mixing = cue;
+    }
+
     private void OnMixStarted()
     {
         var previous = CurrentTrack;
@@ -977,6 +1019,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         if (Queue.MoveNext(userInitiated: false) is not { } entry) return;
         var track = entry.Track;
         _mixFor = null;
+        Mixing = null;
         _crossfadeStarted = false;
         _sessionId = Guid.NewGuid().ToString("N");
         _isTranscoded = false;
@@ -986,7 +1029,9 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         CurrentTrack = track;
         Duration = track.Duration;
         IsBuffering = false;
-        StreamDescription = track.Media?.Describe() is { } d ? d + " · Mixed" : "Mixed";
+        var mixed = _mixLabel is { } how ? "Mixed · " + how : "Mixed";
+        _mixLabel = null;
+        StreamDescription = track.Media?.Describe() is { } d ? d + " · " + mixed : mixed;
         if (_session.Client is { } client) UpdateSystemInfo(track, client);
         UpdateNavigationState();
         if (IsLive) _livePlayed?.Invoke(track);

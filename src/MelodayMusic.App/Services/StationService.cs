@@ -47,7 +47,6 @@ public sealed class StationService
     ];
 
     private readonly PlexSession _session;
-    private readonly PlexPass _pass;
     private readonly MusicIntelligence _intelligence;
     private readonly ILogger _log;
     private Task<StationCatalog>? _catalog;
@@ -59,10 +58,9 @@ public sealed class StationService
     private readonly Dictionary<StationKind, HashSet<string>> _pictured = [];
     private readonly SemaphoreSlim _coverGate = new(4, 4);
 
-    public StationService(PlexSession session, PlexPass pass, MusicIntelligence intelligence, ILogger<StationService> log)
+    public StationService(PlexSession session, MusicIntelligence intelligence, ILogger<StationService> log)
     {
         _session = session;
-        _pass = pass;
         _intelligence = intelligence;
         intelligence.Changed += (_, _) => Clear();
         _log = log;

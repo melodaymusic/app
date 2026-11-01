@@ -1,5 +1,3 @@
-using MelodayMusic.Core.Models;
-
 namespace MelodayMusic.Core.Radio;
 
 public enum PulseFormat { Rotation, NewMusic, Chart, Genre, Throwbacks, WeeklyPicks, ReleaseCountdown }

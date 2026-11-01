@@ -112,9 +112,7 @@ public static class MelodayNaming
     public const double SecondShare = 0.12;
 
     /// <summary>
-    /// What the mix mostly is. Genre tags split one sound many ways (R&amp;B, Alternative R&amp;B, Contemporary R&amp;B…), so a single
-    /// concentrated tag like "New Rave" can outweigh each of them while being a small part of the mix. Tags are first summed by
-    /// family; the biggest family leads, named by its own biggest genre if that genre is a real share of the mix, otherwise by the family.
+    /// The mix's leading genre. Tags are summed by family first, so related tags (R&amp;B, Alternative R&amp;B…) count together.
     /// </summary>
     internal static string? Lead(IReadOnlyDictionary<string, double> genreWeight, double total)
     {

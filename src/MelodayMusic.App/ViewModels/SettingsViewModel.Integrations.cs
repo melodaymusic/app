@@ -47,7 +47,7 @@ public sealed partial class SettingsViewModel
             await LastFm.SaveApiKeyAsync(key);
             _lastFmAwaitingApproval = false;
             OnPropertyChanged(nameof(LastFmButtonText));
-            LastFmStatus = "API key saved. Choose Last.fm rails in Home settings.";
+            LastFmStatus = "API key saved. Turn on the charts you want below.";
             RefreshIntegrations(); return true;
         }
         catch (Exception ex) when (ex is Core.LastFm.LastFmException or HttpRequestException or OperationCanceledException)

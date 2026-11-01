@@ -6,8 +6,8 @@ using MelodayMusic.Core.Artwork;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Radio;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;
 using Windows.UI;
 

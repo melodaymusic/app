@@ -1,6 +1,6 @@
-using MelodayMusic.Core.Plex;
-using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Audio;
+using MelodayMusic.Core.Models;
+using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Settings;
 using Microsoft.Extensions.Logging;
@@ -21,7 +21,7 @@ public sealed class BackgroundAudioAnalysis : IDisposable
     private readonly DispatcherQueue _dispatcher;
     private readonly DispatcherQueueTimer _timer;
     private readonly Queue<Track> _page = new();
-    private readonly Dictionary<string, DateTimeOffset> _failed = [];
+    private readonly Dictionary<string, (DateTimeOffset Retry, int Count)> _failed = [];
     private CancellationTokenSource _lifetime = new();
     private string? _scope;
     private int _cursor;
@@ -50,11 +50,24 @@ public sealed class BackgroundAudioAnalysis : IDisposable
         if (!_working) ScheduleNext();
     }
 
+    public bool Learning => _settings.Current.LearnLibrary;
+
+    // While the listener is away, Power through analyses several songs at once.
+    private bool _away;
+
     private void ScheduleNext()
     {
         if (_disposed) return;
         var fast = FastMode && _session.IsReady && !_player.IsBuffering && HasBackgroundBudget()
             && (_nextSweep <= DateTimeOffset.UtcNow || _analysis.HasPriority);
+        var away = fast && Learning && UserPresence.IsAway();
+        if (away != _away)
+        {
+            _away = away;
+            _log.LogInformation(away ? "Audio analysis: listener away, analysing {Width} songs at once" : "Audio analysis: back to one song at a time",
+                AudioAnalysisService.MaxWidth);
+        }
+        _analysis.SetWidth(away ? AudioAnalysisService.MaxWidth : 1);
         _timer.Stop();
         _timer.Interval = fast ? TimeSpan.FromMilliseconds(250) : TimeSpan.FromSeconds(10);
         _timer.Start();
@@ -134,75 +147,97 @@ public sealed class BackgroundAudioAnalysis : IDisposable
         if (!_inventoryWorking && DateTimeOffset.UtcNow >= _nextInventory) _ = InventoryAsync();
         if (_nextSweep > DateTimeOffset.UtcNow && !_analysis.HasPriority)
         {
-            Report(_inventoryKnown && _total == 0 ? "Your library has no tracks" : Summary.Complete == _total && _engine.Count >= _total && _inventoryKnown
+            Report(_inventoryKnown && _total == 0 ? "Your library has no tracks" : Summary.Complete == _total && (_engine.Count >= _total || !Learning) && _inventoryKnown
                 ? "Up to date · watching for new music" : "Waiting to retry remaining tracks");
             return;
         }
         _working = true;
         var ct = _lifetime.Token;
+        var jobs = new List<Task>();
+        var batch = new HashSet<string>(StringComparer.Ordinal);
         try
         {
-            for (var inspected = 0; inspected < 100 && !ct.IsCancellationRequested; inspected++)
+            for (var inspected = 0; inspected < 100 && jobs.Count < _analysis.Width && !ct.IsCancellationRequested; inspected++)
             {
                 Track? track;
                 if (!_analysis.TryPriority(out track))
                 {
+                    if (!Learning)
+                    {
+                        if (jobs.Count == 0) Report("Not learning your library · only songs you play are checked for transitions");
+                        break;
+                    }
                     if (_page.Count == 0)
                     {
                         if (_reachedEnd)
                         {
                             _reachedEnd = false;
                             _nextSweep = DateTimeOffset.UtcNow.AddMinutes(15);
-                            return;
+                            break;
                         }
                         PagedResult<Track> page;
                         using (PlexServerClient.Uncached()) page = await client.GetTracksAsync(section.Key, _cursor, 100, "titleSort", ct);
-                        if (ct.IsCancellationRequested || _session.Client != client) return;
+                        if (ct.IsCancellationRequested || _session.Client != client) break;
                         foreach (var t in page.Items) _page.Enqueue(t);
                         _reachedEnd = page.Items.Count < 100;
                         _cursor = _reachedEnd ? 0 : _cursor + page.Items.Count;
-                        if (_page.Count == 0) return;
+                        if (_page.Count == 0) break;
                     }
                     track = _page.Dequeue();
                 }
-                if (track is null) continue;
-                if (_failed.TryGetValue(track.RatingKey, out var retry) && retry > DateTimeOffset.UtcNow) continue;
-                if (IsComplete(track) && _engine.Knows(track)) continue;
+                if (track is null || !batch.Add(track.RatingKey)) continue;
+                if (_failed.TryGetValue(track.RatingKey, out var failure) && failure.Retry > DateTimeOffset.UtcNow) continue;
+                if (IsComplete(track) && (_engine.Knows(track) || !Learning)) continue;
                 var (_, head, tail, heard) = (await ReadCachedAsync([track], ct))[0];
-                if (ct.IsCancellationRequested || _session.Client != client || _player.IsBuffering) return;
+                if (ct.IsCancellationRequested || _session.Client != client || _player.IsBuffering) break;
                 Observe(track, head, tail);
                 var (hasHead, hasTail) = (_coverage[track.RatingKey].Head is not null, _coverage[track.RatingKey].Tail is not null);
-                if (!heard)
-                {
-                    Report($"ME is learning the sound of {track.Title}");
-                    var profile = await _analysis.WarmEngineAsync(track, ct, fast: FastMode);
-                    if (ct.IsCancellationRequested) return;
-                    if (profile is not null) _analysis.RequestPriority([track]);
-                    else _failed[track.RatingKey] = DateTimeOffset.UtcNow.AddMinutes(15);
-                    Report(profile is null ? _engine.Error ?? "Track unavailable · continuing" : "Analysing your library in the background");
-                    return;
-                }
-                if (hasHead && hasTail) continue;
-                Report($"Analysing {track.Title}");
-                var analysed = await _analysis.WarmAsync(track, head: !hasHead, ct, fast: FastMode);
-                if (ct.IsCancellationRequested) return;
-                if (analysed is null)
-                {
-                    if (_failed.Count >= 500) _failed.Clear();
-                    _failed[track.RatingKey] = DateTimeOffset.UtcNow.AddMinutes(15);
-                }
-                else
-                {
-                    Observe(track, hasHead ? null : analysed, hasHead ? analysed : null);
-                    if (!hasHead && !hasTail) _analysis.RequestPriority([track]);
-                }
-                Report(analysed is null ? "Track unavailable · continuing with other music" : "Analysing your library in the background");
-                return;
+                if (!heard && Learning) jobs.Add(LearnAsync(track, ct));
+                else if (!hasHead || !hasTail) jobs.Add(ListenAsync(track, hasHead, hasTail, ct));
             }
+            await Task.WhenAll(jobs);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) { _log.LogDebug(ex, "Background audio analysis deferred"); Report("Library unavailable · retrying automatically"); }
-        finally { _working = false; }
+        finally
+        {
+            try { await Task.WhenAll(jobs); }
+            catch (Exception) { }
+            _working = false;
+        }
+    }
+
+    private async Task LearnAsync(Track track, CancellationToken ct)
+    {
+        Report($"Learning the sound of {track.Title}");
+        var profile = await _analysis.WarmEngineAsync(track, ct, fast: _away);
+        if (ct.IsCancellationRequested) return;
+        if (profile is not null) _analysis.RequestPriority([track]);
+        else Fail(track);
+        Report(profile is null ? _engine.Error ?? "Track unavailable · continuing" : "Analysing your library in the background");
+    }
+
+    private async Task ListenAsync(Track track, bool hasHead, bool hasTail, CancellationToken ct)
+    {
+        Report($"Analysing {track.Title}");
+        var analysed = await _analysis.WarmAsync(track, head: !hasHead, ct, fast: _away);
+        if (ct.IsCancellationRequested) return;
+        if (analysed is null) Fail(track);
+        else
+        {
+            Observe(track, hasHead ? null : analysed, hasHead ? analysed : null);
+            if (!hasHead && !hasTail) _analysis.RequestPriority([track]);
+        }
+        Report(analysed is null ? "Track unavailable · continuing with other music" : "Analysing your library in the background");
+    }
+
+    // Back off on unreadable songs: 15 minutes, 2 hours, then a day.
+    private void Fail(Track track)
+    {
+        if (_failed.Count >= 500) _failed.Clear();
+        var count = _failed.TryGetValue(track.RatingKey, out var previous) ? previous.Count + 1 : 1;
+        var wait = count switch { 1 => TimeSpan.FromMinutes(15), 2 => TimeSpan.FromHours(2), _ => TimeSpan.FromDays(1) };
+        _failed[track.RatingKey] = (DateTimeOffset.UtcNow + wait, count);
     }
 
     private bool IsComplete(Track track) => _coverage.TryGetValue(track.RatingKey, out var known) && known.Head is not null && known.Tail is not null;

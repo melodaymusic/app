@@ -50,8 +50,7 @@ public sealed partial class MainWindow : Window
 
         _shell.PropertyChanged += OnShellChanged;
         ShowView(_shell.View);
-        RootGrid.ActualThemeChanged += (_, _) => UpdateTitleBarColors();
-        UpdateTitleBarColors();
+        ApplyTitleBarColors();
 
         AppWindow.Closing += OnClosing;
         ApplyTraySetting();
@@ -63,10 +62,6 @@ public sealed partial class MainWindow : Window
         };
         PlayIntro();
         UiScale.Changed += OnUiScaleChanged;
-        App.Services.GetRequiredService<AmbientService>().PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(AmbientService.ForceDark)) ApplyRequestedTheme();
-        };
     }
 
     private Controls.IntroView? _intro;
@@ -83,7 +78,6 @@ public sealed partial class MainWindow : Window
         intro.Finished += OnIntroFinished;
         _intro = intro;
         RootGrid.Children.Add(intro);
-        UpdateTitleBarColors();
     }
 
     private async void OnIntroFinished(object? sender, EventArgs e)
@@ -99,7 +93,6 @@ public sealed partial class MainWindow : Window
         RootGrid.Children.Remove(intro);
         if (restoreFocus) _shellView?.FocusNavigation();
         _intro = null;
-        UpdateTitleBarColors();
     }
 
     private DateTime? _awaySince;
@@ -119,25 +112,6 @@ public sealed partial class MainWindow : Window
         App.Services.GetRequiredService<Core.Services.PlexSession>().Client?.MarkStale();
         App.Services.GetRequiredService<Dislikes>().Invalidate();
         _ = App.Services.GetRequiredService<HomeViewModel>().RefreshAsync();
-    }
-
-    private AppTheme _theme = AppTheme.System;
-
-    public void ApplyTheme(AppTheme theme)
-    {
-        _theme = theme;
-        ApplyRequestedTheme();
-    }
-
-    private void ApplyRequestedTheme()
-    {
-        RootGrid.RequestedTheme = App.Services.GetRequiredService<AmbientService>().ForceDark ? ElementTheme.Dark : _theme switch
-        {
-            AppTheme.Light => ElementTheme.Light,
-            AppTheme.Dark => ElementTheme.Dark,
-            _ => ElementTheme.Default,
-        };
-        UpdateTitleBarColors();
     }
 
     private void OnUiScaleChanged(object? sender, EventArgs e)
@@ -171,19 +145,18 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    public void UpdateTitleBarColors()
+    private void ApplyTitleBarColors()
     {
-        var dark = RootGrid.ActualTheme == ElementTheme.Dark || _intro is not null;
         TitleText.Foreground = new Microsoft.UI.Xaml.Media.SolidColorBrush(
-            Helpers.ThemeColors.Get("MelodayTextSecondaryBrush", RootGrid.ActualTheme, dark ? ColorHelper.FromArgb(255, 0xB3, 0xAF, 0xA8) : ColorHelper.FromArgb(255, 0x5E, 0x5A, 0x55)));
+            Helpers.ThemeColors.Get("MelodayTextSecondaryBrush", ElementTheme.Dark, ColorHelper.FromArgb(255, 0xB3, 0xAF, 0xA8)));
         var tb = AppWindow.TitleBar;
         tb.ButtonBackgroundColor = Colors.Transparent;
         tb.ButtonInactiveBackgroundColor = Colors.Transparent;
-        tb.ButtonForegroundColor = dark ? Colors.White : Colors.Black;
-        tb.ButtonInactiveForegroundColor = dark ? ColorHelper.FromArgb(0x99, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x99, 0, 0, 0);
-        tb.ButtonHoverBackgroundColor = dark ? ColorHelper.FromArgb(0x1A, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x14, 0, 0, 0);
+        tb.ButtonForegroundColor = Colors.White;
+        tb.ButtonInactiveForegroundColor = ColorHelper.FromArgb(0x99, 0xFF, 0xFF, 0xFF);
+        tb.ButtonHoverBackgroundColor = ColorHelper.FromArgb(0x1A, 0xFF, 0xFF, 0xFF);
         tb.ButtonHoverForegroundColor = tb.ButtonForegroundColor;
-        tb.ButtonPressedBackgroundColor = dark ? ColorHelper.FromArgb(0x10, 0xFF, 0xFF, 0xFF) : ColorHelper.FromArgb(0x0C, 0, 0, 0);
+        tb.ButtonPressedBackgroundColor = ColorHelper.FromArgb(0x10, 0xFF, 0xFF, 0xFF);
     }
 
     private void RestorePlacement()
@@ -244,9 +217,7 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Saves the queue, placement and listening, stops playback and the companion, then exits (and starts again for a restart).
-    /// Closing with the window's X comes here through <see cref="OnClosing"/>; Quit and Restart come here directly,
-    /// because closing the window from code doesn't raise AppWindow.Closing.
+    /// Saves state, stops playback and exits. Quit and Restart call this directly because closing from code doesn't raise AppWindow.Closing.
     /// </summary>
     private async Task ShutDownAsync()
     {

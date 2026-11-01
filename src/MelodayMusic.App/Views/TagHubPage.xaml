@@ -29,8 +29,12 @@
                   ItemContainerStyle="{StaticResource MelodayTileItemStyle}" controls:ResponsiveGrid.MinItemWidth="300"
                   AutomationProperties.AutomationId="TagHubGrid">
             <GridView.Header>
-                <controls:MediaRowControl x:Name="Highlights" CardStyle="EditorialBoard" Visibility="Collapsed" Margin="12,0,0,28"
-                                          AutomationProperties.AutomationId="TagHubHighlights" />
+                <StackPanel>
+                    <controls:MediaRowControl x:Name="Highlights" CardStyle="EditorialBoard" Visibility="Collapsed" Margin="12,0,0,28"
+                                              AutomationProperties.AutomationId="TagHubHighlights" />
+                    <controls:MediaRowControl x:Name="Mixes" CardStyle="ColourBoard" Visibility="Collapsed" Margin="12,0,0,28"
+                                              Subheader="Made by Meloday from your library" AutomationProperties.AutomationId="TagHubMixes" />
+                </StackPanel>
             </GridView.Header>
             <GridView.ItemTemplate>
                 <DataTemplate x:DataType="models:TagItem">

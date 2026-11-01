@@ -1,15 +1,15 @@
 using System.Collections.ObjectModel;
+using MelodayMusic.Controls;
 using MelodayMusic.Core.Radio;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
 using Microsoft.UI;
+using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Windows.UI;
-using MelodayMusic.Controls;
 using Microsoft.UI.Xaml.Navigation;
+using Windows.UI;
 
 namespace MelodayMusic.Views;
 

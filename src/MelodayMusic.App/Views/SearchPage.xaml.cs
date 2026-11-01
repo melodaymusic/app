@@ -27,6 +27,11 @@ public sealed partial class SearchPage : Page
         if (e.ClickedItem is TagItem tag) App.Services.GetRequiredService<LibraryActions>().Open(tag);
     }
 
+    private void OnRelatedSoundClick(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string label) ViewModel.SearchSound(label);
+    }
+
     private async void OnRetry(object? sender, EventArgs e)
     {
         if (!string.IsNullOrWhiteSpace(ViewModel.Query)) await ViewModel.SearchAsync(ViewModel.Query.Trim());

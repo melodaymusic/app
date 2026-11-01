@@ -7,8 +7,8 @@ using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Security;
 using MelodayMusic.Core.Services;
-using MelodayMusic.Core.Taste;
 using MelodayMusic.Core.Settings;
+using MelodayMusic.Core.Taste;
 using Microsoft.Extensions.Logging;
 
 namespace MelodayMusic.Services;
@@ -38,7 +38,6 @@ public sealed class MelodayService
     private static readonly JsonSerializerOptions Json = new() { WriteIndented = true };
 
     private readonly PlexSession _session;
-    private readonly PlexPass _pass;
     private readonly MusicIntelligence _intelligence;
     private readonly Dislikes _dislikes;
     private readonly SettingsStore _settings;
@@ -75,14 +74,13 @@ public sealed class MelodayService
 
     private readonly TasteService _taste;
 
-    public MelodayService(PlexSession session, PlexPass pass, MusicIntelligence intelligence, Dislikes dislikes, SettingsStore settings, DupeStore dupes, Core.Mutes.MuteStore mutes, ISecretStore aiKey,
+    public MelodayService(PlexSession session, MusicIntelligence intelligence, Dislikes dislikes, SettingsStore settings, DupeStore dupes, Core.Mutes.MuteStore mutes, ISecretStore aiKey,
         TasteService taste, ILogger<MelodayService> log)
     {
         _taste = taste;
         _dupes = dupes;
         _mutes = mutes;
         _session = session;
-        _pass = pass;
         _intelligence = intelligence;
         intelligence.Changed += (_, _) => ResetEngine();
         _dislikes = dislikes;

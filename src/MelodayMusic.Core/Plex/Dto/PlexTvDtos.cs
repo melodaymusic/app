@@ -29,8 +29,6 @@ public sealed class PlexUserDto
 public sealed class SubscriptionDto
 {
     public bool? Active { get; set; }
-    public string? Plan { get; set; }
-    public string? Status { get; set; }
 }
 
 public sealed class ResourceDto

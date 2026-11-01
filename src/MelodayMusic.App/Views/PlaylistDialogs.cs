@@ -1,13 +1,8 @@
-using MelodayMusic.Controls;
 using MelodayMusic.Core.Models;
-using MelodayMusic.Core.Plex;
-using MelodayMusic.Core.Services;
 using MelodayMusic.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Imaging;
 
 namespace MelodayMusic.Views;
 
@@ -15,7 +10,23 @@ public static class PlaylistDialogs
 {
     private static LibraryActions Actions => App.Services.GetRequiredService<LibraryActions>();
 
-    public static async Task NewAsync(IReadOnlyList<MediaItem> items, string? suggestedName = null, string? description = null, string? coverPath = null)
+    private static string Contents(IReadOnlyList<MediaItem> items, bool fromQueue)
+    {
+        if (items.All(i => i is Track))
+        {
+            var length = Helpers.Format.LongDuration(TimeSpan.FromMilliseconds(items.OfType<Track>().Sum(t => (double)t.DurationMs)));
+            if (fromQueue) return items.Count == 1 ? "Includes the song in your queue." : $"Includes the {items.Count:N0} songs in your queue · {length}.";
+            return items.Count == 1 ? $"Includes “{items[0].Title}”." : $"Includes {items.Count:N0} songs · {length}.";
+        }
+        if (items.Count == 1) return $"Includes everything in “{items[0].Title}”.";
+        var kind = items.All(i => i is Album) ? "albums" : items.All(i => i is Artist) ? "artists" : "selections";
+        return $"Includes {items.Count:N0} {kind}.";
+    }
+
+    public static Task FromQueueAsync(IReadOnlyList<MediaItem> items) => NewAsync(items, fromQueue: true);
+
+    public static async Task NewAsync(IReadOnlyList<MediaItem> items, string? suggestedName = null, string? description = null, string? coverPath = null,
+        bool fromQueue = false)
     {
         if (items.Count == 0) return;
         var dialog = Dialogs.Create("New Playlist");
@@ -28,7 +39,7 @@ public static class PlaylistDialogs
             Children =
             {
                 name,
-                Dialogs.Note(items.Count == 1 ? $"Starts with {items[0].Title}." : $"Starts with {items.Count} items."),
+                Dialogs.Note(Contents(items, fromQueue)),
                 status,
             },
         };

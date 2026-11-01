@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using MelodayMusic.Core.Audio;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Playback;
@@ -6,17 +8,15 @@ using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Numerics;
-using System.Runtime.InteropServices;
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.UI.Composition;
+using Microsoft.Graphics.DirectX;
 using Microsoft.UI.Composition;
 using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Hosting;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.Graphics.DirectX;
 using Windows.UI;
 
 namespace MelodayMusic.Controls;

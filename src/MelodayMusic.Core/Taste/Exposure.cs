@@ -3,10 +3,7 @@ using System.Text.Json;
 namespace MelodayMusic.Core.Taste;
 
 /// <summary>
-/// What Meloday has put in front of the listener lately: every song and artist it suggests (Meloday, mixes, radios, stations,
-/// Made by Meloday), fading over days. The taste engine marks down what has been shown a lot, so a favourite that every feature
-/// picks gets rested everywhere for a while instead of being picked again because it was played because it was picked.
-/// Suggesting a song never makes it more liked; only playing it does (through Plex and <see cref="TasteMemory"/>).
+/// Songs and artists Meloday has suggested lately, fading over days, so the taste engine can rest what it has shown a lot.
 /// </summary>
 public sealed class Exposure
 {

@@ -1,7 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Serialization;
-using Microsoft.Extensions.Logging;
-
 namespace MelodayMusic.Core.Settings;
 
 public enum RepeatMode
@@ -9,13 +5,6 @@ public enum RepeatMode
     Off,
     All,
     One,
-}
-
-public enum AppTheme
-{
-    System,
-    Light,
-    Dark,
 }
 
 public enum StreamQuality
@@ -26,7 +15,7 @@ public enum StreamQuality
 
 public sealed class AppSettings
 {
-    public MelodayMusic.Core.Audio.MusicEngineKind MusicEngine { get; set; } = MelodayMusic.Core.Audio.MusicEngineKind.Meloday;
+    public bool LearnLibrary { get; set; } = true;
     public bool FastAudioAnalysis { get; set; }
     public string ClientIdentifier { get; set; } = string.Empty;
 
@@ -57,8 +46,6 @@ public sealed class AppSettings
     public double TasteAdventure { get; set; } = Taste.TasteEngine.DefaultAdventure;
     public bool LyricsFallback { get; set; } = true;
     public string? LibraryVersion { get; set; }
-
-    public AppTheme Theme { get; set; } = AppTheme.System;
 
     public List<string> HomeOrder { get; set; } = [];
     public List<string> HomeHidden { get; set; } = [];

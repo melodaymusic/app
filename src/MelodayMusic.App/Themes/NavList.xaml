@@ -11,12 +11,5 @@
             <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#24FFFFFF" />
             <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#18FFFFFF" />
         </ResourceDictionary>
-        <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="#0F000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="#08000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#14000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#1A000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#12000000" />
-        </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 </ResourceDictionary>

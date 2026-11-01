@@ -40,17 +40,14 @@ public static class Accent
     {
         _tween?.Stop();
         Installed.Clear();
-        foreach (var (theme, dark) in new[] { ("Dark", true), ("Light", false) })
+        if (!design.ThemeDictionaries.TryGetValue("Dark", out var value) || value is not ResourceDictionary dictionary) return;
+        foreach (var (role, keys) in Resources)
         {
-            if (!design.ThemeDictionaries.TryGetValue(theme, out var value) || value is not ResourceDictionary dictionary) continue;
-            foreach (var (role, keys) in Resources)
+            foreach (var key in keys)
             {
-                foreach (var key in keys)
-                {
-                    var brush = new SolidColorBrush(ColorFor(dark, role));
-                    dictionary[key] = brush;
-                    Installed.Add((dark, role, brush));
-                }
+                var brush = new SolidColorBrush(ColorFor(true, role));
+                dictionary[key] = brush;
+                Installed.Add((true, role, brush));
             }
         }
     }
@@ -132,14 +129,11 @@ public static class Accent
 
     public static void InstallNeutral(ResourceDictionary target)
     {
-        foreach (var (theme, dark) in new[] { ("Dark", true), ("Light", false) })
-        {
-            var dictionary = new ResourceDictionary();
-            foreach (var (role, keys) in Resources)
-                foreach (var key in keys)
-                    dictionary[key] = new SolidColorBrush(ToColor(RgbFor(dark, role, null)));
-            target.ThemeDictionaries[theme] = dictionary;
-        }
+        var dictionary = new ResourceDictionary();
+        foreach (var (role, keys) in Resources)
+            foreach (var key in keys)
+                dictionary[key] = new SolidColorBrush(ToColor(RgbFor(true, role, null)));
+        target.ThemeDictionaries["Dark"] = dictionary;
     }
 
     private static Color Lerp(Color a, Color b, double t) => Color.FromArgb(255,

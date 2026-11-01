@@ -168,6 +168,15 @@ public sealed class SoundVocabulary
         return new SoundDescription(heard, bands);
     }
 
+    // The words whose meaning sits closest to the query's, by the text side of the model.
+    public IReadOnlyList<SoundTerm> Related(SoundQuery query, int count)
+    {
+        if (query.IsEmpty || count <= 0) return [];
+        var centre = MusicSimilarity.Normalize(Enumerable.Range(0, Dimensions).Select(i => query.Terms.Average(t => t.Vector[i])));
+        if (centre.Length != Dimensions) return [];
+        return Terms.Where(t => !query.Terms.Contains(t)).OrderByDescending(t => Dot(centre, t.Vector)).Take(count).ToList();
+    }
+
     public SoundQuery Query(string text)
     {
         var words = Key(text).Split(' ', StringSplitOptions.RemoveEmptyEntries);

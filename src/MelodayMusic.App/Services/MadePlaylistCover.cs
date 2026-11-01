@@ -12,9 +12,7 @@ namespace MelodayMusic.Services;
 public sealed record CoverPhoto(string Artist, string Path);
 
 /// <summary>
-/// A Made by Meloday playlist's cover: the photo of the artist it starts with, filling the square, a dark fade at the foot,
-/// the name bottom left, and the edge bars in the colour that best stands for the photo (<see cref="PhotoColour"/>).
-/// It changes when the playlist does and starts with someone else. With no photo to hand, the flat colour cover.
+/// A Made by Meloday cover: the first artist's photo with the name and edge bars (<see cref="PhotoColour"/>), or a flat colour.
 /// </summary>
 public static class MadePlaylistCover
 {

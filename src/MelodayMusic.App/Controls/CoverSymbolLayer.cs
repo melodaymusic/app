@@ -1,6 +1,5 @@
 using MelodayMusic.Core.Covers;
 using MelodayMusic.Services;
-using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
@@ -56,8 +55,6 @@ public sealed partial class CoverSymbolLayer : Grid
         }
     }
 
-    private int _groundVersion;
-
     internal event Action<uint>? GroundChanged;
 
     internal void SetGround(uint rgb)
@@ -68,7 +65,6 @@ public sealed partial class CoverSymbolLayer : Grid
 
     internal void SetColour(uint ink)
     {
-        _groundVersion++;
         var brush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink));
         _symbol.Foreground = brush;
         _badge.Foreground = brush;

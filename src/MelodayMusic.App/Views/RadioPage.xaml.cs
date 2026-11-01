@@ -14,7 +14,7 @@ public sealed partial class RadioPage : Page
         var intelligence = App.Services.GetRequiredService<Services.MusicIntelligence>();
         SonicAdventureButton.IsEnabled = intelligence.IsAvailable;
         Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(SonicAdventureButton,
-            intelligence.IsAvailable ? "A path from one song to another, using " + intelligence.Name : "Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
+            intelligence.IsAvailable ? "A path from one song to another, using " + intelligence.Name : "Turn on Let the Meloday Engine learn your library in Settings");
     }
 
     public RadioViewModel ViewModel { get; }
@@ -25,7 +25,7 @@ public sealed partial class RadioPage : Page
         var intelligence = App.Services.GetRequiredService<Services.MusicIntelligence>();
         SonicAdventureButton.IsEnabled = intelligence.IsAvailable;
         ToolTipService.SetToolTip(SonicAdventureButton, intelligence.IsAvailable
-            ? "A path from one song to another, using " + intelligence.Name :"Choose Meloday Engine, or enable Plex Sonic Analysis with Plex Pass");
+            ? "A path from one song to another, using " + intelligence.Name :"Turn on Let the Meloday Engine learn your library in Settings");
         await ViewModel.EnsureLoadedAsync(App.Services.GetRequiredService<ShellViewModel>().LibraryVersion);
     }
 

@@ -797,44 +797,6 @@ public sealed class PlexServerClient
         InvalidateCache();
     }
 
-    public async Task<(string SectionKey, Playlists.SmartFilter Filter)?> GetSmartFilterAsync(string playlistKey, CancellationToken ct = default)
-    {
-        var c = await GetAsync($"/playlists/{playlistKey}", null, ct, null).ConfigureAwait(false);
-        if (c.Metadata?.FirstOrDefault()?.Content is not { } content) return null;
-        var at = content.IndexOf("/directory/", StringComparison.Ordinal);
-        if (at < 0) return null;
-        var path = Uri.UnescapeDataString(content[(at + "/directory/".Length)..]);
-        var match = System.Text.RegularExpressions.Regex.Match(path, @"^/library/sections/(\d+)/all\?(.*)$");
-        return match.Success ? (match.Groups[1].Value, Playlists.SmartFilter.Parse(match.Groups[2].Value)) : null;
-    }
-
-    public async Task<int> CountSmartAsync(string sectionKey, Playlists.SmartFilter filter, CancellationToken ct = default)
-    {
-        var count = new Playlists.SmartFilter { MatchAll = filter.MatchAll };
-        count.Rules.AddRange(filter.Rules);
-        var uri = new Uri(BaseUri, $"library/sections/{sectionKey}/all?{count.ToQuery()}&X-Plex-Container-Start=0&X-Plex-Container-Size=0");
-        var response = await _http.SendJsonAsync<PmsResponse>(HttpMethod.Get, uri, Token, ct).ConfigureAwait(false);
-        var total = response.MediaContainer?.TotalSize ?? response.MediaContainer?.Size ?? 0;
-        return filter.Limit is > 0 ? Math.Min(total, filter.Limit.Value) : total;
-    }
-
-    private string SmartUri(string sectionKey, Playlists.SmartFilter filter) =>
-        $"server://{Server.MachineIdentifier}/{LibraryIdentifier}/library/sections/{sectionKey}/all?{filter.ToQuery()}";
-
-    public async Task<Playlist?> CreateSmartPlaylistAsync(string title, string sectionKey, Playlists.SmartFilter filter, CancellationToken ct = default)
-    {
-        var uri = Build("/playlists", [new("type", "audio"), new("title", title), new("smart", "1"), new("uri", SmartUri(sectionKey, filter))]);
-        var response = await _http.SendJsonAsync<PmsResponse>(HttpMethod.Post, uri, Token, ct).ConfigureAwait(false);
-        InvalidateCache();
-        return response.MediaContainer?.Metadata?.Select(PlexMapper.ToPlaylist).FirstOrDefault();
-    }
-
-    public async Task UpdateSmartPlaylistAsync(string playlistKey, string sectionKey, Playlists.SmartFilter filter, CancellationToken ct = default)
-    {
-        await _http.SendAndForgetBodyAsync(HttpMethod.Put, Build($"/playlists/{playlistKey}/items", [new("uri", SmartUri(sectionKey, filter))]), Token, ct).ConfigureAwait(false);
-        InvalidateCache();
-    }
-
     public async Task DeletePlaylistAsync(string playlistKey, CancellationToken ct = default)
     {
         await _http.SendAndForgetBodyAsync(HttpMethod.Delete, Build($"/playlists/{playlistKey}"), Token, ct).ConfigureAwait(false);

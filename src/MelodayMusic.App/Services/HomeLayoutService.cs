@@ -12,10 +12,8 @@ public sealed partial class HomeSection : ObservableObject
 
     public required string Id { get; init; }
     public required string Title { get; init; }
-    public bool IsAvailable { get; init; } = true;
     public bool IsCurated => HomeLayout.IsCurated(Id);
     public Visibility CuratedVisibility => IsCurated ? Visibility.Visible : Visibility.Collapsed;
-    public string? AvailabilityNote => IsAvailable ? null : "Connect Last.fm in Settings > Connections.";
 
     public string MoveUpLabel => $"Move {Title} up";
     public string MoveDownLabel => $"Move {Title} down";
@@ -29,13 +27,11 @@ public sealed partial class HomeSection : ObservableObject
 public sealed partial class HomeLayoutService : ObservableObject
 {
     private readonly SettingsStore _settings;
-    private readonly LastFmService _lastFm;
     private IReadOnlyList<(string Id, string Title)> _available = [];
 
-    public HomeLayoutService(SettingsStore settings, LastFmService lastFm)
+    public HomeLayoutService(SettingsStore settings)
     {
         _settings = settings;
-        _lastFm = lastFm;
         ShowJumpBackIn = settings.Current.ShowJumpBackIn;
     }
 
@@ -58,8 +54,7 @@ public sealed partial class HomeLayoutService : ObservableObject
 
     public void UpdateCatalog(IReadOnlyList<(string Id, string Title)> available)
     {
-        _available = available.Where(a => _lastFm.HasApiKey || a.Id is not ("trending" or "trending.artists"))
-            .ToList();
+        _available = available;
         var order = HomeLayout.CuratedFirst(_available.Select(a => a.Id)).ToList();
         _available = _available.OrderBy(a => order.IndexOf(a.Id)).ToList();
         HideNewLibraryHubs();
@@ -120,9 +115,7 @@ public sealed partial class HomeLayoutService : ObservableObject
         Sections.Clear();
         foreach (var id in order)
         {
-            var chart = id is "trending" or "trending.artists";
-            var shown = !hidden.Contains(id) && (id == "trending" ? _lastFm.TrendingOn : id == "trending.artists" ? _lastFm.TrendingArtistsOn : true);
-            var section = new HomeSection { Id = id, Title = titles[id], IsShown = shown, IsAvailable = !chart || _lastFm.HasApiKey };
+            var section = new HomeSection { Id = id, Title = titles[id], IsShown = !hidden.Contains(id) };
             section.ShownChanged = OnSectionShownChanged;
             Sections.Add(section);
         }
@@ -134,8 +127,6 @@ public sealed partial class HomeLayoutService : ObservableObject
         hidden.Remove(section.Id);
         if (!section.IsShown) hidden.Add(section.Id);
         _settings.Save();
-        if (section.Id == "trending") _lastFm.SetTrending(section.IsShown);
-        if (section.Id == "trending.artists") _lastFm.SetTrendingArtists(section.IsShown);
         Changed?.Invoke(this, EventArgs.Empty);
     }
 }

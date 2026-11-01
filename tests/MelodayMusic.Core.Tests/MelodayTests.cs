@@ -43,7 +43,7 @@ public class MelodayTests
         var tracks = Enumerable.Range(0, 10).Select(i => T($"{i}", $"Song {i}", "Artist")).ToList();
         for (var seed = 0; seed < 40; seed++)
         {
-            var name = MelodayNaming.Name(period, tracks, _ => tags, moods, eras, new Random(seed), now, "David");
+            var name = MelodayNaming.Name(period, tracks, _ => tags, moods, eras, new Random(seed), now, "Alex");
             Assert.Contains(name.Descriptor, moods["Dreamy"]);
             Assert.Contains(name.EraLabel, eras["2010s"]);
             Assert.True(name.Title.Contains(name.EraLabel!) || name.Title.Contains(name.Descriptor), name.Title);
@@ -172,12 +172,12 @@ public class MelodayTests
         var tags = new AlbumTags(new HashSet<string> { "Dance Pop" }, new HashSet<string> { "Stylish" }, null);
         var tracks = Enumerable.Range(0, 10).Select(i => T($"{i}", $"Song {i}", "Robyn")).ToList();
         var moods = new Dictionary<string, string[]> { ["Stylish"] = ["Slick"] };
-        var name = MelodayNaming.Name(period, tracks, _ => tags, moods, new Dictionary<string, string[]>(), new Random(1), now, "David");
+        var name = MelodayNaming.Name(period, tracks, _ => tags, moods, new Dictionary<string, string[]>(), new Random(1), now, "Alex");
         Assert.StartsWith("Meloday for ", name.Title);
         Assert.EndsWith(" Dance Pop Monday Night", name.Title);
         Assert.Contains("Slick", name.Title);
         Assert.StartsWith("A slick mix of Dance Pop for your night.", name.Description);
-        Assert.Contains("Made for David • Next update at 11:00 PM.", name.Description);
+        Assert.Contains("Made for Alex • Next update at 11:00 PM.", name.Description);
     }
 
     [Theory]

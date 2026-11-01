@@ -1,11 +1,9 @@
 using System.ComponentModel;
-using MelodayMusic.Controls;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Navigation;
 
@@ -33,8 +31,6 @@ public sealed partial class AlbumPage : Page
 
     private static DetailCache Cache => App.Services.GetRequiredService<DetailCache>();
     private string? _cacheKey;
-
-    private LibraryActions Actions => App.Services.GetRequiredService<LibraryActions>();
 
     public string MoreByHeader(string? artist) => string.IsNullOrEmpty(artist) ? "More by this artist" : $"More by {artist}";
 
@@ -75,7 +71,7 @@ public sealed partial class AlbumPage : Page
     private void UpdateWash()
     {
         if (ViewModel.Album is { } album && ReferenceEquals(Frame?.Content, this))
-            _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(album, album.Thumb,
+            _ = App.Services.GetRequiredService<AmbientService>().ShowHeaderAsync(album.Thumb,
                 () => ReferenceEquals(Frame?.Content, this) && ReferenceEquals(album, ViewModel.Album));
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using MelodayMusic.Core.LastFm;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
@@ -6,7 +7,6 @@ using MelodayMusic.Core.Services;
 using MelodayMusic.Core.Settings;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using System.Text.Json;
 
 namespace MelodayMusic.Services;
 
@@ -27,10 +27,15 @@ public sealed class TrendingService
     private readonly ILogger<TrendingService> _log;
     private readonly object _gate = new();
     private readonly SemaphoreSlim _sync = new(1, 1);
+    private static readonly TimeSpan ChartLife = TimeSpan.FromHours(6);
+    private static readonly TimeSpan KeepSavedFor = TimeSpan.FromDays(3);
+    private static readonly TimeSpan RetryAfterSuccess = TimeSpan.FromMinutes(10);
+    private static readonly TimeSpan RetryAfterFailure = TimeSpan.FromMinutes(1);
     private Task<Trending?>? _load;
     private Task<IReadOnlyList<Artist>>? _artists;
     private DateTimeOffset _tracksAt, _artistsAt;
-    private DateTimeOffset _tracksAttemptAt, _artistsAttemptAt;
+    private DateTimeOffset _tracksRetryAt, _artistsRetryAt;
+    private string? _restoredScope;
     private int _version;
     private Trending? _current;
     private string? _libraryScope;
@@ -44,6 +49,7 @@ public sealed class TrendingService
     public bool IsAvailable => _lastFm.HasApiKey;
     public bool KeepOnPlex => _settings.Current.LastFmPlexPlaylist;
     private readonly ChartHistory _chartHistory = new(Path.Combine(MelodayMusic.Core.AppPaths.Shared, "lastfm-live-chart.json"));
+    private readonly ChartRails _rails = new(Path.Combine(MelodayMusic.Core.AppPaths.Shared, "lastfm-rails.json"));
     public IReadOnlyDictionary<string, ChartPosition> Positions { get; private set; } = new Dictionary<string, ChartPosition>();
     public IReadOnlyDictionary<string, ChartPosition> ArtistPositions { get; private set; } = new Dictionary<string, ChartPosition>();
     public string? CoverPath { get; private set; }
@@ -86,6 +92,7 @@ public sealed class TrendingService
         lock (_gate)
         {
             _version++; _load = null; _artists = null; _current = null; _currentArtists = [];
+            _restoredScope = null; _tracksAt = _artistsAt = _tracksRetryAt = _artistsRetryAt = default;
             TracksError = ArtistsError = PlexError = null;
             Playlist = DescribePlaylist();
             CoverPath = null;
@@ -105,8 +112,10 @@ public sealed class TrendingService
     {
         try
         {
-            var current = await GetAsync();
-            await GetArtistsAsync();
+            var tracks = GetAsync();
+            var artists = GetArtistsAsync();
+            await Task.WhenAll(tracks, artists);
+            var current = await tracks;
             if (KeepOnPlex && PlexError is not null && current is { InLibrary.Count: > 0 }
                 && _session.Client is { } client && _session.Section is { } section)
             {
@@ -116,15 +125,59 @@ public sealed class TrendingService
         }
         catch (Exception ex) { _log.LogWarning(ex, "Last.fm refresh failed"); }
     }
+    /// <summary>The chart as it stands. While a newer chart loads, the last one (from this run or the previous one) is returned straight away.</summary>
     public Task<Trending?> GetAsync()
     {
         lock (_gate)
         {
             if (!IsOn) return Task.FromResult<Trending?>(null);
-            if (_load is { IsFaulted: false, IsCanceled: false } task && (!task.IsCompleted || DateTimeOffset.UtcNow - _tracksAt < TimeSpan.FromHours(6)
-                || DateTimeOffset.UtcNow - _tracksAttemptAt < TimeSpan.FromMinutes(10))) return task;
-            _tracksAttemptAt = DateTimeOffset.UtcNow;
-            return _load = LoadTracksAsync(_version);
+            Restore();
+            var now = DateTimeOffset.UtcNow;
+            if (_load is not { IsFaulted: false, IsCanceled: false } task || task.IsCompleted && now - _tracksAt >= ChartLife && now >= _tracksRetryAt)
+            {
+                _tracksRetryAt = now + RetryAfterSuccess;
+                task = _load = LoadTracksAsync(_version);
+            }
+            return !task.IsCompleted && _current is { } kept ? Task.FromResult<Trending?>(kept) : task;
+        }
+    }
+    private void Restore()
+    {
+        if (_session.Client is null || _session.Section is null) return;
+        var scope = PlaylistScope;
+        if (_restoredScope == scope) return;
+        _restoredScope = scope;
+        if (_rails.Get(scope) is not { } saved) return;
+        var now = DateTimeOffset.UtcNow;
+        if (_current is null && saved.Tracks.Count > 0 && now - saved.TracksAt < KeepSavedFor)
+        {
+            _current = new Trending(saved.TracksAt, saved.Scanned, saved.Tracks);
+            _tracksAt = saved.TracksAt;
+            _load ??= Task.FromResult<Trending?>(_current);
+            Positions = _chartHistory.Get(scope);
+            Playlist = DescribePlaylist(saved.Tracks.Count, Playlist.Thumb);
+        }
+        if (_currentArtists.Count == 0 && saved.Artists.Count > 0 && now - saved.ArtistsAt < KeepSavedFor)
+        {
+            _currentArtists = saved.Artists;
+            _artistsAt = saved.ArtistsAt;
+            _artists ??= Task.FromResult<IReadOnlyList<Artist>>(_currentArtists);
+            ArtistPositions = _chartHistory.Get(scope + ":artists");
+        }
+    }
+    private void RetrySoon(ref DateTimeOffset retryAt)
+    {
+        retryAt = DateTimeOffset.UtcNow + RetryAfterFailure;
+        _timer.Change(RetryAfterFailure + TimeSpan.FromSeconds(1), TimeSpan.FromMinutes(10));
+    }
+    private async Task<LiveChart?> LiveChartAsync()
+    {
+        try { return await LiveChartReader.GetAsync().ConfigureAwait(false); }
+        catch (LastFmException ex)
+        {
+            // The Last.fm API chart still works without the website's live chart, so the rails carry on with that.
+            _log.LogInformation("Last.fm live chart unavailable, using the API chart: {Message}", ex.Message);
+            return null;
         }
     }
     public Task RefreshAsync(bool artists)
@@ -139,24 +192,26 @@ public sealed class TrendingService
     private async Task<Trending?> LoadTracksAsync(int version)
     {
         if (_session.Client is not { } client || _session.Section is not { } section) return null;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using var fresh = MelodayMusic.Core.Caching.ResponseCache.FetchFresh();
-            var library = new List<Track>();
-            for (var start = 0; ; start += 1000)
-            {
-                var page = await client.GetTracksAsync(section.Key, start, 1000).ConfigureAwait(false);
-                library.AddRange(page.Items); if (page.Items.Count < 1000) break;
-            }
-            var live = await LiveChartReader.GetAsync().ConfigureAwait(false);
-            _log.LogInformation("Last.fm live chart read: {Tracks} tracks, {Artists} artists", live.Tracks.Count, live.Artists.Count);
+            // The library, the website's live chart and the first API page don't depend on each other, so they load together.
+            var libraryTask = Paging.AllAsync((start, size) => client.GetTracksAsync(section.Key, start, size), 1000);
+            var liveTask = LiveChartAsync();
+            var next = _lastFm.ChartPageAsync(1);
+            var library = await libraryTask.ConfigureAwait(false);
+            var liveTracks = (await liveTask.ConfigureAwait(false))?.Tracks ?? [];
+            _log.LogInformation("Last.fm chart sources ready in {Elapsed} ms: {Library} library songs, {Live} live chart songs", clock.ElapsedMilliseconds, library.Count, liveTracks.Count);
             var selection = new LibraryChart(library);
-            foreach (var entry in live.Tracks) selection.Add(entry);
-            var entries = live.Tracks.Select(entry => (MelodayText.CanonicalTitle(entry.Title), MelodayText.NormalizeArtist(entry.Artist))).ToHashSet();
-            var scanned = live.Tracks.Count;
+            foreach (var entry in liveTracks) selection.Add(entry);
+            var entries = liveTracks.Select(entry => (MelodayText.CanonicalTitle(entry.Title), MelodayText.NormalizeArtist(entry.Artist))).ToHashSet();
+            var scanned = liveTracks.Count;
             for (var page = 1; !selection.IsFull; page++)
             {
-                var chart = await _lastFm.ChartPageAsync(page).ConfigureAwait(false);
+                var chart = await next.ConfigureAwait(false);
+                // Ask for the following page while this one is matched, since a chart often needs several pages to fill.
+                next = chart.Count < 100 ? Task.FromResult<IReadOnlyList<ChartTrack>>([]) : _lastFm.ChartPageAsync(page + 1);
                 var added = 0;
                 foreach (var entry in chart)
                 {
@@ -169,21 +224,29 @@ public sealed class TrendingService
             }
             var tracks = new SongSet().AddNew(selection.Tracks);
             if (version != _version || _session.Client != client || _session.Section?.Key != section.Key || !IsOn) return null;
-            if (KeepOnPlex) await SyncAsync(client, section.Key, tracks).ConfigureAwait(false);
             var cover = await PlaylistCover.RenderAsync(PlaylistScope + ":" + PlaylistKey, Playlist.Title, _log).ConfigureAwait(false);
             Trending current;
             lock (_gate)
             {
                 if (version != _version || _session.Client != client || _session.Section?.Key != section.Key || !IsOn) return null;
                 _tracksAt = DateTimeOffset.UtcNow;
+                _tracksRetryAt = _tracksAt + RetryAfterSuccess;
                 TracksError = null;
                 CoverPath = cover;
-                try { Positions = _chartHistory.Update(PlaylistScope, tracks.Select(t => t.RatingKey)); }
+                try
+                {
+                    Positions = _chartHistory.Update(PlaylistScope, tracks.Select(t => t.RatingKey));
+                    _rails.SaveTracks(PlaylistScope, tracks, scanned, _tracksAt);
+                }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _log.LogWarning(ex, "Chart history could not be saved"); }
                 Playlist = DescribePlaylist(tracks.Count, cover);
                 current = _current = new Trending(_tracksAt, scanned, tracks);
             }
+            _log.LogInformation("Last.fm Top 100 ready in {Elapsed} ms: {Count} songs from {Scanned} chart entries", clock.ElapsedMilliseconds, tracks.Count, scanned);
             Changed?.Invoke(this, EventArgs.Empty);
+            // Updating the Plex playlist moves songs one at a time, so Home shows the chart first and Plex catches up after.
+            if (KeepOnPlex)
+                _ = SyncAsync(client, section.Key, tracks).ContinueWith(_ => { if (PlexError is not null) Changed?.Invoke(this, EventArgs.Empty); }, TaskScheduler.Default);
             return current;
         }
         catch (Exception ex) when (ex is LastFmException or PlexException or HttpRequestException or TaskCanceledException)
@@ -192,6 +255,7 @@ public sealed class TrendingService
             lock (_gate)
             {
                 if (version != _version || !IsOn) return null;
+                if (_current is null) RetrySoon(ref _tracksRetryAt);
                 TracksError = "Last.fm is unavailable right now. Try again shortly.";
                 return _current;
             }
@@ -202,28 +266,31 @@ public sealed class TrendingService
         lock (_gate)
         {
             if (!_lastFm.TrendingArtistsOn) return Task.FromResult<IReadOnlyList<Artist>>([]);
-            if (_artists is { IsFaulted: false, IsCanceled: false } task && (!task.IsCompleted || DateTimeOffset.UtcNow - _artistsAt < TimeSpan.FromHours(6)
-                || DateTimeOffset.UtcNow - _artistsAttemptAt < TimeSpan.FromMinutes(10))) return task;
-            _artistsAttemptAt = DateTimeOffset.UtcNow;
-            return _artists = LoadArtistsAsync(_version);
+            Restore();
+            var now = DateTimeOffset.UtcNow;
+            if (_artists is not { IsFaulted: false, IsCanceled: false } task || task.IsCompleted && now - _artistsAt >= ChartLife && now >= _artistsRetryAt)
+            {
+                _artistsRetryAt = now + RetryAfterSuccess;
+                task = _artists = LoadArtistsAsync(_version);
+            }
+            return !task.IsCompleted && _currentArtists.Count > 0 ? Task.FromResult(_currentArtists) : task;
         }
     }
     private async Task<IReadOnlyList<Artist>> LoadArtistsAsync(int version)
     {
         if (_session.Client is not { } client || _session.Section is not { } section) return [];
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             using var fresh = MelodayMusic.Core.Caching.ResponseCache.FetchFresh();
-            var library = new List<Artist>();
-            for (var start = 0; ; start += 1000)
-            {
-                var page = await client.GetArtistsAsync(section.Key, start, 1000).ConfigureAwait(false);
-                library.AddRange(page.Items); if (page.Items.Count < 1000) break;
-            }
-            var live = await LiveChartReader.GetAsync().ConfigureAwait(false);
+            var libraryTask = Paging.AllAsync((start, size) => client.GetArtistsAsync(section.Key, start, size), 1000);
+            var liveTask = LiveChartAsync();
+            var next = _lastFm.ArtistChartPageAsync(1);
+            var library = await libraryTask.ConfigureAwait(false);
+            var liveArtists = (await liveTask.ConfigureAwait(false))?.Artists ?? [];
             var lookup = library.ToLookup(a => MelodayText.NormalizeArtist(a.Title));
             var result = new List<Artist>(); var seen = new HashSet<string>();
-            foreach (var name in live.Artists)
+            foreach (var name in liveArtists)
             {
                 var key = MelodayText.NormalizeArtist(name);
                 if (lookup[key].FirstOrDefault() is { } artist && seen.Add(artist.RatingKey))
@@ -233,10 +300,11 @@ public sealed class TrendingService
                     result.Add(copy.Deserialize<Artist>()!);
                 }
             }
-            var entries = live.Artists.Select(MelodayText.NormalizeArtist).ToHashSet();
+            var entries = liveArtists.Select(MelodayText.NormalizeArtist).ToHashSet();
             for (var page = 1; result.Count < 100; page++)
             {
-                var chart = await _lastFm.ArtistChartPageAsync(page).ConfigureAwait(false);
+                var chart = await next.ConfigureAwait(false);
+                next = chart.Count < 100 ? Task.FromResult<IReadOnlyList<string>>([]) : _lastFm.ArtistChartPageAsync(page + 1);
                 var added = 0;
                 foreach (var name in chart)
                 {
@@ -257,11 +325,17 @@ public sealed class TrendingService
             {
                 if (version != _version || _session.Client != client || _session.Section?.Key != section.Key || !_lastFm.TrendingArtistsOn) return [];
                 _artistsAt = DateTimeOffset.UtcNow;
+                _artistsRetryAt = _artistsAt + RetryAfterSuccess;
                 ArtistsError = null;
-                try { ArtistPositions = _chartHistory.Update(PlaylistScope + ":artists", result.Select(a => a.RatingKey)); }
+                try
+                {
+                    ArtistPositions = _chartHistory.Update(PlaylistScope + ":artists", result.Select(a => a.RatingKey));
+                    _rails.SaveArtists(PlaylistScope, result, _artistsAt);
+                }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { _log.LogWarning(ex, "Artist chart history could not be saved"); }
                 _currentArtists = result;
             }
+            _log.LogInformation("Last.fm Trending Artists ready in {Elapsed} ms: {Count} artists", clock.ElapsedMilliseconds, result.Count);
             Changed?.Invoke(this, EventArgs.Empty);
             return result;
         }
@@ -271,6 +345,7 @@ public sealed class TrendingService
             lock (_gate)
             {
                 if (version != _version || !_lastFm.TrendingArtistsOn) return [];
+                if (_currentArtists.Count == 0) RetrySoon(ref _artistsRetryAt);
                 ArtistsError = "Last.fm is unavailable right now. Try again shortly.";
                 return _currentArtists;
             }

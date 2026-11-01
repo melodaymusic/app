@@ -21,7 +21,23 @@ public sealed class AudioAnalysisService
     private readonly MelodayEngine _engine;
     private readonly string _folder = Path.Combine(AppPaths.Cache, "analysis");
     private readonly ConcurrentDictionary<string, Task<AudioAnalysis?>> _results = new();
-    private readonly SemaphoreSlim _one = new(1, 1);
+    public static readonly int MaxWidth = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+    private readonly SemaphoreSlim _slots = new(1, MaxWidth);
+    private readonly object _widthGate = new();
+    private int _width = 1;
+
+    public int Width => _width;
+
+    // Narrowing takes effect as running analyses finish.
+    public void SetWidth(int width)
+    {
+        width = Math.Clamp(width, 1, MaxWidth);
+        lock (_widthGate)
+        {
+            for (; _width < width; _width++) _slots.Release();
+            for (; _width > width; _width--) _ = _slots.WaitAsync();
+        }
+    }
     private readonly object _resultGate = new();
     private readonly ConcurrentQueue<Track> _priority = new();
     public event EventHandler? Available;
@@ -52,7 +68,7 @@ public sealed class AudioAnalysisService
         if (await _engine.CachedAsync(track, ct).ConfigureAwait(false) is { } cached) return cached;
         var client = _session.Client;
         var scope = _engine.Scope;
-        await _one.WaitAsync(ct).ConfigureAwait(false);
+        await _slots.WaitAsync(ct).ConfigureAwait(false);
         try
         {
             if (await _engine.CachedAsync(track, ct).ConfigureAwait(false) is { } ready) return ready;
@@ -77,10 +93,10 @@ public sealed class AudioAnalysisService
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) when (ex is not OutOfMemoryException) { _engine.Failed(ex); return null; }
-        finally { _one.Release(); }
+        finally { _slots.Release(); }
     }
 
-    private (string Source, TimeSpan Offset) Source(Track track, TimeSpan from, PlexServerClient? client, CancellationToken ct)
+    private (string Source, TimeSpan Offset) Source(Track track, TimeSpan from, PlexServerClient? client)
     {
         if (_downloads.LocalUri(track) is { } local) return (local.LocalPath, from);
         if (client is null) throw new IOException("Library unavailable");
@@ -92,7 +108,7 @@ public sealed class AudioAnalysisService
 
     private float[] Read(Track track, TimeSpan from, TimeSpan length, PlexServerClient? client, CancellationToken ct, int rate)
     {
-        var source = Source(track, from, client, ct);
+        var source = Source(track, from, client);
         try { return AudioDecoder.ReadWindow(source.Source, source.Offset, length, ct, rate); }
         catch (System.Runtime.InteropServices.COMException ex) when (ex.HResult == unchecked((int)0xC00D36C4) && client is not null)
         {
@@ -170,7 +186,7 @@ public sealed class AudioAnalysisService
         {
         }
 
-        try { await _one.WaitAsync(ct).ConfigureAwait(false); }
+        try { await _slots.WaitAsync(ct).ConfigureAwait(false); }
         catch (OperationCanceledException) { return null; }
         try
         {
@@ -207,7 +223,7 @@ public sealed class AudioAnalysisService
         }
         finally
         {
-            _one.Release();
+            _slots.Release();
         }
     }
 

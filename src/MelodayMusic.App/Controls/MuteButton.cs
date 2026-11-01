@@ -1,4 +1,3 @@
-using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Mutes;
 using MelodayMusic.Services;
 using Microsoft.Extensions.DependencyInjection;

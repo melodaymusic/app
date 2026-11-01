@@ -66,7 +66,7 @@ public static class MediaMenu
             Add("Schedule on Pulse…", "Calendar", () => _ = Views.PulseScheduleDialog.ShowAsync(item));
 
         if (item is Track or Album or Artist or Playlist or MusicCollection)
-            menu.Items.Add(AddToPlaylist(item, contextTracks));
+            menu.Items.Add(AddToPlaylist(item));
 
         if (item is Track or Album or Playlist)
         {
@@ -181,7 +181,6 @@ public static class MediaMenu
             case Playlist p:
                 menu.Items.Add(new MenuFlyoutSeparator());
                 AddEditItems(p);
-                if (p.IsSmart) Add("Edit Rules\u2026", "SlidersHorizontal", () => _ = Views.SmartPlaylistDialog.EditAsync(p));
                 Danger(Add("Delete Playlist\u2026", "Trash2", () => _ = Views.PlaylistDialogs.DeleteAsync(p)));
                 break;
         }
@@ -191,7 +190,7 @@ public static class MediaMenu
     /// <summary>Things that can be marked "Don't use for my taste profile": what a queue can be started from.</summary>
     internal static bool TasteSource(MediaItem item) => item is Playlist or Album or ArtistMix or TagMix or BuiltMix or Station { IsBuilder: false };
 
-    private static MenuFlyoutSubItem AddToPlaylist(MediaItem item, IReadOnlyList<Track>? contextTracks)
+    private static MenuFlyoutSubItem AddToPlaylist(MediaItem item)
     {
         var actions = App.Services.GetRequiredService<LibraryActions>();
         var catalog = App.Services.GetRequiredService<PlaylistCatalog>();
@@ -224,7 +223,7 @@ public static class MediaMenu
 
     public static MenuFlyout AddToPlaylistFlyout(MediaItem item)
     {
-        var sub = AddToPlaylist(item, null);
+        var sub = AddToPlaylist(item);
         var entries = sub.Items.ToList();
         sub.Items.Clear();
         var flyout = new MenuFlyout();

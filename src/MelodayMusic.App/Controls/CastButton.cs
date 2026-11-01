@@ -63,23 +63,26 @@ public sealed partial class CastButton : ToggleButton
         AutomationProperties.SetName(this, label);
     }
 
-    private void Build()
+    private void Build() => Fill(_menu.Items, _cast);
+
+    /// <summary>Lists This Computer and the devices found so far; shared with the player bar's More menu.</summary>
+    public static void Fill(IList<MenuFlyoutItemBase> items, CastService cast)
     {
-        _menu.Items.Clear();
-        _menu.Items.Add(Item("This Computer", null));
-        if (_cast.Devices.Count > 0) _menu.Items.Add(new MenuFlyoutSeparator());
-        foreach (var device in _cast.Devices)
-            _menu.Items.Add(Item(device.Name, device));
-        if (_cast.IsSearching)
-            _menu.Items.Add(new MenuFlyoutItem { Text = "Looking for devices…", IsEnabled = false });
-        else if (_cast.Devices.Count == 0)
-            _menu.Items.Add(new MenuFlyoutItem { Text = "No devices found on this network", IsEnabled = false });
+        items.Clear();
+        items.Add(Item("This Computer", null, cast));
+        if (cast.Devices.Count > 0) items.Add(new MenuFlyoutSeparator());
+        foreach (var device in cast.Devices)
+            items.Add(Item(device.Name, device, cast));
+        if (cast.IsSearching)
+            items.Add(new MenuFlyoutItem { Text = "Looking for devices…", IsEnabled = false });
+        else if (cast.Devices.Count == 0)
+            items.Add(new MenuFlyoutItem { Text = "No devices found on this network", IsEnabled = false });
     }
 
-    private RadioMenuFlyoutItem Item(string name, CastDevice? device)
+    private static RadioMenuFlyoutItem Item(string name, CastDevice? device, CastService cast)
     {
-        var item = new RadioMenuFlyoutItem { Text = name, GroupName = "cast", IsChecked = device?.Id == _cast.Current?.Id };
-        item.Click += (_, _) => _ = _cast.PlayOnAsync(device);
+        var item = new RadioMenuFlyoutItem { Text = name, GroupName = "cast", IsChecked = device?.Id == cast.Current?.Id };
+        item.Click += (_, _) => _ = cast.PlayOnAsync(device);
         return item;
     }
 }

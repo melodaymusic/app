@@ -14,14 +14,14 @@ public static class HomeLayout
     }
 
     public static bool IsCurated(string id) =>
-        id is "spotlight" or "artist.mixes" or "stations" or "trending" or "trending.artists" || id.StartsWith("context.", StringComparison.Ordinal);
+        id is "spotlight" or "artist.mixes" or "stations" || id.StartsWith("context.", StringComparison.Ordinal);
 
     public static bool IsLibraryHub(string id) => id != "pinned" && !IsCurated(id);
 
     private static readonly string[] DefaultOrder =
     [
         "pinned", "artist.mixes", "context.discovery", "stations", "context.time", "context.day", "context.season", "context.repeat",
-        "context.new", "context.forgotten", "context.lastyear", "context.decade", "spotlight", "trending", "trending.artists",
+        "context.new", "context.forgotten", "context.lastyear", "context.decade", "spotlight",
     ];
 
     public static IReadOnlyList<string> CuratedFirst(IEnumerable<string> available) =>

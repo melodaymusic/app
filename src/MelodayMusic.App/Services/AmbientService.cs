@@ -7,7 +7,6 @@ namespace MelodayMusic.Services;
 public sealed partial class AmbientService : ObservableObject
 {
     private readonly ArtworkService _artwork;
-    private int _headerVersion;
 
     public AmbientService(ArtworkService artwork)
     {
@@ -24,8 +23,6 @@ public sealed partial class AmbientService : ObservableObject
 
     public object? PageFillOwner { get; set; }
 
-    [ObservableProperty] public partial bool ForceDark { get; set; }
-
     private int _accentVersion;
 
     public async Task SetAccentFromAsync(string? artworkPath, Func<bool> stillCurrent)
@@ -37,7 +34,6 @@ public sealed partial class AmbientService : ObservableObject
 
     public void Clear()
     {
-        _headerVersion++;
         _accentVersion++;
         Accent.Set(null);
         Wash = null;
@@ -45,8 +41,7 @@ public sealed partial class AmbientService : ObservableObject
         HeaderPalette = null;
         PageFill = null;
         PageFillOwner = null;
-        ForceDark = false;
     }
 
-    public Task ShowHeaderAsync(MediaItem item, string? artworkPath, Func<bool> stillCurrent) => SetAccentFromAsync(artworkPath, stillCurrent);
+    public Task ShowHeaderAsync(string? artworkPath, Func<bool> stillCurrent) => SetAccentFromAsync(artworkPath, stillCurrent);
 }

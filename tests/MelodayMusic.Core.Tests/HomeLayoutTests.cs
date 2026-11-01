@@ -46,6 +46,6 @@ public class HomeLayoutTests
         Assert.True(HomeLayout.IsLibraryHub("music.hub"));
         Assert.True(HomeLayout.IsLibraryHub("recent.added"));
         Assert.False(HomeLayout.IsLibraryHub("pinned"));
-        Assert.False(HomeLayout.IsLibraryHub("trending"));
+        Assert.False(HomeLayout.IsLibraryHub("stations"));
     }
 }

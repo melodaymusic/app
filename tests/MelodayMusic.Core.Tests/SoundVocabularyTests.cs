@@ -169,4 +169,20 @@ public class SoundVocabularyTests
         Assert.Empty(vocabulary.Search(vocabulary.Query("kazoo"), library));
         Assert.Single(vocabulary.Search(vocabulary.Query("jazz"), library, limit: 1));
     }
+
+    [Fact]
+    public void Related_words_are_the_nearest_others()
+    {
+        var vocabulary = Synthetic();
+        var mellow = vocabulary.Query("mellow");
+        Assert.Empty(vocabulary.Related(mellow, 0));
+        var related = vocabulary.Related(mellow, 2);
+        Assert.Equal(2, related.Count);
+        Assert.DoesNotContain(related, t => t.Label == "Mellow");
+
+        var real = SoundVocabulary.Load(Asset());
+        var lateNight = real.Related(real.Query("late night"), 2);
+        Assert.Equal(2, lateNight.Count);
+        Assert.DoesNotContain(lateNight, t => t.Label == "Late Night");
+    }
 }

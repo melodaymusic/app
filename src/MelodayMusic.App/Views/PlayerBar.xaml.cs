@@ -1,10 +1,10 @@
+using MelodayMusic.Controls;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using Microsoft.UI.Xaml.Media;
 
 namespace MelodayMusic.Views;
 
@@ -16,16 +16,28 @@ public sealed partial class PlayerBar : UserControl
         Accent.InstallNeutral(Resources);
         InitializeComponent();
         SeekSliderHelper.Attach(ProgressSlider, Player);
-        Loaded += (_, _) => { _panels.PropertyChanged += OnPanelsChanged; SyncPanelButtons(); };
-        Unloaded += (_, _) => _panels.PropertyChanged -= OnPanelsChanged;
+        Loaded += (_, _) =>
+        {
+            _panels.PropertyChanged += OnPanelsChanged;
+            _cast.PropertyChanged += OnCastChanged;
+            SyncPanelButtons();
+            SyncCast();
+        };
+        Unloaded += (_, _) =>
+        {
+            _panels.PropertyChanged -= OnPanelsChanged;
+            _cast.PropertyChanged -= OnCastChanged;
+        };
         SizeChanged += (_, e) => VisualStateManager.GoToState(this,
-            e.NewSize.Width >= UiScale.Size(860) ? "WideState" : e.NewSize.Width >= UiScale.Size(700) ? "MediumState"
+            e.NewSize.Width >= UiScale.Size(980) ? "WideState" : e.NewSize.Width >= UiScale.Size(820) ? "MediumState"
             : e.NewSize.Width >= UiScale.Size(640) ? "CompactState" : e.NewSize.Width >= UiScale.Size(520) ? "TightState" : "NarrowState", false);
     }
 
     public PlayerViewModel Player { get; }
 
     private readonly PanelService _panels = App.Services.GetRequiredService<PanelService>();
+    private readonly CastService _cast = App.Services.GetRequiredService<CastService>();
+    private MenuFlyoutSubItem? _castMenu;
     private bool _syncingPanel;
     private void OnPanelsChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => SyncPanelButtons();
 
@@ -33,8 +45,36 @@ public sealed partial class PlayerBar : UserControl
     {
         _syncingPanel = true;
         QueueToggle.IsChecked = _panels.Open == SidePanel.Queue;
-        LyricsToggle.IsChecked = _panels.Open == SidePanel.Lyrics;
         _syncingPanel = false;
+    }
+
+    // Cast lives in the More menu; the bar only shows it while another device is playing, as a status you can tap.
+    private void OnCastChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e) => DispatcherQueue.TryEnqueue(() =>
+    {
+        SyncCast();
+        if (_castMenu is not null) CastButton.Fill(_castMenu.Items, _cast);
+    });
+
+    private void SyncCast() => CastToggle.Visibility = _cast.IsCasting ? Visibility.Visible : Visibility.Collapsed;
+
+    private async void OnMore(object sender, RoutedEventArgs e)
+    {
+        var menu = new MenuFlyout { Placement = Microsoft.UI.Xaml.Controls.Primitives.FlyoutPlacementMode.Top };
+        var lyrics = new ToggleMenuFlyoutItem { Text = "Lyrics", IsChecked = _panels.Open == SidePanel.Lyrics, KeyboardAcceleratorTextOverride = "Ctrl+Shift+L" };
+        lyrics.Click += (_, _) => _panels.Toggle(SidePanel.Lyrics);
+        menu.Items.Add(lyrics);
+        var mini = new MenuFlyoutItem { Text = "Mini Player", KeyboardAcceleratorTextOverride = "Ctrl+Shift+M" };
+        mini.Click += (_, _) => App.Services.GetRequiredService<MiniPlayerService>().Open();
+        menu.Items.Add(mini);
+        menu.Items.Add(new MenuFlyoutSeparator());
+        var cast = new MenuFlyoutSubItem { Text = _cast.Current is { } device ? $"Playing on {device.Name}" : "Play on Another Device" };
+        CastButton.Fill(cast.Items, _cast);
+        menu.Items.Add(cast);
+        _castMenu = cast;
+        menu.Closed += (_, _) => { if (ReferenceEquals(_castMenu, cast)) _castMenu = null; };
+        menu.ShowAt(MoreButton);
+        await _cast.SearchAsync();
+        if (ReferenceEquals(_castMenu, cast)) CastButton.Fill(cast.Items, _cast);
     }
 
     public void CastShadowOnto(UIElement receiver)
@@ -45,11 +85,9 @@ public sealed partial class PlayerBar : UserControl
     private void OnPanelToggleChanged(object sender, RoutedEventArgs e)
     {
         if (_syncingPanel) return;
-        _panels.Toggle(ReferenceEquals(sender, LyricsToggle) ? SidePanel.Lyrics : SidePanel.Queue);
+        _panels.Toggle(SidePanel.Queue);
         SyncPanelButtons();
     }
-
-    private void OnMiniPlayer(object sender, RoutedEventArgs e) => App.Services.GetRequiredService<MiniPlayerService>().Open();
 
     private void OnOpenNowPlaying(object sender, RoutedEventArgs e)
     {

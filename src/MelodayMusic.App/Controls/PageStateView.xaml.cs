@@ -43,6 +43,35 @@ public sealed partial class PageStateView : UserControl
 
     public event EventHandler? RetryRequested;
 
+    private static readonly TimeSpan SlowAfter = TimeSpan.FromSeconds(4);
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer? _slow;
+
+    private void WatchSlowLoad(bool loading)
+    {
+        if (!loading)
+        {
+            _slow?.Stop();
+            SlowNote.Visibility = SpinnerNote.Visibility = Visibility.Collapsed;
+            return;
+        }
+        if (_slow is { IsRunning: true } || SlowNote.Visibility == Visibility.Visible) return;
+        _slow ??= CreateSlowTimer();
+        _slow.Start();
+    }
+
+    private Microsoft.UI.Dispatching.DispatcherQueueTimer CreateSlowTimer()
+    {
+        var timer = DispatcherQueue.CreateTimer();
+        timer.Interval = SlowAfter;
+        timer.IsRepeating = false;
+        timer.Tick += (_, _) =>
+        {
+            if (Skeleton.Visibility == Visibility.Visible) SlowNote.Visibility = Visibility.Visible;
+            else if (Spinner.IsActive) SpinnerNote.Visibility = Visibility.Visible;
+        };
+        return timer;
+    }
+
     private void Update()
     {
         var hasError = !string.IsNullOrEmpty(ErrorMessage);
@@ -51,10 +80,12 @@ public sealed partial class PageStateView : UserControl
         Skeleton.Kind = SkeletonKind;
         Skeleton.Round = SkeletonRound;
         Skeleton.Margin = SkeletonPadding;
+        SlowNote.Margin = new Thickness(SkeletonPadding.Left, SkeletonPadding.Top, SkeletonPadding.Right, 0);
         Skeleton.Visibility = skeleton ? Visibility.Visible : Visibility.Collapsed;
         Skeleton.SetActive(skeleton);
         Spinner.IsActive = loading && !skeleton;
-        Spinner.Visibility = Spinner.IsActive ? Visibility.Visible : Visibility.Collapsed;
+        SpinnerPanel.Visibility = Spinner.IsActive ? Visibility.Visible : Visibility.Collapsed;
+        WatchSlowLoad(loading);
         ErrorPanel.Visibility = hasError && !IsLoading ? Visibility.Visible : Visibility.Collapsed;
         ErrorText.Text = ErrorMessage ?? string.Empty;
         EmptyPanel.Visibility = IsEmpty && !IsLoading && !hasError ? Visibility.Visible : Visibility.Collapsed;

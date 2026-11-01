@@ -52,11 +52,15 @@
                         <TextBlock Text="{x:Bind ViewModel.RecapEyebrow, Mode=OneWay}" Style="{StaticResource MelodayOverlineText}" />
                         <TextBlock Text="{x:Bind ViewModel.RecapTime, Mode=OneWay}" Style="{StaticResource MelodayHeroText}" />
                         <TextBlock Text="listened" Style="{StaticResource MelodaySecondaryText}" />
-                        <StackPanel Orientation="Horizontal" Spacing="6" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasChange, Mode=OneWay}">
+                        <Grid ColumnSpacing="6" Margin="0,8,0,0" Visibility="{x:Bind ViewModel.HasChange, Mode=OneWay}">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
                             <controls:LucideIcon Icon="{x:Bind ViewModel.ChangeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconXS}" Height="{StaticResource MelodayIconXS}"
-                                                 Foreground="{ThemeResource MelodayAccentBrush}" VerticalAlignment="Center" />
-                            <TextBlock Text="{x:Bind ViewModel.ChangeText, Mode=OneWay}" Style="{StaticResource MelodayBodyText}" VerticalAlignment="Center" TextWrapping="WrapWholeWords" />
-                        </StackPanel>
+                                                 Foreground="{ThemeResource MelodayAccentBrush}" VerticalAlignment="Top" Margin="0,4,0,0" />
+                            <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.ChangeText, Mode=OneWay}" Style="{StaticResource MelodayBodyText}" TextWrapping="WrapWholeWords" />
+                        </Grid>
                     </StackPanel>
                     </Grid>
                     <ItemsRepeater Grid.Row="1" ItemsSource="{x:Bind ViewModel.Recap}" AutomationProperties.Name="Recap">

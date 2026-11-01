@@ -96,7 +96,7 @@ public static class PlexMapper
             Thumb = d.Thumb,
             Art = d.Art ?? d.GrandparentArt,
             ArtistTitle = d.GrandparentTitle,
-            TrackArtist = NullIfEmpty(d.OriginalTitle),
+            TrackArtist = NullIfEmpty(JoinArtists(d.OriginalTitle)),
             ArtistRatingKey = d.GrandparentRatingKey,
             ArtistThumb = d.GrandparentThumb,
             AlbumTitle = d.ParentTitle,
@@ -252,6 +252,11 @@ public static class PlexMapper
         DateTimeOffset.TryParse(s, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var d) ? d : null;
 
     private static string? NullIfEmpty(string? s) => string.IsNullOrWhiteSpace(s) ? null : s;
+
+    // Multi-artist tags can reach Plex separated by a null character, which Windows draws as nothing.
+    private static string? JoinArtists(string? s) => s?.Contains('\0') == true
+        ? string.Join(", ", s.Split('\0', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        : s;
 
     private static string? ExtractFilterValue(string fastKey)
     {

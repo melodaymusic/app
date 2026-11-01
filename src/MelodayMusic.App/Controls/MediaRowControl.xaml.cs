@@ -1,12 +1,11 @@
-using MelodayMusic.Core.Layout;
 using System.Collections;
 using System.Windows.Input;
+using MelodayMusic.Core.Layout;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
-using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using Microsoft.UI.Xaml.Media;

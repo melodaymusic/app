@@ -1,5 +1,5 @@
-using MelodayMusic.Helpers;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Helpers;
 using MelodayMusic.Services;
 using MelodayMusic.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +22,7 @@ public sealed partial class PlaylistsPage : Page
         var tracks = App.Services.GetRequiredService<PlayerService>().Queue.Items.Select(i => i.Track).ToList();
         if (tracks.Count > 0)
         {
-            await PlaylistDialogs.NewAsync(tracks);
+            await PlaylistDialogs.FromQueueAsync(tracks);
             return;
         }
         var dialog = Dialogs.Create("New Playlist", XamlRoot);
@@ -31,8 +31,6 @@ public sealed partial class PlaylistsPage : Page
         Dialogs.PreferClose(dialog);
         await dialog.ShowAsync();
     }
-
-    private void OnNewSmartPlaylist(object sender, Microsoft.UI.Xaml.RoutedEventArgs e) => _ = SmartPlaylistDialog.NewAsync();
 
     public PlaylistsViewModel ViewModel { get; }
 

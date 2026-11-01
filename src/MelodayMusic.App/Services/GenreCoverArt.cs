@@ -1,6 +1,5 @@
 using MelodayMusic.Core;
 using MelodayMusic.Core.Artwork;
-using MelodayMusic.Core.Covers;
 using MelodayMusic.Core.Playlists;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;

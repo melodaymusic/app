@@ -38,6 +38,10 @@
             <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="#141316" />
             <SolidColorBrush x:Key="MelodayHairlineBrush" Color="#1FFFFFFF" />
             <helpers:LiquidGlassBrush x:Key="MelodayPlayerAcrylicBrush" TintColor="#1E1D23" TintOpacity="0.62" FallbackColor="#26252B" />
+            <LinearGradientBrush x:Key="MelodayGlassRimBrush" MappingMode="Absolute" StartPoint="0,0" EndPoint="0,56">
+                <GradientStop Offset="0" Color="#47FFFFFF" />
+                <GradientStop Offset="1" Color="#17FFFFFF" />
+            </LinearGradientBrush>
             <AcrylicBrush x:Key="MelodayGlassBrush" TintColor="#16161B" TintOpacity="0.2" TintLuminosityOpacity="0.38" FallbackColor="#1C1B21" />
             <AcrylicBrush x:Key="MelodayOverlayGlassBrush" TintColor="#141316" TintOpacity="0.28" TintLuminosityOpacity="0.45" FallbackColor="#B3141316" />
             <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="#24FFFFFF" />
@@ -58,61 +62,6 @@
             <SolidColorBrush x:Key="GridViewItemBackgroundSelected" Color="#12FFFFFF" />
             <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPointerOver" Color="#12FFFFFF" />
             <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#12FFFFFF" />
-        </ResourceDictionary>
-        <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="TextControlBorderBrush" Color="#38000000" />
-            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#70000000" />
-            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="#1B1A1D" />
-            <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
-            <SolidColorBrush x:Key="MelodayDangerTextBrush" Color="#C42B30" />
-            <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
-            <Color x:Key="SystemAccentColor">#C77912</Color>
-            <Color x:Key="SystemAccentColorLight1">#D98A1C</Color>
-            <Color x:Key="SystemAccentColorLight2">#E69B35</Color>
-            <Color x:Key="SystemAccentColorLight3">#F2AE4E</Color>
-            <Color x:Key="SystemAccentColorDark1">#A15C07</Color>
-            <Color x:Key="SystemAccentColorDark2">#854B06</Color>
-            <Color x:Key="SystemAccentColorDark3">#663A05</Color>
-
-            <SolidColorBrush x:Key="MelodayAccentBrush" Color="#A15C07" />
-            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="#8A4F06" />
-            <SolidColorBrush x:Key="MelodayOnAccentBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="MelodayWindowBrush" Color="#F1EFEC" />
-            <SolidColorBrush x:Key="MelodayContentBrush" Color="#FBFAF8" />
-            <SolidColorBrush x:Key="MelodaySubtleFillBrush" Color="#17000000" />
-            <SolidColorBrush x:Key="MelodayHoverOverlayBrush" Color="#12000000" />
-            <SolidColorBrush x:Key="MelodayPressedOverlayBrush" Color="#1F000000" />
-            <SolidColorBrush x:Key="MelodayDividerBrush" Color="#14000000" />
-            <SolidColorBrush x:Key="MelodayTextPrimaryBrush" Color="#1B1A1D" />
-            <SolidColorBrush x:Key="MelodayTextSecondaryBrush" Color="#5E5A55" />
-            <SolidColorBrush x:Key="MelodayTextTertiaryBrush" Color="#6E6A64" />
-            <SolidColorBrush x:Key="MelodayChipSelectedBrush" Color="#14000000" />
-            <SolidColorBrush x:Key="MelodayPlaceholderBrush" Color="#E6E3DE" />
-            <SolidColorBrush x:Key="MelodayPlaceholderIconBrush" Color="#A6A19A" />
-            <SolidColorBrush x:Key="MelodayPlayButtonBrush" Color="#1B1A1D" />
-            <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="#FBFAF8" />
-            <SolidColorBrush x:Key="MelodayHairlineBrush" Color="#1A000000" />
-            <helpers:LiquidGlassBrush x:Key="MelodayPlayerAcrylicBrush" TintColor="#FFFFFF" TintOpacity="0.72" FallbackColor="#FAF9F7" />
-            <AcrylicBrush x:Key="MelodayGlassBrush" TintColor="#FFFFFF" TintOpacity="0.3" TintLuminosityOpacity="0.55" FallbackColor="#F7F6F4" />
-            <AcrylicBrush x:Key="MelodayOverlayGlassBrush" TintColor="#141316" TintOpacity="0.28" TintLuminosityOpacity="0.45" FallbackColor="#B3141316" />
-            <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="#80FFFFFF" />
-            <SolidColorBrush x:Key="MelodayGlassFillBrush" Color="#66FFFFFF" />
-            <SolidColorBrush x:Key="MelodayAmbientDimBrush" Color="#C7F3F1EE" />
-            <SolidColorBrush x:Key="MelodayArtworkOutlineBrush" Color="#12000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundPointerOver" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemPointerOverBorderBrush" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemSelectedPointerOverBorderBrush" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemSelectedBorderBrush" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemSelectedPressedBorderBrush" Color="Transparent" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundPressed" Color="Transparent" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelected" Color="#0F000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPointerOver" Color="#0F000000" />
-            <SolidColorBrush x:Key="ListViewItemBackgroundSelectedPressed" Color="#0F000000" />
-            <SolidColorBrush x:Key="GridViewItemBackgroundPointerOver" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemBackgroundPressed" Color="Transparent" />
-            <SolidColorBrush x:Key="GridViewItemBackgroundSelected" Color="#0F000000" />
-            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPointerOver" Color="#0F000000" />
-            <SolidColorBrush x:Key="GridViewItemBackgroundSelectedPressed" Color="#0F000000" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
             <SolidColorBrush x:Key="MelodayDangerBrush" Color="{ThemeResource SystemColorHighlightColor}" />
@@ -137,6 +86,7 @@
             <SolidColorBrush x:Key="MelodayOnPlayButtonBrush" Color="{ThemeResource SystemColorButtonTextColor}" />
             <SolidColorBrush x:Key="MelodayHairlineBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="MelodayPlayerAcrylicBrush" Color="{ThemeResource SystemColorWindowColor}" />
+            <SolidColorBrush x:Key="MelodayGlassRimBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
             <SolidColorBrush x:Key="MelodayGlassBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="MelodayOverlayGlassBrush" Color="{ThemeResource SystemColorWindowColor}" />
             <SolidColorBrush x:Key="MelodayGlassEdgeBrush" Color="{ThemeResource SystemColorWindowTextColor}" />
