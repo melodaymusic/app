@@ -86,7 +86,7 @@ public static class SongInfoDialog
         var profile = await App.Services.GetRequiredService<MelodayEngine>().CachedAsync(track);
         var features = head ?? tail;
         body.Children.Add(Section("Meloday Analysis",
-            ("Sound profile", profile is null ? "Waiting for ME analysis" : "ME - music sound profile"),
+            ("Sound profile", profile is null ? "Waiting for the Meloday Engine" : "Meloday Engine sound profile"),
             ("Audio sampled", profile is null ? null : $"{profile.SampledSeconds:0} seconds across {profile.SampleOffsets.Length} positions"),
             ("Analysed", profile?.AnalysedAt.LocalDateTime.ToString("g")),
             ("Tempo", features?.HasBeat == true ? $"{features.Bpm:0.0} BPM (confidence {features.TempoConfidence:P0})" : "Not reliably detected yet"),

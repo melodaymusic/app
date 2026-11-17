@@ -92,7 +92,7 @@ public static class MoodTagDialog
             else if (row.ByMeloday is { } by)
                 detail = "Meloday added " + string.Join(", ", by.Added);
             else if (!row.Analysed)
-                detail = "Not analysed by ME yet";
+                detail = "Not analysed by the Meloday Engine yet";
             else
                 detail = "No clear mood to add";
             var has = row.Current.Count > 0 ? "In Plex: " + string.Join(", ", row.Current) : "No moods in Plex";

@@ -67,9 +67,15 @@ public partial class App : Application
         {
             _log?.LogCritical(ex, "Startup failed");
             _services?.GetService<FileLoggerProvider>()?.Dispose();
-            Environment.FailFast("Meloday Music failed to start: " + ex.Message, ex);
+            MessageBoxW(IntPtr.Zero,
+                "Meloday Music couldn't start.\n\n" + ex.Message + "\n\nDetails are in the log folder:\n" + AppPaths.Logs,
+                "Meloday Music", 0x10);
+            Environment.Exit(1);
         }
     }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int MessageBoxW(IntPtr owner, string text, string caption, uint type);
 
     /// <summary>After a profile switch the new instance is started with --after and the old one's process id; it waits for that one to finish closing.</summary>
     private static void WaitForEarlierInstance()

@@ -214,7 +214,7 @@ public static class SoundFingerprintDialog
     }
 
     private const string HeardNote =
-        "ME's model learnt sounds and words together, so it can say what a fingerprint sounds like. Each row is the words that fit best, " +
+        "ME's model learned sounds and words together, so it can say what a fingerprint sounds like. Each row is the words that fit best, " +
         "with how sure ME is among that row's words, measured against the rest of your library. A row in grey is only a lean.";
 
     private static StackPanel Words(SoundDescription description, SoundVocabulary vocabulary)

@@ -52,7 +52,7 @@ public sealed partial class MuteButton : Button
             ? "Keep this song or its artist out of Meloday for a while"
             : $"{(song is not null ? "This song" : artist!.Title)} is muted · {MuteLengths.Remaining(muted.Until, DateTimeOffset.UtcNow)}";
         ToolTipService.SetToolTip(this, tip);
-        AutomationProperties.SetName(this, muted is null ? "Mute" : $"Muted. {tip}");
+        AutomationProperties.SetName(this, muted is null ? "Mute this song or artist" : $"Muted. {tip}");
     }
 
     private void ShowMenu()

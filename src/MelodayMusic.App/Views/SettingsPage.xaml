@@ -786,12 +786,12 @@
                             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                             <controls:LucideIcon Icon="Sparkles" VerticalAlignment="Center" />
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
-                                <TextBlock Text="What Meloday has learnt" Style="{StaticResource MelodayBodyText}" />
+                                <TextBlock Text="What Meloday has learned" Style="{StaticResource MelodayBodyText}" />
                                 <TextBlock Text="{x:Bind ViewModel.TasteSummary, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Text="{x:Bind ViewModel.TasteLately, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             </StackPanel>
                             <Button Grid.Column="2" Content="Forget" Style="{StaticResource MelodaySecondaryButtonStyle}" Command="{x:Bind ViewModel.ForgetTasteCommand}"
-                                    VerticalAlignment="Center" AutomationProperties.Name="Forget what Meloday learnt here" AutomationProperties.AutomationId="ForgetTasteButton" />
+                                    VerticalAlignment="Center" AutomationProperties.Name="Forget what Meloday learned here" AutomationProperties.AutomationId="ForgetTasteButton" />
                         </Grid>
                     </StackPanel>
                 </Border>
@@ -1130,7 +1130,7 @@
                         <StackPanel Style="{StaticResource AnalysisRowStyle}" Spacing="12">
                             <StackPanel Spacing="4">
                                 <TextBlock Text="Tag moods from the Meloday Engine" Style="{StaticResource MelodayBodyText}" />
-                                <TextBlock Text="Adds the moods ME hears clearly to your songs in Plex, so Plexamp and other Plex apps can use them. Existing moods are kept, and the field is locked so Plex doesn't overwrite them. Meloday records what it adds, so you can remove it all later. Nothing is written until you ask. To try a few albums first, right-click an album and choose Tag Moods in Plex." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
+                                <TextBlock Text="Adds the moods the Meloday Engine hears clearly to your songs in Plex, so Plexamp and other Plex apps can use them. Existing moods are kept, and the field is locked so Plex doesn't overwrite them. Meloday records what it adds, so you can remove it all later. Nothing is written until you ask. To try a few albums first, right-click an album and choose Tag Moods in Plex." Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Text="{x:Bind ViewModel.MoodTagStatus, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                             </StackPanel>
                             <controls:ActionWrapPanel Spacing="8">

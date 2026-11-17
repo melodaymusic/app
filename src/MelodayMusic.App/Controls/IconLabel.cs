@@ -1,5 +1,7 @@
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Controls.Primitives;
 
 namespace MelodayMusic.Controls;
 
@@ -19,6 +21,22 @@ public sealed partial class IconLabel : StackPanel
         _icon.VerticalAlignment = VerticalAlignment.Center;
         Children.Add(_icon);
         Children.Add(_text);
+        Loaded += (_, _) => NameButton();
+    }
+
+    private string? _given;
+
+    // A button holding an icon and a label has no text content of its own, so screen readers would announce it as just "button".
+    private void NameButton()
+    {
+        DependencyObject? parent = this;
+        for (var i = 0; i < 4 && parent is not null && parent is not ButtonBase; i++)
+            parent = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(parent);
+        if (parent is not ButtonBase button || string.IsNullOrEmpty(Text)) return;
+        var current = AutomationProperties.GetName(button);
+        if (!string.IsNullOrEmpty(current) && current != _given) return;
+        _given = Text;
+        AutomationProperties.SetName(button, Text);
     }
 
     public static readonly DependencyProperty IconProperty = DependencyProperty.Register(
@@ -31,7 +49,12 @@ public sealed partial class IconLabel : StackPanel
     }
 
     public static readonly DependencyProperty TextProperty = DependencyProperty.Register(
-        nameof(Text), typeof(string), typeof(IconLabel), new PropertyMetadata(string.Empty, (d, e) => ((IconLabel)d)._text.Text = (string)e.NewValue));
+        nameof(Text), typeof(string), typeof(IconLabel), new PropertyMetadata(string.Empty, (d, e) =>
+        {
+            var label = (IconLabel)d;
+            label._text.Text = (string)e.NewValue;
+            if (label.IsLoaded) label.NameButton();
+        }));
 
     public string Text
     {

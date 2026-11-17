@@ -1,5 +1,11 @@
 <Project>
   <PropertyGroup>
     <Version>0.97.0</Version>
+    <Copyright>Copyright © 2026 Meloday Music</Copyright>
+  </PropertyGroup>
+  <!-- Release binaries and their stack traces show source paths relative to the repository, not the build machine's folders. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PathMap>$(MSBuildThisFileDirectory)=/_/</PathMap>
+    <DebugType>embedded</DebugType>
   </PropertyGroup>
 </Project>

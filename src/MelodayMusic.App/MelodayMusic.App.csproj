@@ -51,7 +51,7 @@
     <GetAssemblyIdentity AssemblyFiles="$(PublishDir)Microsoft.ML.OnnxRuntime.dll">
       <Output TaskParameter="Assemblies" ItemName="PublishedEngineRuntime" />
     </GetAssemblyIdentity>
-    <Error Condition="'%(PublishedEngineRuntime.Version)' != '1.23.2.0'" Text="The published ONNX managed runtime was overwritten. Clean stale build/publish outputs and rebuild; ME requires runtime 1.23.2.0." />
+    <Error Condition="'%(PublishedEngineRuntime.Version)' != '1.23.2.0'" Text="The published ONNX managed runtime was overwritten. Clean stale build/publish outputs and rebuild; the Meloday Engine requires runtime 1.23.2.0." />
   </Target>
   <Target Name="PinEngineNativeRuntime" AfterTargets="Build">
     <Copy SourceFiles="$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\$(RuntimeIdentifier)\native\onnxruntime.dll;$(PkgMicrosoft_ML_OnnxRuntime)\runtimes\$(RuntimeIdentifier)\native\onnxruntime_providers_shared.dll" DestinationFolder="$(TargetDir)" />
@@ -60,6 +60,6 @@
     <Error Condition="!Exists('Native\win-x64\Meloday.ProjectM.dll') Or !Exists('Native\win-x64\projectM-4.dll') Or !Exists('Native\win-x64\glew32.dll')" Text="The projectM runtime is missing. Run tools/projectm/build.ps1 before building the x64 app." />
   </Target>
   <Target Name="CheckMelodayEngineModel" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('Assets\Engine\audio.onnx')" Text="The ME audio model is missing. Run tools/engine/download.ps1 before building." />
+    <Error Condition="!Exists('Assets\Engine\audio.onnx')" Text="The Meloday Engine audio model is missing. Run tools/engine/download.ps1 before building." />
   </Target>
 </Project>

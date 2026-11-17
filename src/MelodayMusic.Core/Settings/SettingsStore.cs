@@ -35,9 +35,10 @@ public sealed class SettingsStore
             if (File.Exists(_path))
                 settings = JsonSerializer.Deserialize<AppSettings>(File.ReadAllText(_path), JsonOptions);
         }
-        catch (Exception ex) when (ex is JsonException or IOException)
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
         {
             _log.LogWarning(ex, "Settings file unreadable; using defaults");
+            KeepUnreadableCopy();
         }
         settings ??= new AppSettings();
         if (string.IsNullOrWhiteSpace(settings.ClientIdentifier))
@@ -49,6 +50,18 @@ public sealed class SettingsStore
         if (settings.TranscodeBitrateKbps is < 64 or > 320) settings.TranscodeBitrateKbps = 320;
         settings.CrossfadeSeconds = Math.Clamp(settings.CrossfadeSeconds, Playback.Crossfade.MinSeconds, Playback.Crossfade.MaxSeconds);
         return settings;
+    }
+
+    // The next save replaces the file, so the unreadable one is set aside where it can still be recovered by hand.
+    private void KeepUnreadableCopy()
+    {
+        try
+        {
+            if (File.Exists(_path)) File.Copy(_path, _path + ".unreadable", overwrite: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+        }
     }
 
     public void Save()
@@ -68,7 +81,7 @@ public sealed class SettingsStore
                 File.WriteAllText(temp, JsonSerializer.Serialize(settings, JsonOptions));
                 File.Move(temp, _path, overwrite: true);
             }
-            catch (IOException ex)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 _log.LogError(ex, "Could not save settings");
             }
