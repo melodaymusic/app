@@ -9,16 +9,17 @@
             <SolidColorBrush x:Key="MelodayDangerBrush" Color="#C42B30" />
             <SolidColorBrush x:Key="MelodayDangerTextBrush" Color="#F47C7C" />
             <SolidColorBrush x:Key="MelodayOnDangerBrush" Color="White" />
-            <Color x:Key="SystemAccentColor">#D98A1C</Color>
-            <Color x:Key="SystemAccentColorLight1">#E69B35</Color>
-            <Color x:Key="SystemAccentColorLight2">#F2AE4E</Color>
-            <Color x:Key="SystemAccentColorLight3">#F8C77D</Color>
-            <Color x:Key="SystemAccentColorDark1">#A5620A</Color>
-            <Color x:Key="SystemAccentColorDark2">#85500A</Color>
-            <Color x:Key="SystemAccentColorDark3">#663C05</Color>
+            <!-- No brand hue: with no artwork the accent is the neutral off-white, as in Services/Accent.cs. -->
+            <Color x:Key="SystemAccentColor">#A9A6A0</Color>
+            <Color x:Key="SystemAccentColorLight1">#C8C5BF</Color>
+            <Color x:Key="SystemAccentColorLight2">#F4F2EE</Color>
+            <Color x:Key="SystemAccentColorLight3">#FFFFFF</Color>
+            <Color x:Key="SystemAccentColorDark1">#8C8881</Color>
+            <Color x:Key="SystemAccentColorDark2">#6E6B66</Color>
+            <Color x:Key="SystemAccentColorDark3">#4F4D49</Color>
 
-            <SolidColorBrush x:Key="MelodayAccentBrush" Color="#F2AE4E" />
-            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="#F2AE4E" />
+            <SolidColorBrush x:Key="MelodayAccentBrush" Color="#F4F2EE" />
+            <SolidColorBrush x:Key="MelodayAccentTextBrush" Color="#F4F2EE" />
             <SolidColorBrush x:Key="MelodayOnAccentBrush" Color="#16130F" />
             <SolidColorBrush x:Key="MelodayWindowBrush" Color="#121114" />
             <SolidColorBrush x:Key="MelodayContentBrush" Color="#18171B" />

@@ -27,7 +27,7 @@ internal sealed record VisualPalette(Color Main, Color Light)
         return new VisualPalette(main, Mix(main, Microsoft.UI.Colors.White, 0.5)) { Deep = Of(tones.Deep), Colours = colours };
     }
 
-    public static VisualPalette Default { get; } = From(Color.FromArgb(255, 242, 174, 78));
+    public static VisualPalette Default { get; } = From(Color.FromArgb(255, 244, 242, 238));
 
     public static VisualPalette From(Color colour)
     {

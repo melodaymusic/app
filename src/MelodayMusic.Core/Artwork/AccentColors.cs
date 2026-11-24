@@ -2,8 +2,8 @@ namespace MelodayMusic.Core.Artwork;
 
 public static class AccentColors
 {
-    public const uint DefaultDark = 0xF2AE4E;
-    public const uint DefaultLight = 0xA15C07;
+    public const uint DefaultDark = 0xF4F2EE;
+    public const uint DefaultLight = 0x1B1A1D;
 
     private const int HueBins = 24;
 
