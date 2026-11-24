@@ -19,7 +19,7 @@
             <controls:DetailHeader.ExtraActions>
                 <StackPanel Orientation="Horizontal" Spacing="8">
                     <controls:PageSearch x:Name="Search" Placeholder="Search this playlist" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay}" />
-                    <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+                    <controls:SortButton Options="{x:Bind ViewModel.SortOptions, Mode=OneWay}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
                 </StackPanel>
             </controls:DetailHeader.ExtraActions>
         </controls:DetailHeader>

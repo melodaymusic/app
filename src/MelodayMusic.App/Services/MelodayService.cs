@@ -149,6 +149,36 @@ public sealed class MelodayService
 
     public bool KeepOnPlex => _settings.Current.MelodayPlexPlaylist;
 
+    public bool HasPlexCopy => KeepOnPlex || PlexCopyKey is not null;
+
+    // The Plex copy of the Meloday mix, matched by its saved key or by the title marker every copy carries.
+    public bool IsPlexCopy(Playlist playlist) =>
+        playlist.Title.StartsWith(InvisiblePrefix, StringComparison.Ordinal) || (PlexCopyKey is { } key && playlist.RatingKey == key);
+
+    private string? PlexCopyKey
+    {
+        get
+        {
+            var path = SharedSyncPath;
+            lock (_plexCopyGate)
+            {
+                var stamp = File.Exists(path) ? File.GetLastWriteTimeUtc(path) : DateTime.MinValue;
+                if (path != _plexCopyPath || stamp != _plexCopyStamp)
+                {
+                    _plexCopyPath = path;
+                    _plexCopyStamp = stamp;
+                    _plexCopyKey = stamp == DateTime.MinValue ? null : Read<string>(path);
+                }
+                return _plexCopyKey;
+            }
+        }
+    }
+
+    private readonly object _plexCopyGate = new();
+    private string? _plexCopyPath;
+    private DateTime _plexCopyStamp;
+    private string? _plexCopyKey;
+
     public async Task SetKeepOnPlexAsync(bool on)
     {
         if (_settings.Current.MelodayPlexPlaylist == on) return;
@@ -781,7 +811,7 @@ public sealed class MelodayService
         }
     }
 
-    private const int PlexCoverVersion = 9;
+    private const int PlexCoverVersion = 12;
 
     private string StorageScope => _storageScope.Value ?? Scope;
     private string ScopedPath(string name) => Path.Combine(AppPaths.Meloday, name + "-" +

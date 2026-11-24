@@ -35,6 +35,7 @@ public sealed partial class Billboard : UserControl
             var self = (Billboard)d;
             var w = (double)e.NewValue > 0 ? (double)e.NewValue : UiScale.BillboardWidth;
             self.Root.Width = w;
+            self.Heading.Width = Math.Max(0, w - self.Heading.Margin.Left - self.Heading.Margin.Right);
             self.Root.Height = Math.Round(w * 9 / 16);
             self.LayoutFeature();
         }));
@@ -93,6 +94,7 @@ public sealed partial class Billboard : UserControl
     {
         ["New Release"] = "Coral",
         ["New Addition"] = "Turquoise",
+        ["New Artist"] = "Leaf Green",
         ["Artist Spotlight"] = "Violet",
         ["Rediscover"] = "Amber",
         ["From Your Library"] = "Sky Blue",

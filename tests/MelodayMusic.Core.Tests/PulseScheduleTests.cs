@@ -96,6 +96,45 @@ public class PulseScheduleTests
     }
 
     [Fact]
+    public void Albums_and_playlists_play_in_order_and_other_sources_shuffle_unless_chosen()
+    {
+        PulseScheduleRule For(PulseScheduleSourceKind kind, PulseScheduleOrder? order = null) =>
+            Rule() with { Source = new(kind, "key", "Title"), Order = order };
+
+        Assert.Equal(PulseScheduleOrder.InOrder, For(PulseScheduleSourceKind.Album).PlayOrder);
+        Assert.Equal(PulseScheduleOrder.InOrder, For(PulseScheduleSourceKind.Playlist).PlayOrder);
+        Assert.Equal(PulseScheduleOrder.Shuffle, For(PulseScheduleSourceKind.Artist).PlayOrder);
+        Assert.Equal(PulseScheduleOrder.Shuffle, For(PulseScheduleSourceKind.Album, PulseScheduleOrder.Shuffle).PlayOrder);
+        Assert.Equal(PulseScheduleOrder.InOrder, For(PulseScheduleSourceKind.Genre, PulseScheduleOrder.InOrder).PlayOrder);
+        // A single song or a Pulse program has no order to choose.
+        Assert.Equal(PulseScheduleOrder.InOrder, For(PulseScheduleSourceKind.Track, PulseScheduleOrder.Shuffle).PlayOrder);
+        Assert.False(PulseScheduleRule.HasOrderChoice(PulseScheduleSourceKind.Programme));
+    }
+
+    [Fact]
+    public void A_chosen_order_is_saved_and_older_programs_load_without_one()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "meloday-pulse-order-" + Guid.NewGuid().ToString("N") + ".json");
+        try
+        {
+            var shuffled = Rule() with { Source = new(PulseScheduleSourceKind.Playlist, "playlist:1", "Mix"), Order = PulseScheduleOrder.Shuffle };
+            new PulseScheduleStore(path).Upsert("scope", shuffled);
+            Assert.Equal(PulseScheduleOrder.Shuffle, new PulseScheduleStore(path).Get("scope").Single().PlayOrder);
+
+            var saved = System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(path))!;
+            Assert.True(saved["scope"]![0]!.AsObject().Remove("Order"));
+            File.WriteAllText(path, saved.ToJsonString());
+            var older = new PulseScheduleStore(path).Get("scope").Single();
+            Assert.Null(older.Order);
+            Assert.Equal(PulseScheduleOrder.InOrder, older.PlayOrder);
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
+
+    [Fact]
     public void The_store_updates_removes_and_keeps_library_scopes_apart()
     {
         var path = Path.Combine(Path.GetTempPath(), "meloday-pulse-guide-" + Guid.NewGuid().ToString("N") + ".json");

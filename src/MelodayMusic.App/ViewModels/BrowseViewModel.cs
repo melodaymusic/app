@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
+using Microsoft.Extensions.DependencyInjection;
+using MelodayMusic.Services;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
@@ -15,12 +17,30 @@ public sealed record BrowseCategory(string Label, string Icon, TagKind? Kind, bo
 public sealed partial class BrowseViewModel : ViewModelBase
 {
     private readonly Dictionary<string, IReadOnlyList<MediaItem>> _cache = [];
+    // The library's own tags for each category, so a moved genre regroups without asking the server again.
+    private readonly Dictionary<string, (TagKind Kind, IReadOnlyList<TagItem> Tags)> _raw = [];
     private int _loadedVersion = -1;
 
     public BrowseViewModel(PlexSession session, ILogger<BrowseViewModel> log) : base(session, log)
     {
         SelectedCategory = Categories[0];
         SelectedSort = SortOptions[0];
+        HasFamilyMoves = Moves.HasMoves;
+        TagFamilies.Changed += (_, _) => Regroup();
+    }
+
+    private static TagFamilyMoves Moves => App.Services.GetRequiredService<TagFamilyMoves>();
+
+    /// <summary>Whether the listener has moved any genre, style or mood to another family.</summary>
+    [ObservableProperty] public partial bool HasFamilyMoves { get; private set; }
+
+    public void ResetFamilies() => Moves.ResetAll();
+
+    private void Regroup()
+    {
+        HasFamilyMoves = Moves.HasMoves;
+        foreach (var (label, raw) in _raw) _cache[label] = TagFamilies.Group(raw.Tags, raw.Kind);
+        if (_cache.TryGetValue(SelectedCategory.Label, out var items)) Fill(items);
     }
 
     public IReadOnlyList<BrowseCategory> Categories { get; } =
@@ -71,7 +91,11 @@ public sealed partial class BrowseViewModel : ViewModelBase
 
     public async Task EnsureLoadedAsync(int libraryVersion)
     {
-        if (_loadedVersion != libraryVersion) _cache.Clear();
+        if (_loadedVersion != libraryVersion)
+        {
+            _cache.Clear();
+            _raw.Clear();
+        }
         if (_loadedVersion == libraryVersion && Items.Count > 0) return;
         _loadedVersion = libraryVersion;
         await LoadCategoryAsync();
@@ -101,6 +125,7 @@ public sealed partial class BrowseViewModel : ViewModelBase
                 if (tags.Count == 0 && kind == TagKind.Mood) tags = await Client.GetTagsAsync(SectionKey, kind, PlexTypes.Album);
                 tags = tags.Where(t => !t.Title.Equals("ArtistPopular", StringComparison.OrdinalIgnoreCase)).ToList();
                 items = kind == TagKind.Decade ? tags.OrderByDescending(t => t.Title).ToList() : TagFamilies.Group(tags, kind);
+                if (kind != TagKind.Decade && SelectedCategory == category) _raw[category.Label] = (kind, tags);
             }
             if (SelectedCategory != category) return;
             _cache[category.Label] = items;

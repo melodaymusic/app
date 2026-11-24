@@ -32,7 +32,14 @@
         </Grid.RowDefinitions>
 
         <controls:PageHeader Title="Browse" Padding="{StaticResource MelodayPageHeaderPadding}">
-            <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+            <StackPanel Orientation="Horizontal" Spacing="{StaticResource MelodaySpaceS}">
+                <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnResetFamilies"
+                        Visibility="{x:Bind ViewModel.HasFamilyMoves, Mode=OneWay}" AutomationProperties.AutomationId="ResetFamiliesButton"
+                        ToolTipService.ToolTip="Put every genre, style and mood you moved back where Meloday sorted it">
+                    <controls:IconLabel Icon="ListRestart" Text="Reset Families" />
+                </Button>
+                <controls:SortButton Options="{x:Bind ViewModel.SortOptions}" Selected="{x:Bind ViewModel.SelectedSort, Mode=TwoWay}" />
+            </StackPanel>
         </controls:PageHeader>
 
         <controls:ChipTabs x:Name="Categories" Grid.Row="1" Margin="40,0,40,16" AutomationLabel="Browse categories"

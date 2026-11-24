@@ -30,6 +30,16 @@ public sealed partial class BrowsePage : Page
 
     public BrowseViewModel ViewModel { get; }
 
+    private async void OnResetFamilies(object sender, RoutedEventArgs e)
+    {
+        var dialog = Dialogs.Create("Reset genre families?");
+        dialog.Content = Dialogs.Text("Every genre, style and mood you moved goes back to the family Meloday sorted it into.");
+        dialog.PrimaryButtonText = "Reset";
+        dialog.CloseButtonText = "Cancel";
+        dialog.DefaultButton = ContentDialogButton.Close;
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary) ViewModel.ResetFamilies();
+    }
+
     protected override async void OnNavigatedTo(NavigationEventArgs e)
     {
         base.OnNavigatedTo(e);

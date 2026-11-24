@@ -6,7 +6,6 @@ using Microsoft.UI.Dispatching;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
-using VirtualKey = Windows.System.VirtualKey;
 
 namespace MelodayMusic.Views;
 
@@ -47,8 +46,16 @@ public sealed partial class VisualizerStage : UserControl
             _idle.Stop();
             return;
         }
-        Focus(FocusState.Programmatic);
+        TakeFocus(attempts: 10);
         ShowChrome();
+    }
+
+    // The stage has only just become visible, so it can't take focus until it has been laid out. With focus, a key
+    // press brings back the controls.
+    private void TakeFocus(int attempts)
+    {
+        if (!_stage.IsOn || Focus(FocusState.Programmatic) || attempts <= 0) return;
+        DispatcherQueue.TryEnqueue(DispatcherQueuePriority.Low, () => TakeFocus(attempts - 1));
     }
 
     private void ShowChrome()
@@ -67,19 +74,16 @@ public sealed partial class VisualizerStage : UserControl
 
     private void OnActivity(object sender, PointerRoutedEventArgs e)
     {
-        if (_stage.IsOn) ShowChrome();
+        if (!_stage.IsOn) return;
+        ShowChrome();
+        if (e.Pointer.IsInContact && FocusManager.GetFocusedElement(XamlRoot) is null) Focus(FocusState.Pointer);
     }
 
-    private void OnKeyDown(object sender, KeyRoutedEventArgs e)
+    // Escape is caught by StageService before it gets here; any other key brings the controls back.
+    protected override void OnKeyDown(KeyRoutedEventArgs e)
     {
-        if (!_stage.IsOn) return;
-        if (e.Key == VirtualKey.Escape)
-        {
-            e.Handled = true;
-            _stage.Exit();
-            return;
-        }
-        ShowChrome();
+        base.OnKeyDown(e);
+        if (_stage.IsOn) ShowChrome();
     }
 
     private void OnExit(object sender, RoutedEventArgs e) => _stage.Exit();

@@ -92,16 +92,16 @@ public class LyricVisualTests
     }
 
     [Fact]
-    public void Lyrics_are_set_in_manrope_alone_and_louder_music_is_set_heavier()
+    public void Lyrics_are_set_in_dm_sans_alone_and_louder_music_is_set_heavier()
     {
-        Assert.Equal(["Nunito"], LyricFonts.All.Select(f => f.Family));
-        Assert.Equal(400, LyricFonts.Weight(LyricFont.Nunito, 0));
-        Assert.Equal(900, LyricFonts.Weight(LyricFont.Nunito, 1));
-        Assert.True(LyricFonts.Weight(LyricFont.Nunito, 0.5) is 500 or 700);
+        Assert.Equal(["DM Sans"], LyricFonts.All.Select(f => f.Family));
+        Assert.Equal(400, LyricFonts.Weight(LyricFont.DMSans, 0));
+        Assert.Equal(900, LyricFonts.Weight(LyricFont.DMSans, 1));
+        Assert.True(LyricFonts.Weight(LyricFont.DMSans, 0.5) is 500 or 700);
         foreach (var e in new[] { -1.0, 0.0, 0.3, 0.7, 1.0, 2.0 })
-            Assert.Contains(LyricFonts.Weight(LyricFont.Nunito, e), new[] { 400, 500, 700, 900 });
+            Assert.Contains(LyricFonts.Weight(LyricFont.DMSans, e), new[] { 400, 500, 700, 900 });
         Assert.True(LyricFonts.Energy(0.05) == 0 && LyricFonts.Energy(0.9) == 1);
-        Assert.Equal(("Nunito.ttf", "Nunito", 700), LyricFonts.For(LyricFont.Nunito).Resolve(650));
+        Assert.Equal(("DMSans.ttf", "DM Sans", 700), LyricFonts.For(LyricFont.DMSans).Resolve(650));
     }
 
     [Fact]
@@ -109,6 +109,6 @@ public class LyricVisualTests
     {
         var fonts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "..", "src", "MelodayMusic.App", "Assets", "Fonts"));
         foreach (var file in LyricFonts.All.SelectMany(t => t.Files)) Assert.True(File.Exists(Path.Combine(fonts, file)), file);
-        Assert.Equal(new[] { "Nunito.ttf" }, Directory.GetFiles(fonts, "*.ttf").Select(Path.GetFileName).OrderBy(n => n));
+        Assert.Equal(new[] { "DMSans.ttf" }, Directory.GetFiles(fonts, "*.ttf").Select(Path.GetFileName).OrderBy(n => n));
     }
 }

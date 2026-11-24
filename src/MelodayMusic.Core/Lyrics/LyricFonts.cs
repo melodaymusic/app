@@ -2,15 +2,15 @@ namespace MelodayMusic.Core.Lyrics;
 
 public enum LyricFont
 {
-    Nunito,
+    DMSans,
 }
 
 public sealed record LyricType(LyricFont Font, string Family, string File, int LightestWeight, int HeaviestWeight, string SystemFallback)
 {
     private static readonly (int Weight, string File)[] Faces =
     [
-        (400, "Nunito.ttf"), (500, "Nunito.ttf"),
-        (700, "Nunito.ttf"), (900, "Nunito.ttf"),
+        (400, "DMSans.ttf"), (500, "DMSans.ttf"),
+        (700, "DMSans.ttf"), (900, "DMSans.ttf"),
     ];
 
     public (string File, string Family, int Weight) Resolve(int weight)
@@ -26,7 +26,7 @@ public static class LyricFonts
 {
     public static IReadOnlyList<LyricType> All { get; } =
     [
-        new(LyricFont.Nunito, "Nunito", "Nunito.ttf", 400, 900, "Segoe UI Variable Display"),
+        new(LyricFont.DMSans, "DM Sans", "DMSans.ttf", 400, 900, "Segoe UI Variable Display"),
     ];
 
     public static LyricType For(LyricFont font) => All[(int)font];

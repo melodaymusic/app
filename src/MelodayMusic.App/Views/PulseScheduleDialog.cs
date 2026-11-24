@@ -75,6 +75,7 @@ public static class PulseScheduleDialog
             }).ToList(),
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(kinds, "Kind of music");
+        kinds.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("ms-appx:///Themes/NavList.xaml") });
 
         var listHeading = new TextBlock { Style = (Style)resources["MelodayGroupHeaderText"] };
         var search = new TextBox();
@@ -158,7 +159,6 @@ public static class PulseScheduleDialog
             Minimum = 1,
             Maximum = existingLength.Kind == PulseScheduleLengthKind.SongCount ? 100 : 720,
             SmallChange = 1,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Compact,
             Value = existingLength.Value,
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };
@@ -171,6 +171,27 @@ public static class PulseScheduleDialog
         }
         lengthKind.SelectionChanged += (_, _) => RefreshLength();
         RefreshLength();
+
+        // In order plays the source from the top every time; Shuffle draws different songs for each airing.
+        var order = new ComboBox
+        {
+            Header = "Order",
+            ItemsSource = new[] { "In order", "Shuffle" },
+            SelectedIndex = (int)(rule?.PlayOrder ?? (source is null ? PulseScheduleOrder.Shuffle : PulseScheduleRule.DefaultOrder(source.Kind))),
+            HorizontalAlignment = HorizontalAlignment.Stretch,
+        };
+        var orderChosen = rule?.Order is not null;
+        order.SelectionChanged += (_, _) => orderChosen = true;
+        void RefreshOrder()
+        {
+            var choice = source is not null && PulseScheduleRule.HasOrderChoice(source.Kind);
+            order.Visibility = choice ? Visibility.Visible : Visibility.Collapsed;
+            if (choice && !orderChosen)
+            {
+                order.SelectedIndex = (int)PulseScheduleRule.DefaultOrder(source!.Kind);
+                orderChosen = false;
+            }
+        }
 
         var ends = new CalendarDatePicker
         {
@@ -191,7 +212,7 @@ public static class PulseScheduleDialog
         {
             Spacing = UiScale.Size(16),
             Padding = new Thickness(0, 0, UiScale.Size(16), 0),
-            Children = { chosenHost, date, time, repeat, days, lengthKind, amount, options, status },
+            Children = { chosenHost, date, time, repeat, days, lengthKind, amount, order, options, status },
         };
 
         var layout = new Grid { ColumnSpacing = UiScale.Size(24), Width = Dialogs.ContentWidth(1020) };
@@ -321,6 +342,7 @@ public static class PulseScheduleDialog
                 if (string.IsNullOrWhiteSpace(title.Text)) title.PlaceholderText = source.Title;
             }
             dialog.IsPrimaryButtonEnabled = source is not null;
+            RefreshOrder();
         }
 
         RefreshSource();
@@ -373,6 +395,7 @@ public static class PulseScheduleDialog
                 Days = selectedDays,
                 EndsOn = chosenEndsOn,
                 Length = length,
+                Order = PulseScheduleRule.HasOrderChoice(source.Kind) ? (PulseScheduleOrder)Math.Max(0, order.SelectedIndex) : null,
                 Title = string.IsNullOrWhiteSpace(title.Text) ? null : title.Text.Trim(),
             };
             var conflicts = service.Conflicts(candidate);
@@ -407,7 +430,7 @@ public static class PulseScheduleDialog
                     playlists.AddRange(page.Items);
                     if (!page.HasMore || page.Items.Count == 0) break;
                 }
-                return playlists.Where(CanSchedule).Select(p => ChoiceFor(p)!).ToList();
+                return Services.PlaylistCopies.Hide(playlists).Where(CanSchedule).Select(p => ChoiceFor(p)!).ToList();
             case Kind.Collections:
                 return (await client.GetCollectionsAsync(sectionKey)).OrderBy(c => c.Title, StringComparer.CurrentCultureIgnoreCase)
                     .Select(c => ChoiceFor(c)!).ToList();

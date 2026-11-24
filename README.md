@@ -159,12 +159,9 @@ stay on your PC.
 
 ## Third-party software
 
-The app ships the Nunito typeface (SIL OFL 1.1), Lucide icons (ISC), projectM (LGPL 2.1) and several
+The app ships the DM Sans typeface (SIL OFL 1.1), Lucide icons (ISC), projectM (LGPL 2.1) and several
 MIT-licensed libraries. The full list with licences is in
 [src/MelodayMusic.App/Assets/THIRD-PARTY-NOTICES.txt](src/MelodayMusic.App/Assets/THIRD-PARTY-NOTICES.txt).
-
-Cover shapes: Shape Icons by [SVGBackgrounds.com](https://www.svgbackgrounds.com) and Shape Icons by
-[shapes.gallery](https://shapes.gallery).
 
 The Genre Essentials covers are based on Apple Music's genre artwork, redesigned in the Meloday palette.
 Apple Music is a trademark of Apple Inc.

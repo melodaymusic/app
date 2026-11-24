@@ -27,13 +27,13 @@ public sealed partial class PlaylistsViewModel : PagedListViewModel<Playlist>
             dispatcher?.TryEnqueue(async () => await ReloadAsync());
         App.Services.GetRequiredService<Services.MadePlaylistService>().Changed += (_, _) =>
             dispatcher?.TryEnqueue(async () => await ReloadAsync());
+        App.Services.GetRequiredService<Services.MelodayService>().PlexSyncChanged += (_, _) =>
+            dispatcher?.TryEnqueue(async () => await ReloadAsync());
     }
 
     protected override async Task<PagedResult<Playlist>> FetchAsync(int start, int size, string sort, CancellationToken ct)
     {
-        var trendingService = App.Services.GetRequiredService<Services.TrendingService>();
-        var made = App.Services.GetRequiredService<Services.MadePlaylistService>();
-        if (trendingService.IsOn || made.ManagedPlexKeys.Count > 0)
+        if (Services.PlaylistCopies.AnyKept)
         {
             var all = new List<Playlist>();
             for (var offset = 0; ; offset += 500)
@@ -42,7 +42,7 @@ public sealed partial class PlaylistsViewModel : PagedListViewModel<Playlist>
                 all.AddRange(page.Items);
                 if (page.Items.Count < 500) break;
             }
-            var visible = made.WithoutCopies(trendingService.ForDisplay(all));
+            var visible = Services.PlaylistCopies.ForDisplay(all);
             return LocalSort.Page(sort == "local:tracks"
                 ? visible.OrderByDescending(p => p.TrackCount ?? 0).ThenBy(p => p.Title).ToList() : visible, start, size);
         }

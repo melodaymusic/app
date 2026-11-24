@@ -533,6 +533,12 @@ public sealed partial class ShellView : UserControl
             e.Handled = true;
             return;
         }
+        if (e.Key == VirtualKey.Escape && _navigation.CurrentPage == typeof(NowPlayingPage) && _navigation.CanGoBack && !IsEditingText())
+        {
+            _navigation.GoBack();
+            e.Handled = true;
+            return;
+        }
         if (e.Key != VirtualKey.Space) return;
         for (var focused = FocusManager.GetFocusedElement(XamlRoot) as DependencyObject; focused is not null; focused = VisualTreeHelper.GetParent(focused))
             if (focused is TextBox or AutoSuggestBox or PasswordBox or RichEditBox or ButtonBase or ToggleSwitch or ComboBox or ListViewItem or GridViewItem or Slider) return;

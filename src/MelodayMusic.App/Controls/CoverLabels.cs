@@ -6,42 +6,50 @@ using Microsoft.UI.Xaml.Media;
 
 namespace MelodayMusic.Controls;
 
+/// <summary>
+/// Every generated cover, Meloday's included, on a 1000-unit square: the playlist label ("Meloday", "Essentials", "Mix", "Genre")
+/// top right in SemiBold, and the name bottom left in Bold. Both shrink to fit, to no less than 40%.
+/// </summary>
 public static class CoverType
 {
     public const double Unit = 1000;
-    public const double BoxWidth = 760;
-    public const double NameWidth = 675;
     public const double BoxHeight = 405;
-    public const double NameTop = 100, NameRight = 110, NameSize = 100, NameLine = 100, NameBaseline = 80;
-    public const int NameLines = 4;
-    public const double LabelLeft = 110, LabelBottom = 100, LabelSize = 88, LabelLine = 96, LabelBaseline = 81;
-    public const int LabelLines = 3;
+    // The label mirrors the Meloday mark: in from the right edge as far as the mark is from the left, its capitals centred on the mark.
+    // DM Sans capitals are 0.7 em tall; the baseline sits 0.7625 em down the line (the font's ascent share, where XAML puts it too).
+    public const double LabelSize = 76, LabelLine = 76, LabelBaseline = 76 * 0.7625, CapHeight = 0.7;
+    public const double LabelRight = MelodayMusic.Services.CoverSymbol.Left, LabelWidth = 675;
+    public const double LabelTop = MelodayMusic.Services.CoverSymbol.Top + MelodayMusic.Services.CoverSymbol.Height / 2 - (LabelBaseline - CapHeight * LabelSize / 2);
+    public const int LabelLines = 4;
+    public const double NameWidth = 760, NameLeft = 110, NameBottom = 100, NameSize = 85, NameLine = 85, NameBaseline = 85 * 0.8;
+    public const int NameLines = 3;
+    public static readonly Windows.UI.Text.FontWeight LabelWeight = FontWeights.SemiBold;
+    public static readonly Windows.UI.Text.FontWeight NameWeight = FontWeights.Bold;
 }
 
 public sealed class CoverTextLayer : Grid
 {
-    private readonly TextBlock _name = new()
+    private readonly TextBlock _label = new()
     {
-        Width = CoverType.NameWidth,
+        Width = CoverType.LabelWidth,
         HorizontalAlignment = HorizontalAlignment.Right,
         VerticalAlignment = VerticalAlignment.Top,
         TextAlignment = TextAlignment.Right,
         TextWrapping = TextWrapping.WrapWholeWords,
         LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-        FontWeight = FontWeights.Black,
+        FontWeight = CoverType.LabelWeight,
         Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
         IsHitTestVisible = false,
     };
 
-    private readonly TextBlock _label = new()
+    private readonly TextBlock _name = new()
     {
-        Width = CoverType.BoxWidth,
+        Width = CoverType.NameWidth,
         HorizontalAlignment = HorizontalAlignment.Left,
         VerticalAlignment = VerticalAlignment.Bottom,
         TextAlignment = TextAlignment.Left,
         TextWrapping = TextWrapping.WrapWholeWords,
         LineStackingStrategy = LineStackingStrategy.BlockLineHeight,
-        FontWeight = FontWeights.Bold,
+        FontWeight = CoverType.NameWeight,
         Foreground = new SolidColorBrush(Microsoft.UI.Colors.White),
         IsHitTestVisible = false,
     };
@@ -56,30 +64,32 @@ public sealed class CoverTextLayer : Grid
         _name.FontFamily = _label.FontFamily = _probe.FontFamily = font;
         Children.Add(new Grid
         {
-            Width = CoverType.NameWidth, Height = CoverType.BoxHeight,
+            Width = CoverType.LabelWidth, Height = CoverType.BoxHeight,
             HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Top,
-            Margin = new Thickness(0, CoverType.NameTop, CoverType.NameRight, 0), Children = { _name },
+            Margin = new Thickness(0, CoverType.LabelTop, CoverType.LabelRight, 0), Children = { _label },
         });
         Children.Add(new Grid
         {
-            Width = CoverType.BoxWidth, Height = CoverType.BoxHeight,
+            Width = CoverType.NameWidth, Height = CoverType.BoxHeight,
             HorizontalAlignment = HorizontalAlignment.Left, VerticalAlignment = VerticalAlignment.Bottom,
-            Margin = new Thickness(CoverType.LabelLeft, 0, 0, CoverType.LabelBottom), Children = { _label },
+            Margin = new Thickness(CoverType.NameLeft, 0, 0, CoverType.NameBottom), Children = { _name },
         });
-        SetSize(_name, CoverType.NameSize, CoverType.NameLine);
         SetSize(_label, CoverType.LabelSize, CoverType.LabelLine);
+        SetSize(_name, CoverType.NameSize, CoverType.NameLine);
     }
 
-    public string Title
-    {
-        get => _name.Text;
-        set => Fit(_name, value, CoverType.NameSize, CoverType.NameLine / CoverType.NameSize, CoverType.NameLines, FontWeights.Black);
-    }
-
+    /// <summary>The playlist label, top right.</summary>
     public string Label
     {
         get => _label.Text;
-        set => Fit(_label, value, CoverType.LabelSize, CoverType.LabelLine / CoverType.LabelSize, CoverType.LabelLines, FontWeights.Bold);
+        set => Fit(_label, value, CoverType.LabelSize, CoverType.LabelLine / CoverType.LabelSize, CoverType.LabelLines, CoverType.LabelWeight);
+    }
+
+    /// <summary>The name, bottom left.</summary>
+    public string Title
+    {
+        get => _name.Text;
+        set => Fit(_name, value, CoverType.NameSize, CoverType.NameLine / CoverType.NameSize, CoverType.NameLines, CoverType.NameWeight);
     }
 
     private static void SetSize(TextBlock block, double size, double line)
@@ -128,6 +138,7 @@ public sealed partial class CoverLabels : Grid
         Children.Add(new Viewbox { Stretch = Stretch.Uniform, Child = _text });
     }
 
+    /// <summary>The name, bottom left.</summary>
     public static readonly DependencyProperty TitleProperty = DependencyProperty.Register(
         nameof(Title), typeof(string), typeof(CoverLabels), new PropertyMetadata(string.Empty, (d, e) => ((CoverLabels)d)._text.Title = e.NewValue as string ?? string.Empty));
 
@@ -137,6 +148,7 @@ public sealed partial class CoverLabels : Grid
         set => SetValue(TitleProperty, value);
     }
 
+    /// <summary>The playlist label, top right.</summary>
     public static readonly DependencyProperty LabelProperty = DependencyProperty.Register(
         nameof(Label), typeof(string), typeof(CoverLabels), new PropertyMetadata(string.Empty, (d, e) => ((CoverLabels)d)._text.Label = e.NewValue as string ?? string.Empty));
 

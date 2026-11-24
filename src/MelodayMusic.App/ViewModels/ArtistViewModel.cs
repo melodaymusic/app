@@ -49,6 +49,11 @@ public sealed partial class ArtistViewModel : ViewModelBase
     [ObservableProperty] public partial Album? LatestRelease { get; private set; }
     [ObservableProperty] public partial string LatestReleaseKind { get; private set; } = "Album";
     [ObservableProperty] public partial string LatestReleaseMeta { get; private set; } = string.Empty;
+    /// <summary>The song the artist is on, when the latest release is someone else's album.</summary>
+    [ObservableProperty] public partial Track? LatestTrack { get; private set; }
+    [ObservableProperty] public partial string LatestTitle { get; private set; } = string.Empty;
+    [ObservableProperty] public partial string? LatestThumb { get; private set; }
+    private readonly Dictionary<string, Track> _appearanceTracks = new(StringComparer.Ordinal);
 
     public async Task LoadAsync(Artist seed)
     {
@@ -92,19 +97,32 @@ public sealed partial class ArtistViewModel : ViewModelBase
             AlbumGroups.Clear();
             foreach (var group in groups) AlbumGroups.Add(group);
 
-            var latest = releases.OrderByDescending(ReleaseSortKey).ThenByDescending(a => a.AddedAt).FirstOrDefault();
-            if (latest is not null)
+            // A feature or soundtrack appearance counts as the latest release when it's newer than the artist's own.
+            var ownLatest = releases.OrderByDescending(ReleaseSortKey).ThenByDescending(a => a.AddedAt).FirstOrDefault();
+            // Appearances only carry a year, so the newest few are fetched to compare full release dates.
+            var candidates = await Task.WhenAll(new[] { ownLatest }.Concat(appearances.Take(3)).OfType<Album>()
+                .Select(a => FullAlbumAsync(client, a)));
+            var full = candidates.OrderByDescending(ReleaseSortKey).ThenByDescending(a => a.AddedAt).FirstOrDefault();
+            if (full is not null)
             {
-                var full = await client.GetAlbumAsync(latest.RatingKey) ?? latest;
+                var guest = full.ArtistRatingKey != artist.RatingKey && _appearanceTracks.TryGetValue(full.RatingKey, out var song) ? song : null;
+                LatestThumb = full.Thumb ?? guest?.AlbumThumb;
+                LatestTrack = guest;
                 LatestRelease = full;
+                LatestTitle = guest?.Title ?? full.Title;
                 LatestReleaseKind = Releases.Label(Releases.Classify(full));
                 var bits = new List<string>();
+                if (guest is not null) bits.Add("From " + full.Title);
+                else if (full.ArtistRatingKey != artist.RatingKey && !string.IsNullOrWhiteSpace(full.ArtistTitle)) bits.Add(full.ArtistTitle);
                 if (full.Year is > 0) bits.Add(full.Year.Value.ToString());
-                if (full.TrackCount is > 0) bits.Add(Format.Count(full.TrackCount, "song", "songs"));
+                if (guest is null && full.TrackCount is > 0) bits.Add(Format.Count(full.TrackCount, "song", "songs"));
                 LatestReleaseMeta = string.Join(" · ", bits);
             }
             else
             {
+                LatestTrack = null;
+                LatestThumb = null;
+                LatestTitle = string.Empty;
                 LatestRelease = null;
             }
 
@@ -158,12 +176,13 @@ public sealed partial class ArtistViewModel : ViewModelBase
             return [];
         }
         var mine = own.Select(a => a.RatingKey).ToHashSet(StringComparer.Ordinal);
+        _appearanceTracks.Clear();
         return found.Tracks
             .Where(t => t.AlbumRatingKey is not null && !mine.Contains(t.AlbumRatingKey)
                         && t.ArtistRatingKey != artist.RatingKey
                         && ArtistCredit.Mentions(t.DisplayArtist, artist.Title))
             .GroupBy(t => t.AlbumRatingKey!)
-            .Select(g => g.First())
+            .Select(g => _appearanceTracks[g.Key] = g.First())
             .Select(t => new Album
             {
                 RatingKey = t.AlbumRatingKey!,
@@ -270,6 +289,16 @@ public sealed partial class ArtistViewModel : ViewModelBase
 
     private static IEnumerable<Artist> HubArtists(IReadOnlyList<Hub> hubs, string id) =>
         hubs.FirstOrDefault(h => h.Identifier == id)?.Items.OfType<Artist>() ?? [];
+
+    private async Task<Album> FullAlbumAsync(PlexServerClient client, Album album)
+    {
+        try { return await client.GetAlbumAsync(album.RatingKey) ?? album; }
+        catch (PlexException ex)
+        {
+            Log.LogDebug("Album details unavailable: {Message}", ex.Message);
+            return album;
+        }
+    }
 
     private async Task<IReadOnlyList<T>?> Optional<T>(Task<IReadOnlyList<T>> task)
     {

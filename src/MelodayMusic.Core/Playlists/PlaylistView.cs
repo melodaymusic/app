@@ -6,6 +6,11 @@ public static class PlaylistView
 {
     public const string Order = "order";
 
+    /// <summary>Chains tracks by how they sound. Offered only when the playlist's audio analysis is there.</summary>
+    public const string Sonic = "sonic";
+
+    public static (string Label, string Key) SonicSort { get; } = ("Sonic order", Sonic);
+
     public static IReadOnlyList<(string Label, string Key)> Sorts { get; } =
     [
         ("Playlist order", Order),

@@ -105,7 +105,8 @@ public sealed partial class ChartColumnView : UserControl
         {
             Track t => (t.Title, t.DisplayArtist, t.DisplayThumb, "Music"),
             Album a => (a.Title, a.ArtistTitle, a.Thumb, "Disc3"),
-            Artist a => (a.Title, a.ViewCount > 0 ? Helpers.Format.Plays(a.ViewCount) : a.Genres.FirstOrDefault(), a.Thumb, "MicVocal"),
+            // A chart rank is public; the listener's own play count beside it would read as personal.
+            Artist a => (a.Title, (string?)null, a.Thumb, "MicVocal"),
             _ => (item.Title, item.Subtitle, item.Thumb, "Music"),
         };
 

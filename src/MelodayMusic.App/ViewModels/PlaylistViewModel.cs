@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using MelodayMusic.Core.Models;
+using MelodayMusic.Core.Playback;
 using MelodayMusic.Core.Plex;
 using MelodayMusic.Core.Services;
 using MelodayMusic.Helpers;
@@ -10,12 +11,22 @@ namespace MelodayMusic.ViewModels;
 
 public sealed partial class PlaylistViewModel : ViewModelBase
 {
+    private const int SonicSample = 150;
+
+    private static readonly IReadOnlyList<SortOption> PlainSorts =
+        Core.Playlists.PlaylistView.Sorts.Select(s => new SortOption(s.Label, s.Key)).ToList();
+
+    private static readonly SortOption SonicOption = new(Core.Playlists.PlaylistView.SonicSort.Label, Core.Playlists.PlaylistView.SonicSort.Key);
+
+    private readonly Services.AudioAnalysisService _analysis;
+    private readonly Dictionary<string, (Core.Audio.AudioAnalysis? Head, Core.Audio.AudioAnalysis? Tail)> _sonic = [];
     private List<Track>? _all;
     private int _viewVersion;
 
-    public PlaylistViewModel(PlexSession session, ILogger<PlaylistViewModel> log) : base(session, log)
+    public PlaylistViewModel(PlexSession session, Services.AudioAnalysisService analysis, ILogger<PlaylistViewModel> log) : base(session, log)
     {
-        SortOptions = Core.Playlists.PlaylistView.Sorts.Select(s => new SortOption(s.Label, s.Key)).ToList();
+        _analysis = analysis;
+        SortOptions = PlainSorts;
         SelectedSort = SortOptions[0];
     }
 
@@ -23,7 +34,7 @@ public sealed partial class PlaylistViewModel : ViewModelBase
     [ObservableProperty] public partial IncrementalCollection<Track>? Tracks { get; private set; }
     [ObservableProperty] public partial string MetaText { get; private set; } = string.Empty;
 
-    public IReadOnlyList<SortOption> SortOptions { get; }
+    [ObservableProperty] public partial IReadOnlyList<SortOption> SortOptions { get; private set; }
 
     [ObservableProperty] public partial SortOption SelectedSort { get; set; }
 
@@ -36,6 +47,10 @@ public sealed partial class PlaylistViewModel : ViewModelBase
     private bool IsPlain => SelectedSort.Value == Core.Playlists.PlaylistView.Order && string.IsNullOrWhiteSpace(SearchText);
 
     public bool CanReorder => Playlist is { IsSmart: false } && IsPlain;
+
+    /// <summary>The tracks in the order the page shows them when a sort or search is on, so Play follows what's on screen. Null when the playlist's own order applies.</summary>
+    public IReadOnlyList<Track>? ViewTracks =>
+        !IsPlain && Shown is IEnumerable<Track> shown && !ReferenceEquals(Shown, Tracks) ? shown.ToList() : null;
 
     public System.Windows.Input.ICommand? RemoveCommand => Playlist is { IsSmart: false } ? RemoveTrackCommand : null;
 
@@ -83,9 +98,62 @@ public sealed partial class PlaylistViewModel : ViewModelBase
             return;
         }
         if (version != _viewVersion || !ReferenceEquals(tracks, Tracks)) return;
-        var view = Core.Playlists.PlaylistView.Sort(all.Where(t => Core.Playlists.PlaylistView.Matches(t, SearchText)), SelectedSort.Value).ToList();
+        var matching = all.Where(t => Core.Playlists.PlaylistView.Matches(t, SearchText));
+        List<Track> view;
+        if (SelectedSort.Value == Core.Playlists.PlaylistView.Sonic)
+        {
+            var items = await SonicItemsAsync(matching.ToList());
+            view = [.. await Task.Run(() => SmartOrder.Sonic(items))];
+            if (version != _viewVersion || !ReferenceEquals(tracks, Tracks)) return;
+        }
+        else
+        {
+            view = Core.Playlists.PlaylistView.Sort(matching, SelectedSort.Value).ToList();
+        }
         Shown = new System.Collections.ObjectModel.ObservableCollection<Track>(view);
         NoMatches = view.Count == 0 && all.Count > 0;
+    }
+
+    private async Task<List<SmartOrderItem>> SonicItemsAsync(IReadOnlyList<Track> tracks)
+    {
+        var items = new List<SmartOrderItem>(tracks.Count);
+        foreach (var track in tracks)
+        {
+            var key = SonicKey(track);
+            if (!_sonic.TryGetValue(key, out var known))
+            {
+                var head = await _analysis.CachedHeadAsync(track);
+                var tail = await _analysis.CachedTailAsync(track);
+                known = (head, tail);
+                if (head is not null || tail is not null) _sonic[key] = known;
+            }
+            items.Add(new SmartOrderItem(track, known.Head, known.Tail));
+        }
+        return items;
+    }
+
+    private static string SonicKey(Track track) => track.RatingKey + "|" + track.DurationMs;
+
+    // Sonic order is offered only when Meloday's audio analysis covers most of the playlist.
+    // The first page of tracks is the sample, so opening a playlist never reads the whole thing.
+    private async Task UpdateSonicOptionAsync(IncrementalCollection<Track> tracks)
+    {
+        var sample = tracks.Take(SonicSample).ToList();
+        var analysed = 0;
+        foreach (var track in sample)
+        {
+            var key = SonicKey(track);
+            if (_sonic.ContainsKey(key)) { analysed++; continue; }
+            var head = await _analysis.CachedHeadAsync(track);
+            if (head is null) continue;
+            analysed++;
+            _sonic[key] = (head, await _analysis.CachedTailAsync(track));
+        }
+        if (!ReferenceEquals(tracks, Tracks)) return;
+        var offer = SmartOrder.Covers(analysed, sample.Count);
+        if (offer == SortOptions.Contains(SonicOption)) return;
+        SortOptions = offer ? [PlainSorts[0], SonicOption, .. PlainSorts.Skip(1)] : PlainSorts;
+        if (!offer && SelectedSort == SonicOption) SelectedSort = SortOptions[0];
     }
 
     private async Task<List<Track>> AllTracksAsync(string playlistKey)
@@ -120,7 +188,7 @@ public sealed partial class PlaylistViewModel : ViewModelBase
         {
             Log.LogWarning("Couldn't remove {Track} from {Playlist}: {Message}", track.Title, playlist.Title, ex.Message);
             ErrorMessage = null;
-            App.Services.GetRequiredService<Services.NotificationService>().ShowError("Couldn't remove the track", "Plex didn't accept the change.", autoHide: true);
+            App.Services.GetRequiredService<Services.NotificationService>().ShowError("Couldn't remove the song", "Plex didn't accept the change.", autoHide: true);
             await LoadAsync(playlist);
         }
     }
@@ -163,6 +231,7 @@ public sealed partial class PlaylistViewModel : ViewModelBase
             }
             IsEmpty = tracks.Count == 0;
         });
+        if (ReferenceEquals(tracks, Tracks)) await UpdateSonicOptionAsync(tracks);
     }
 
     public async Task RefreshAsync()
@@ -195,6 +264,7 @@ public sealed partial class PlaylistViewModel : ViewModelBase
                 Tracks = fresh;
                 IsEmpty = fresh.Count == 0;
             }
+            if (Tracks is { } shown) await UpdateSonicOptionAsync(shown);
         }
         catch (PlexException ex)
         {

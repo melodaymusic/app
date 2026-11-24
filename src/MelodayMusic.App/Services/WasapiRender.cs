@@ -20,10 +20,19 @@ public sealed class WasapiRender : IDisposable
     private readonly int _rate;
     private float[] _scratch;
     private volatile bool _exit;
+    private volatile bool _lost;
     private bool _playing;
     private float _volume = 1;
 
     public event Action? RanDry;
+
+    // Raised once, from whichever thread noticed, when Windows takes the output device away: it was unplugged or
+    // disconnected, the PC slept, or the audio service restarted. This renderer can't play again after that.
+    public event Action? Lost;
+
+    public bool IsLost => _lost;
+
+    public string DeviceId { get; }
 
     public WasapiRender(int rate, int channels, int bufferMs, FillHandler fill)
     {
@@ -31,6 +40,7 @@ public sealed class WasapiRender : IDisposable
         _channels = channels;
         _rate = rate;
         _device = new MMDeviceEnumerator().GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+        DeviceId = _device.ID;
         _client = _device.AudioClient;
         var format = WaveFormat.CreateIeeeFloatWaveFormat(rate, channels);
         _client.Initialize(AudioClientShareMode.Shared,
@@ -74,10 +84,18 @@ public sealed class WasapiRender : IDisposable
     {
         lock (_gate)
         {
-            if (_playing) return;
+            if (_playing || _lost) return;
             _playing = true;
-            FillLocked(_bufferFrames - _client.CurrentPadding);
-            _client.Start();
+            try
+            {
+                FillLocked(_bufferFrames - _client.CurrentPadding);
+                _client.Start();
+            }
+            catch (Exception ex) when (IsDeviceGone(ex))
+            {
+                MarkLostLocked();
+                return;
+            }
         }
         _event.Set();
     }
@@ -88,7 +106,9 @@ public sealed class WasapiRender : IDisposable
         {
             if (!_playing) return;
             _playing = false;
-            _client.Stop();
+            if (_lost) return;
+            try { _client.Stop(); }
+            catch (Exception ex) when (IsDeviceGone(ex)) { MarkLostLocked(); }
         }
     }
 
@@ -96,12 +116,20 @@ public sealed class WasapiRender : IDisposable
     {
         lock (_gate)
         {
+            if (_lost) return;
             var wasPlaying = _playing;
-            _client.Stop();
-            _client.Reset();
-            if (!wasPlaying) return;
-            FillLocked(_bufferFrames);
-            _client.Start();
+            try
+            {
+                _client.Stop();
+                _client.Reset();
+                if (!wasPlaying) return;
+                FillLocked(_bufferFrames);
+                _client.Start();
+            }
+            catch (Exception ex) when (IsDeviceGone(ex))
+            {
+                MarkLostLocked();
+            }
         }
     }
 
@@ -117,12 +145,16 @@ public sealed class WasapiRender : IDisposable
                 _event.WaitOne(250);
                 lock (_gate)
                 {
-                    if (!_playing || _exit) continue;
+                    if (!_playing || _exit || _lost) continue;
                     var padding = _client.CurrentPadding;
                     if (padding == 0) RanDry?.Invoke();
                     FillLocked(_bufferFrames - padding);
                 }
             }
+        }
+        catch (Exception ex) when (IsDeviceGone(ex))
+        {
+            lock (_gate) MarkLostLocked();
         }
         catch (Exception)
         {
@@ -145,6 +177,18 @@ public sealed class WasapiRender : IDisposable
         Marshal.Copy(_scratch, 0, data, made * _channels);
         _render.ReleaseBuffer(made, AudioClientBufferFlags.None);
     }
+
+    private void MarkLostLocked()
+    {
+        if (_lost) return;
+        _lost = true;
+        _playing = false;
+        Lost?.Invoke();
+    }
+
+    // AUDCLNT_E_DEVICE_INVALIDATED, AUDCLNT_E_SERVICE_NOT_RUNNING and AUDCLNT_E_RESOURCES_INVALIDATED.
+    public static bool IsDeviceGone(Exception ex) =>
+        ex is COMException { HResult: unchecked((int)0x88890004) or unchecked((int)0x88890010) or unchecked((int)0x88890026) };
 
     public void Dispose()
     {

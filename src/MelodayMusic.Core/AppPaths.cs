@@ -40,6 +40,7 @@ public static class AppPaths
     public static string LyricEdits => Path.Combine(Root, "lyrics", "edits");
     public static string LiveStations => Path.Combine(Root, "radio", "live.json");
     public static string PulseSchedule => Path.Combine(Root, "radio", "pulse-schedule.json");
+    public static string PulseLineup => Path.Combine(Root, "radio", "pulse-lineup.json");
     public static string StationFeedback => Path.Combine(Root, "radio", "feedback.json");
     public static string HeadlinerHistory => Path.Combine(Root, "radio", "headliners.json");
     public static string Logs => Path.Combine(Shared, "logs");

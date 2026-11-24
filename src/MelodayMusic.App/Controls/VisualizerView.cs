@@ -213,7 +213,7 @@ public sealed partial class VisualizerView : Grid
         if (_sprite is not null) _sprite.Opacity = on && available && _renderError is null ? 1 : 0;
         _note.Text = _renderError is { } error ? "This visualizer couldn't start. " + error
             : "Visualizers listen to this computer's own player, so they don't show while casting.";
-        _note.Visibility = on && (_renderError is not null || !available && _player.CurrentTrack is not null) ? Visibility.Visible : Visibility.Collapsed;
+        _note.Visibility = on && (_renderError is not null || !available && _player.IsCasting && _player.CurrentTrack is not null) ? Visibility.Visible : Visibility.Collapsed;
         var run = on && available && _renderError is null && Motion.IsActive && (_player.IsPlaying || !_settled);
         if (run) StartLoop();
         else StopLoop();

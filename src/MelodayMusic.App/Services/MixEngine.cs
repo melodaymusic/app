@@ -3,13 +3,14 @@ using MelodayMusic.Core.Playback;
 using Microsoft.Extensions.Logging;
 using Microsoft.UI.Dispatching;
 using NAudio.CoreAudioApi;
+using NAudio.CoreAudioApi.Interfaces;
 using NAudio.MediaFoundation;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 
 namespace MelodayMusic.Services;
 
-public sealed class MixEngine : IPlaybackEngine
+public sealed class MixEngine : IPlaybackEngine, IMMNotificationClient
 {
     private const int Channels = 2;
     private const int OutputBufferMs = 800;
@@ -19,6 +20,7 @@ public sealed class MixEngine : IPlaybackEngine
     private readonly DispatcherQueue _dispatcher;
     private readonly object _gate = new();
     private WasapiRender? _output;
+    private MMDeviceEnumerator? _deviceWatch;
     private int _rate = 48000;
 
     private Deck? _current;
@@ -163,10 +165,10 @@ public sealed class MixEngine : IPlaybackEngine
         if (!crossfading)
         {
             lock (_gate) _limiter?.Reset();
-            _output!.Flush();
+            Drive(o => o.Flush());
         }
-        if (_playing) _output!.Play();
-        else _output!.Pause();
+        var play = _playing;
+        Drive(o => { if (play) o.Play(); else o.Pause(); });
         SetState(_playing ? EngineState.Playing : EngineState.Paused);
         return true;
     }
@@ -180,8 +182,7 @@ public sealed class MixEngine : IPlaybackEngine
     {
         if (_current is null) return;
         _playing = true;
-        EnsureOutput();
-        _output!.Play();
+        Drive(o => o.Play());
         SetState(EngineState.Playing);
     }
 
@@ -349,28 +350,99 @@ public sealed class MixEngine : IPlaybackEngine
         if (_current is { } deck) Settle(deck);
     }
 
+    // Runs an output call, and if the device turned out to be gone, reopens the current default device and runs it
+    // again there, so a song isn't reported as unplayable because headphones were unplugged or the PC slept.
+    private void Drive(Action<WasapiRender> act)
+    {
+        EnsureOutput();
+        act(_output!);
+        if (!_output!.IsLost) return;
+        EnsureOutput();
+        act(_output!);
+    }
+
     private void EnsureOutput()
     {
-        if (_output is not null) return;
-        try
+        if (_output is { IsLost: false }) return;
+        if (_output is { } lost)
         {
-            using var devices = new MMDeviceEnumerator();
-            using var device = devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            _rate = device.AudioClient.MixFormat.SampleRate;
+            _log.LogWarning("The audio output device went away; switching to the current default device");
+            _output = null;
+            lost.Dispose();
         }
-        catch (Exception ex)
+        if (_limiter is null)
         {
-            _log.LogDebug("Using 48 kHz: {Message}", ex.Message);
+            try
+            {
+                using var devices = new MMDeviceEnumerator();
+                using var device = devices.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
+                _rate = device.AudioClient.MixFormat.SampleRate;
+            }
+            catch (Exception ex)
+            {
+                _log.LogDebug("Using 48 kHz: {Message}", ex.Message);
+            }
+            _limiter = new Limiter(_rate, Channels);
+            _riser = new Riser(_rate, Channels);
+            WatchDevices();
         }
-        _limiter = new Limiter(_rate, Channels);
-        _riser = new Riser(_rate, Channels);
-        _output = new WasapiRender(_rate, Channels, OutputBufferMs, Render);
-        _output.RanDry += () =>
+        // A later device keeps the first device's rate: Windows converts it, and the open songs stay valid.
+        var output = new WasapiRender(_rate, Channels, OutputBufferMs, Render);
+        output.RanDry += () =>
         {
             if (PerfMonitor.IsEnabled) _log.LogInformation("[perf] the audio device ran dry: the app held the audio thread for longer than the {Buffer} ms buffer", OutputBufferMs);
         };
+        output.Lost += () => _dispatcher.TryEnqueue(() => SwitchOutput(null));
+        _output = output;
         ApplyVolume();
     }
+
+    private void WatchDevices()
+    {
+        try
+        {
+            _deviceWatch = new MMDeviceEnumerator();
+            _deviceWatch.RegisterEndpointNotificationCallback(this);
+        }
+        catch (Exception ex)
+        {
+            _log.LogDebug("Not following the default audio device: {Message}", ex.Message);
+        }
+    }
+
+    // Moves playback to the current default device when the old one is gone or Windows picked another one.
+    private void SwitchOutput(string? defaultId)
+    {
+        if (_output is null) return;
+        if (!_output.IsLost && (defaultId is null || defaultId == _output.DeviceId)) return;
+        try
+        {
+            if (!_output.IsLost)
+            {
+                _log.LogInformation("The default audio device changed; moving playback to it");
+                var old = _output;
+                _output = null;
+                old.Dispose();
+            }
+            EnsureOutput();
+            if (_playing && _current is not null) _output!.Play();
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning("No audio output device is available yet: {Message}", ex.Message);
+        }
+    }
+
+    void IMMNotificationClient.OnDefaultDeviceChanged(DataFlow flow, Role role, string defaultDeviceId)
+    {
+        if (flow != DataFlow.Render || role != Role.Multimedia || string.IsNullOrEmpty(defaultDeviceId)) return;
+        _dispatcher.TryEnqueue(() => SwitchOutput(defaultDeviceId));
+    }
+
+    void IMMNotificationClient.OnDeviceStateChanged(string deviceId, DeviceState newState) { }
+    void IMMNotificationClient.OnDeviceAdded(string pwstrDeviceId) { }
+    void IMMNotificationClient.OnDeviceRemoved(string deviceId) { }
+    void IMMNotificationClient.OnPropertyValueChanged(string pwstrDeviceId, PropertyKey key) { }
 
     private float[] _scratch = new float[Slice * Channels];
 
@@ -670,6 +742,12 @@ public sealed class MixEngine : IPlaybackEngine
     public void Dispose()
     {
         Stop();
+        if (_deviceWatch is { } watch)
+        {
+            try { watch.UnregisterEndpointNotificationCallback(this); } catch (Exception) { }
+            watch.Dispose();
+            _deviceWatch = null;
+        }
         _output?.Dispose();
         _output = null;
     }

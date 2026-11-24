@@ -102,6 +102,8 @@ public sealed class TrendingService
         Changed?.Invoke(this, EventArgs.Empty);
     }
     private string PlaylistScope => _session.Server?.MachineIdentifier + ":" + _session.Section?.Key + ":" + _session.Account?.Id;
+    public bool IsPlexCopy(Playlist playlist) =>
+        IsOn && _settings.Current.LastFmPlaylistKeys.TryGetValue(PlaylistScope, out var managed) && playlist.RatingKey == managed;
     public IReadOnlyList<Playlist> ForDisplay(IEnumerable<Playlist> playlists)
     {
         if (!IsOn) return playlists.ToList();

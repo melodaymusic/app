@@ -11,10 +11,23 @@ public sealed partial class TagHubPage : Page
 {
     private TagItem? _family;
 
+    private readonly System.Collections.ObjectModel.ObservableCollection<TagItem> _members = [];
+
     public TagHubPage()
     {
         InitializeComponent();
         Controls.ResponsiveGrid.SetFixedItemHeight(Members, Controls.TagCard.SlotHeight);
+        Members.ItemsSource = _members;
+        Loaded += (_, _) => TagFamilies.Changed += OnFamiliesChanged;
+        Unloaded += (_, _) => TagFamilies.Changed -= OnFamiliesChanged;
+    }
+
+    // A genre moved out of this family leaves the page straight away.
+    private void OnFamiliesChanged(object? sender, EventArgs e)
+    {
+        if (_family is null) return;
+        foreach (var member in _members.Where(m => TagFamilies.FamilyOf(m.Title, m.TagKind) != _family.Title).ToList()) _members.Remove(member);
+        Header.Subtitle = Helpers.Format.Count(_members.Count, Singular(_family.TagKind), Plural(_family.TagKind));
     }
 
     protected override void OnNavigatedTo(NavigationEventArgs e)
@@ -25,7 +38,8 @@ public sealed partial class TagHubPage : Page
         Header.Eyebrow = family.TagKind.ToString();
         Header.Title = family.Title;
         Header.Subtitle = Helpers.Format.Count(family.Members.Count, Singular(family.TagKind), Plural(family.TagKind));
-        Members.ItemsSource = family.Members;
+        _members.Clear();
+        foreach (var member in family.Members) _members.Add(member);
         _ = LoadHighlightsAsync(family);
         _ = LoadMixesAsync(family);
     }

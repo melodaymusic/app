@@ -19,8 +19,8 @@ public static class EditorChrome
 
     private static void Apply(FrameworkElement editor)
     {
-        var edge = new SolidColorBrush(ColorHelper.FromArgb(0x38, 255, 255, 255));
-        var hover = new SolidColorBrush(ColorHelper.FromArgb(0x70, 255, 255, 255));
+        var edge = new SolidColorBrush(ColorHelper.FromArgb(0x1F, 255, 255, 255));
+        var hover = new SolidColorBrush(ColorHelper.FromArgb(0x38, 255, 255, 255));
         var focus = new SolidColorBrush(ColorHelper.FromArgb(255, 244, 242, 238));
         editor.Resources["TextControlBorderThemeThickness"] = new Thickness(1);
         editor.Resources["TextControlBorderThemeThicknessFocused"] = new Thickness(1);

@@ -62,6 +62,12 @@ public static class MediaMenu
         Add("Play Next", "ListStart", () => _ = actions.PlayNextAsync(item));
         Add("Add to Queue", "ListEnd", () => _ = actions.AddToQueueAsync(item));
 
+        if (item is TagItem { IsFamily: false } tag && TagFamilies.CanMove(tag.TagKind))
+        {
+            menu.Items.Add(new MenuFlyoutSeparator());
+            menu.Items.Add(MoveToFamily(tag));
+        }
+
         if (Views.PulseScheduleDialog.CanSchedule(item))
             Add("Schedule on Pulse…", "Calendar", () => _ = Views.PulseScheduleDialog.ShowAsync(item));
 
@@ -189,6 +195,32 @@ public static class MediaMenu
 
     /// <summary>Things that can be marked "Don't use for my taste profile": what a queue can be started from.</summary>
     internal static bool TasteSource(MediaItem item) => item is Playlist or Album or ArtistMix or TagMix or BuiltMix or Station { IsBuilder: false };
+
+    // Lets a listener put a genre, style or mood under the family they think it belongs to.
+    private static MenuFlyoutSubItem MoveToFamily(TagItem tag)
+    {
+        var moves = App.Services.GetRequiredService<TagFamilyMoves>();
+        var current = TagFamilies.FamilyOf(tag.Title, tag.TagKind);
+        var automatic = TagFamilies.AutomaticFamilyOf(tag.Title, tag.TagKind);
+        var sub = new MenuFlyoutSubItem { Text = "Move to Family" };
+        foreach (var family in TagFamilies.Names(tag.TagKind))
+        {
+            var option = new RadioMenuFlyoutItem { Text = family, GroupName = "family", IsChecked = family == current };
+            option.Click += (_, _) => moves.Move(tag, family);
+            sub.Items.Add(option);
+        }
+        sub.Items.Add(new MenuFlyoutSeparator());
+        var none = new RadioMenuFlyoutItem { Text = "No Family", GroupName = "family", IsChecked = current is null };
+        none.Click += (_, _) => moves.Move(tag, null);
+        sub.Items.Add(none);
+        if (TagFamilies.IsMoved(tag.Title, tag.TagKind))
+        {
+            var reset = new MenuFlyoutItem { Text = automatic is null ? "Back to Automatic" : $"Back to Automatic ({automatic})" };
+            reset.Click += (_, _) => moves.Reset(tag);
+            sub.Items.Add(reset);
+        }
+        return sub;
+    }
 
     private static MenuFlyoutSubItem AddToPlaylist(MediaItem item)
     {

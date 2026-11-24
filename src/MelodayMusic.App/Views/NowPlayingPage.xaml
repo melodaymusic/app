@@ -74,7 +74,7 @@
                             <TextBlock Text="{x:Bind Player.FeaturedProgress, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" />
                         </StackPanel>
                     </Grid>
-                    <TextBlock x:Name="TitleText" Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource MelodayHeroText}" FontSize="{StaticResource MelodayFontFeature}" LineHeight="{StaticResource MelodayLineFeature}"
+                    <TextBlock x:Name="TitleText" Text="{x:Bind Player.Title, Mode=OneWay}" Style="{StaticResource MelodayHeroText}" FontSize="{StaticResource MelodayFontFeature}"
                                IsTextSelectionEnabled="True" AutomationProperties.AutomationId="NowPlayingPageTitle" />
                     <HyperlinkButton Command="{x:Bind Player.OpenArtistCommand}" Style="{StaticResource MelodayFeatureSubtitleLinkStyle}">
                         <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" TextTrimming="CharacterEllipsis" />

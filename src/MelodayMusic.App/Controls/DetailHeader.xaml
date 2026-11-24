@@ -6,7 +6,7 @@
     xmlns:helpers="using:MelodayMusic.Helpers"
     IsTabStop="False">
 
-    <Grid x:Name="Root" Padding="{StaticResource MelodayDetailHeaderPadding}" ColumnSpacing="{StaticResource MelodayDetailHeaderSpacing}">
+    <Grid x:Name="Root" Background="Transparent" PointerWheelChanged="OnWheel" Padding="{StaticResource MelodayDetailHeaderPadding}" ColumnSpacing="{StaticResource MelodayDetailHeaderSpacing}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="Auto" />
             <ColumnDefinition Width="*" />

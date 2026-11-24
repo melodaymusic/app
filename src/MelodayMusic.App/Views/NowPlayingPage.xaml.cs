@@ -86,6 +86,8 @@ public sealed partial class NowPlayingPage : Page
             UpdateVisibility();
             _ = UpdateBackdropAsync();
         }
+        // Playback moves to the mixing engine when a song starts, which is when a visualizer has something to draw.
+        else if (e.PropertyName == nameof(PlayerViewModel.IsPlaying)) UpdateVisibility();
     }
 
     private void UpdateVisibility()
@@ -93,7 +95,9 @@ public sealed partial class NowPlayingPage : Page
         var visible = Player.HasTrack ? Visibility.Visible : Visibility.Collapsed;
         Cover.Visibility = visible;
         Info.Visibility = visible;
-        var picture = Player.HasTrack && _visualizer.Style != Core.Playback.VisualizerStyle.Off && !_stage.IsOn;
+        var service = App.Services.GetRequiredService<PlayerService>();
+        var picture = Player.HasTrack && _visualizer.Style != Core.Playback.VisualizerStyle.Off && !_stage.IsOn
+            && (service.CanVisualize || service.IsCasting);
         Visualizer.Visibility = picture ? Visibility.Visible : Visibility.Collapsed;
         if (picture) Cover.Visibility = Visibility.Collapsed;
     }
@@ -117,7 +121,6 @@ public sealed partial class NowPlayingPage : Page
             Info.Width = info;
             UpNextPanel.Width = art + ColumnGap + info;
             TitleText.FontSize = UiScale.Text(40);
-            TitleText.LineHeight = UiScale.Text(48);
         }
         else
         {
@@ -131,7 +134,6 @@ public sealed partial class NowPlayingPage : Page
             Info.Width = info;
             UpNextPanel.Width = info;
             TitleText.FontSize = UiScale.Text(32);
-            TitleText.LineHeight = UiScale.Text(40);
         }
 
         Cover.Width = art;

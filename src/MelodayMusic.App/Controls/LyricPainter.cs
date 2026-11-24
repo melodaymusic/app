@@ -27,7 +27,7 @@ internal sealed class LyricPainter(bool backdrop) : IVisualPainter, IDisposable
 
     private static readonly object TypeGate = new();
     private static double s_energy = 0.4, s_energyAt = -1;
-    private readonly LyricFont _font = LyricFont.Nunito;
+    private readonly LyricFont _font = LyricFont.DMSans;
     private double _energy = 0.4;
     private float _shownAlpha = 1;
     private SetLine?[] _lines = [];

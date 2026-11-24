@@ -61,7 +61,7 @@ public sealed partial class HomeViewModel
             IReadOnlyList<(Playlist Playlist, IReadOnlyList<Track> Tracks)> playlistSamples = [];
             try
             {
-                var playlists = (await client.GetPlaylistsAsync(0, 16, sort: "updatedAt:desc")).Items;
+                var playlists = Services.PlaylistCopies.Hide((await client.GetPlaylistsAsync(0, 16, sort: "updatedAt:desc")).Items);
                 playlistSamples = await Task.WhenAll(playlists.Select(async playlist =>
                 {
                     var tracks = (await client.GetPlaylistItemsAsync(playlist.RatingKey, 0, 80)).Items;

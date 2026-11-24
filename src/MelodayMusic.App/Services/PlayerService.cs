@@ -39,6 +39,8 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
 
     public bool CanVisualize => Mixer is not null;
 
+    public bool IsCasting => routing_?.Cast is not null;
+
     public bool TryReadHeard(float[] destination, out int sampleRate)
     {
         sampleRate = 48000;
@@ -81,6 +83,7 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
     private TimeSpan _transcodeOffset;
     private DateTime _lastReport = DateTime.MinValue;
     private int _consecutiveFailures;
+    private bool _outputFailed;
     private bool _playReported;
     private TimeSpan _pendingStartPosition;
     private bool _sourceLoaded;
@@ -625,6 +628,14 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
             return;
         }
 
+        if (_outputFailed)
+        {
+            _log.LogError("Could not play {Track}: no audio output device", track.Title);
+            _notifications.ShowError("No sound output", "Windows has no speakers or headphones available. Connect one, then press Play.");
+            StopInternal(clearTrack: false);
+            return;
+        }
+
         _consecutiveFailures++;
         _log.LogError("Could not play {Track} ({Codec})", track.Title, track.Media?.Codec);
         _notifications.ShowError("Couldn't play track", $"“{track.Title}” is unavailable or in a format that couldn't be played.");
@@ -644,12 +655,15 @@ public sealed partial class PlayerService : ObservableObject, IDisposable
         _isTranscoded = transcoded;
         _transcodeOffset = transcoded ? offset : TimeSpan.Zero;
         _openedLevel = level;
+        _outputFailed = false;
         try
         {
             return await _engine.OpenAsync(uri, start, autoPlay, ct, crossfade, level);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            // E_NOTFOUND comes from asking Windows for a default output device when there is none.
+            _outputFailed = WasapiRender.IsDeviceGone(ex) || ex is System.Runtime.InteropServices.COMException { HResult: unchecked((int)0x80070490) };
             _log.LogError(ex, "Engine failed to open media");
             return false;
         }

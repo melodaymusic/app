@@ -24,7 +24,8 @@ public class SpotlightSelectionTests
         var artist = new Artist { RatingKey = "artist", Title = "Someone", Thumb = "thumb" };
         var picks = SpotlightSelection.Pick(Now, [old, old], [artist], []);
         var pick = Assert.Single(picks);
-        Assert.Equal("From Your Library", pick.Tag);
+        Assert.DoesNotContain("New", pick.Tag);
+        Assert.Equal("From Your Library", Assert.Single(SpotlightSelection.Pick(Now, [old, old], [], [])).Tag);
     }
 
     [Fact]
@@ -62,5 +63,24 @@ public class SpotlightSelectionTests
     {
         Assert.Empty(SpotlightSelection.Pick(Now, [], [], []));
         Assert.Empty(SpotlightSelection.Pick(Now, [new Album()], [new Artist()], [new Album()]));
+    }
+
+    [Fact]
+    public void LeadsWithTheNewestReleaseAndAnArtistNewToTheLibrary()
+    {
+        var older = new Album { RatingKey = "older", ArtistRatingKey = "a1", ArtistTitle = "One", Thumb = "t", ReleaseDate = Now.AddDays(-40) };
+        var newest = new Album { RatingKey = "newest", ArtistRatingKey = "a2", ArtistTitle = "Two", Thumb = "t", ReleaseDate = Now.AddDays(-3) };
+        var future = new Album { RatingKey = "future", ArtistRatingKey = "a3", ArtistTitle = "Three", Thumb = "t", ReleaseDate = Now.AddDays(20) };
+        var arrival = new Artist { RatingKey = "a4", Title = "Four", Thumb = "t", AddedAt = Now.AddDays(-6) };
+        var stale = new Artist { RatingKey = "a5", Title = "Five", Thumb = "t", AddedAt = Now.AddYears(-2) };
+        var favourite = new Artist { RatingKey = "a6", Title = "Six", Thumb = "t" };
+        var picks = SpotlightSelection.Pick(Now, [], [favourite], [], [future, older, newest], [stale, arrival]);
+        Assert.Equal("newest", picks[0].Item.RatingKey);
+        Assert.Equal("New Release", picks[0].Tag);
+        Assert.Equal(arrival, picks[1].Item);
+        Assert.Equal("New Artist", picks[1].Tag);
+        Assert.Contains(picks, p => p.Item == favourite && p.Tag == "Artist Spotlight");
+        Assert.DoesNotContain(picks, p => p.Item.RatingKey == "future" && p.Tag == "New Release");
+        Assert.DoesNotContain(picks, p => p.Item == stale && p.Tag == "New Artist");
     }
 }

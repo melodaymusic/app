@@ -36,7 +36,7 @@
                                            SourcePath="{x:Bind ViewModel.FeaturedCover, Mode=OneWay}" />
                 </Button>
                 <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
-                    <TextBlock Text="{x:Bind ViewModel.FeaturedTitle, Mode=OneWay}" Style="{StaticResource MelodayHeroText}" FontSize="{StaticResource MelodayFontFeature}" LineHeight="{StaticResource MelodayLineFeature}"
+                    <TextBlock Text="{x:Bind ViewModel.FeaturedTitle, Mode=OneWay}" Style="{StaticResource MelodayHeroText}" FontSize="{StaticResource MelodayFontFeature}"
                                TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
                     <HyperlinkButton Style="{StaticResource MelodayFeatureSubtitleLinkStyle}" Click="OnFeaturedArtistClick"
                                      Visibility="{x:Bind ViewModel.FeaturedHasArtist, Mode=OneWay}">

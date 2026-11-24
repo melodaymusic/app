@@ -16,7 +16,7 @@ public sealed record CoverPhoto(string Artist, string Path);
 /// </summary>
 public static class MadePlaylistCover
 {
-    private const int Version = 8;
+    private const int Version = 16;
     private static string Folder => Path.Combine(AppPaths.Root, "made");
 
     public static async Task<string?> RenderAsync(PlaylistRecipe recipe, CoverPhoto? photo, ILogger log)
@@ -32,6 +32,7 @@ public static class MadePlaylistCover
             var device = CanvasDevice.GetSharedDevice();
             using var picture = photo is null ? null : await LoadAsync(device, photo.Path, log);
             using var target = new CanvasRenderTarget(device, size, size, 96);
+            uint accent;
             using (var ds = target.CreateDrawingSession())
             {
                 if (picture is null)
@@ -39,6 +40,7 @@ public static class MadePlaylistCover
                     ds.Clear(Color.FromArgb(255, (byte)(ground >> 16), (byte)(ground >> 8), (byte)ground));
                     var baseline = MelodayCover.DrawTitleBottomLeft(ds, recipe.Title, size, log);
                     CoverEdges.Draw(ds, ground, size, baseline);
+                    accent = CoverEdge.Colour(ground);
                 }
                 else
                 {
@@ -46,9 +48,10 @@ public static class MadePlaylistCover
                     DrawPhoto(ds, picture, size);
                     var baseline = MelodayCover.DrawTitleBottomLeft(ds, recipe.Title, size, log);
                     CoverEdges.DrawIn(ds, edge, size, baseline);
+                    accent = edge;
                 }
             }
-            await CoverSymbol.DrawAsync(target);
+            await CoverSymbol.DrawAsync(target, accent);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             foreach (var old in Directory.EnumerateFiles(Folder, $"cover-{recipe.Id}-*.png"))
             {

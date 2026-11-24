@@ -84,7 +84,9 @@ public sealed partial class MediaTile : UserControl
         TitleText.Visibility = isMix ? Visibility.Collapsed : Visibility.Visible;
         SubtitleRow.Margin = isMix ? new Thickness(0, 10, 0, 0) : new Thickness(0);
         UpdateMix(isMix ? item : null);
+        // An artist is already plain from the round photo, so the "Artist" line is hidden; screen readers still hear it.
         if (round) SubtitleText.Text = "Artist";
+        SubtitleRow.Visibility = round ? Visibility.Collapsed : Visibility.Visible;
         Art.PlaceholderIcon = item switch
         {
             Artist => "MicVocal",
@@ -95,7 +97,6 @@ public sealed partial class MediaTile : UserControl
         };
         Art.SourcePath = item switch
         {
-            _ when isMix && ShapeCovers.Applies(item) => Art.SourcePath,
             Playlist p => p.DisplayThumb,
             Track t => t.DisplayThumb,
             _ => item?.Thumb,
@@ -123,31 +124,14 @@ public sealed partial class MediaTile : UserControl
         StationField.Field = station is null ? null : StationColours.Field(station);
         StationField.Tint = station is null ? null : StationColours.Tint(station);
         if (station is null) return;
-        StationLabels.Title = station.IsBuilder ? string.Empty : Helpers.Format.StationCoverTitle(station);
-        StationLabels.Label = station.IsBuilder ? station.Title : Helpers.Format.StationCoverLabel(station);
+        StationLabels.Label = station.IsBuilder ? string.Empty : Helpers.Format.StationCoverTitle(station);
+        StationLabels.Title = station.IsBuilder ? station.Title : Helpers.Format.StationCoverLabel(station);
         StationSymbol.Badge = station.IsBuilder ? string.Empty : Helpers.Format.StationBadge(station);
         StationSymbol.SetStation(station);
     }
 
     private async void UpdateMix(MediaItem? mix)
     {
-        if (mix is not null && ShapeCovers.Applies(mix))
-        {
-            if (MixArt is not null) MixArt.Visibility = Visibility.Collapsed;
-            Art.Visibility = Visibility.Visible;
-            Art.SourcePath = null;
-            SubtitleText.TextTrimming = TextTrimming.CharacterEllipsis;
-            var info = App.Services.GetRequiredService<MixService>().GetAsync(mix);
-            var cover = await App.Services.GetRequiredService<ShapeCovers>().GetAsync(mix);
-            if (!ReferenceEquals(mix, Item)) return;
-            Art.SourcePath = cover;
-            if (await info is { Featuring.Length: > 0 } found && ReferenceEquals(mix, Item))
-            {
-                SubtitleText.Text = found.Featuring;
-                AutomationProperties.SetName(this, $"{mix.Title}, {found.Featuring}");
-            }
-            return;
-        }
         if (mix is not null && MixArt is null) FindName(nameof(MixArt));
         if (MixArt is null) return;
         MixArt.Visibility = mix is null ? Visibility.Collapsed : Visibility.Visible;
@@ -155,6 +139,7 @@ public sealed partial class MediaTile : UserControl
         Art.Visibility = Visibility.Collapsed;
         SubtitleText.TextTrimming = TextTrimming.CharacterEllipsis;
         MixArt.Show(null);
+        MixArt.Radio = mix is BuiltMix { RatingKey: not "mix:discovery" };
         MixArt.Title = mix.Title;
         var data = await MixCoverData.LoadAsync(mix);
         if (!ReferenceEquals(mix, Item)) return;

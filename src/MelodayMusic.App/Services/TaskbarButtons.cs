@@ -11,6 +11,9 @@ public sealed class TaskbarButtons
     private const uint PlayPauseId = 2;
     private const uint NextId = 3;
 
+    // Sent whenever Windows creates the window's taskbar button, including after the window comes back from the tray.
+    private static readonly uint TaskbarButtonCreated = RegisterWindowMessage("TaskbarButtonCreated");
+
     private readonly PlayerService _player;
     private readonly TaskbarPreview _preview;
     private readonly ILogger<TaskbarButtons> _log;
@@ -53,7 +56,20 @@ public sealed class TaskbarButtons
         }
         catch (Exception ex) when (ex is COMException or InvalidCastException or DllNotFoundException)
         {
-            _log.LogDebug("Taskbar buttons unavailable: {Message}", ex.Message);
+            _log.LogWarning("Taskbar buttons unavailable: {Message}", ex.Message);
+        }
+    }
+
+    // A new taskbar button starts without the playback buttons, so they're added to it again.
+    private void AddAgain()
+    {
+        try
+        {
+            _taskbar?.ThumbBarAddButtons(_hwnd, 3, Buttons());
+        }
+        catch (COMException ex)
+        {
+            _log.LogWarning("Taskbar buttons couldn't be added again: {Message}", ex.Message);
         }
     }
 
@@ -86,6 +102,7 @@ public sealed class TaskbarButtons
     {
         const uint WM_COMMAND = 0x0111;
         if (_preview.Handle(hwnd, msg, lParam)) return IntPtr.Zero;
+        if (msg == TaskbarButtonCreated && TaskbarButtonCreated != 0) _dispatcher.TryEnqueue(AddAgain);
         const int THBN_CLICKED = 0x1800;
         if (msg == WM_COMMAND && ((int)wParam >> 16 & 0xFFFF) == THBN_CLICKED)
         {
@@ -117,6 +134,9 @@ public sealed class TaskbarButtons
 
     [DllImport("user32.dll")]
     private static extern int GetSystemMetrics(int index);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    private static extern uint RegisterWindowMessage(string name);
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
     private struct THUMBBUTTON

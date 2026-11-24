@@ -31,8 +31,6 @@ internal static class CoverSymbol
         return count == 0 ? 0 : (uint)((r / count) << 16 | (g / count) << 8 | (b / count));
     }
 
-    internal static uint InkFor(CanvasRenderTarget target) => CoverInk.Symbol(Under(target, Height));
-
     internal static Task DrawAsync(CanvasRenderTarget target, uint? ink = null, string? badge = null)
     {
         var colour = ink ?? CoverInk.Symbol(Under(target, Height));

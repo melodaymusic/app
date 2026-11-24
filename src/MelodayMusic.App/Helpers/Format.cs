@@ -8,11 +8,21 @@ public static class Format
     public static string StationCoverName(Core.Models.Station station) =>
         station.StationKind == Core.Models.StationKind.Flagship ? "Pulse" : station.Title.EndsWith(" Radio", StringComparison.Ordinal) ? station.Title[..^6] : station.Title;
 
-    public static string StationCoverTitle(Core.Models.Station station) => string.Empty;
+    /// <summary>The playlist label on a station's cover, top right, as "Mix" is on a mix's; a live station has its "Live" badge instead.</summary>
+    public static string StationCoverTitle(Core.Models.Station station) => station.IsLive ? string.Empty : "Radio";
 
     public static string StationBadge(Core.Models.Station station) => station.IsLive ? "Live" : string.Empty;
 
     public static string StationCoverLabel(Core.Models.Station station) => StationCoverName(station);
+
+    /// <summary>A mix's cover text: the name bottom left, and "Mix" (or "Radio" for a radio mix) as the label top right.</summary>
+    public static (string Name, string Label) MixCoverText(MediaItem mix) => MixCoverText(mix.Title, mix is BuiltMix { RatingKey: not "mix:discovery" });
+
+    public static (string Name, string Label) MixCoverText(string title, bool radio = false)
+    {
+        if (radio) return (title.EndsWith(" Radio", StringComparison.Ordinal) ? title[..^6] : title, "Radio");
+        return (title.EndsWith(" Mix", StringComparison.Ordinal) ? title[..^4] : title, "Mix");
+    }
 
     public static string Duration(TimeSpan t)
     {

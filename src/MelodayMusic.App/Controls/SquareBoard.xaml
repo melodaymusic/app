@@ -23,8 +23,6 @@
 
                 <controls:CoverEdgeLayer x:Name="StationEdges" Visibility="Collapsed" />
                 <controls:CoverLabels x:Name="StationLabels" Visibility="Collapsed" />
-                <TextBlock x:Name="TitleText" Style="{StaticResource MelodayBoardTitleText}" FontSize="{StaticResource MelodayFontColourTitle}" TextWrapping="WrapWholeWords" MaxLines="2"
-                           TextTrimming="CharacterEllipsis" VerticalAlignment="Bottom" HorizontalAlignment="Left" Margin="16,0,56,14" IsHitTestVisible="False" />
                 <controls:CoverSymbolLayer x:Name="StationSymbol" Visibility="Collapsed" />
                 <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource MelodayOverlayButtonStyle}"
                         HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,12,12" IsTabStop="False"

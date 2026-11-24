@@ -3,23 +3,14 @@ namespace MelodayMusic.Core.Radio;
 public enum PulseFormat { Rotation, NewMusic, Chart, Genre, Throwbacks, WeeklyPicks, ReleaseCountdown }
 public sealed record PulseProgramme(string Title, PulseFormat Format, string? Genre = null)
 {
-    public static PulseProgramme At(DateTimeOffset time) => time.Hour switch
-    {
-        >= 6 and < 9 => new("Morning Pulse", PulseFormat.Rotation),
-        >= 9 and < 12 => new("New Music", PulseFormat.NewMusic),
-        >= 12 and < 14 => new("Chart Pulse", PulseFormat.Chart),
-        >= 14 and < 16 => new("Then & Now", PulseFormat.Throwbacks),
-        >= 16 and < 18 => new("Pop Focus", PulseFormat.Genre, "pop"),
-        >= 18 and < 20 => time.DayOfWeek == DayOfWeek.Friday ? time.Hour == 19 ? new("New Release Countdown", PulseFormat.ReleaseCountdown) : new("Weekly Picks", PulseFormat.WeeklyPicks) : new("Rap & R&B", PulseFormat.Genre, "rap"),
-        >= 20 and < 22 => new("Alternative Focus", PulseFormat.Genre, "alternative"),
-        _ => new("Continuous Pulse", PulseFormat.Rotation),
-    };
+    /// <summary>The built-in lineup's program at a time; a saved lineup goes through <see cref="PulseLineup"/>.</summary>
+    public static PulseProgramme At(DateTimeOffset time) => PulseLineup.At(PulseLineup.Defaults, time);
 
     public static PulseProgramme For(PulseFormat format, string? genre = null) => format switch
     {
         PulseFormat.NewMusic => new("New Music", format),
         PulseFormat.Chart => new("Chart Pulse", format),
-        PulseFormat.Genre => new(string.IsNullOrWhiteSpace(genre) ? "Genre Focus" : $"{genre} Focus", format, genre),
+        PulseFormat.Genre => new(string.IsNullOrWhiteSpace(genre) ? "Genre Focus" : $"{char.ToUpperInvariant(genre.Trim()[0])}{genre.Trim()[1..]} Focus", format, genre?.Trim()),
         PulseFormat.Throwbacks => new("Then & Now", format),
         PulseFormat.WeeklyPicks => new("Weekly Picks", format),
         PulseFormat.ReleaseCountdown => new("New Release Countdown", format),
@@ -71,14 +62,5 @@ public sealed record PulseProgramme(string Title, PulseFormat Format, string? Ge
         return tracks.DistinctBy(LiveRotation.ArtistOf).Take(20).Select(t => new BlockPick(t, 0)).ToList();
     }
 
-    public static DateTimeOffset NextBoundary(DateTimeOffset at)
-    {
-        var tomorrow = new DateTimeOffset(at.Year, at.Month, at.Day, 0, 0, 0, at.Offset).AddDays(1);
-        foreach (var hour in new[] { 6, 9, 12, 14, 16, 18, 19, 20, 22 })
-        {
-            var candidate = tomorrow.AddDays(-1).AddHours(hour);
-            if (candidate > at && At(candidate) != At(at)) return candidate;
-        }
-        return tomorrow.AddHours(6);
-    }
+    public static DateTimeOffset NextBoundary(DateTimeOffset at) => PulseLineup.NextBoundary(PulseLineup.Defaults, at);
 }

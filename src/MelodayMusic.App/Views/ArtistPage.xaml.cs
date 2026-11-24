@@ -10,7 +10,6 @@ using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
 using Windows.Foundation;
 
 namespace MelodayMusic.Views;
@@ -18,7 +17,7 @@ namespace MelodayMusic.Views;
 public sealed partial class ArtistPage : Page
 {
     private readonly AmbientService _ambient = App.Services.GetRequiredService<AmbientService>();
-    private readonly List<(Button Button, TextBlock Label, Rectangle Underline, FrameworkElement? Target)> _tabs = [];
+    private readonly List<(Button Button, TextBlock Label, Border Fill, FrameworkElement? Target)> _tabs = [];
     private readonly ArtistLogoService _logos = App.Services.GetRequiredService<ArtistLogoService>();
     private Artist? _artist;
     private ArtworkPalette? _palette;
@@ -39,6 +38,7 @@ public sealed partial class ArtistPage : Page
         Attach(ViewModel);
         SizeChanged += (_, _) => LayoutHero();
         Loaded += (_, _) => LayoutHero();
+        Loaded += (_, _) => UpdateParallax();
         TabsRow.SizeChanged += (_, e) => { if (Math.Abs(e.NewSize.Height - e.PreviousSize.Height) >= 1) LayoutHero(); };
         FactsList.Loaded += (_, _) => LayoutHero();
         BuildTabs();
@@ -144,10 +144,12 @@ public sealed partial class ArtistPage : Page
 
     private void BuildHeroSkeleton()
     {
-        var bones = new StackPanel { Spacing = UiScale.Size(20, 16) };
+        var bones = new StackPanel { Spacing = UiScale.Size(20, 16), HorizontalAlignment = HorizontalAlignment.Center };
         var control = UiScale.Target(40);
-        bones.Children.Add(SkeletonView.Block(UiScale.Size(380, 240), UiScale.Text(64), 10));
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
+        var name = SkeletonView.Block(UiScale.Size(380, 240), UiScale.Text(64), 10);
+        name.HorizontalAlignment = HorizontalAlignment.Center;
+        bones.Children.Add(name);
+        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, HorizontalAlignment = HorizontalAlignment.Center };
         actions.Children.Add(SkeletonView.Block(UiScale.Size(104), control, control / 2));
         actions.Children.Add(SkeletonView.Block(UiScale.Size(124), control, control / 2));
         actions.Children.Add(SkeletonView.Block(control, control, control / 2));
@@ -263,7 +265,6 @@ public sealed partial class ArtistPage : Page
                 UpdateLogo();
                 break;
             case nameof(ArtistViewModel.LatestRelease):
-                LatestArt.SourcePath = ViewModel.LatestRelease?.Thumb;
                 BuildTabs();
                 break;
             case nameof(ArtistViewModel.IsLoading):
@@ -340,7 +341,6 @@ public sealed partial class ArtistPage : Page
         // A name without a logo is set as large as a logo stands.
         var nameSize = width >= UiScale.Size(1240) ? 112 : wide ? 96 : width >= UiScale.Size(560) ? 76 : 60;
         NameText.FontSize = UiScale.Text(nameSize);
-        NameText.LineHeight = UiScale.Text(Math.Round(nameSize * 1.04));
         var columns = width < UiScale.Size(560) ? 1 : width < UiScale.Size(900) ? 2 : 4;
         if (FactsList.ItemsPanelRoot is UniformColumns facts) facts.Columns = columns;
 
@@ -348,9 +348,26 @@ public sealed partial class ArtistPage : Page
         VisualStateManager.GoToState(this, state, false);
     }
 
+    private bool _parallax;
+
+    // The hero image drifts down at a fraction of the scroll speed, so it trails the content.
+    private void UpdateParallax()
+    {
+        if (_parallax || !Helpers.Motion.IsEnabled) return;
+        _parallax = true;
+        var scroll = Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetScrollViewerManipulationPropertySet(Scroller);
+        var drift = scroll.Compositor.CreateExpressionAnimation("Max(0, -scroll.Translation.Y) * 0.3");
+        drift.SetReferenceParameter("scroll", scroll);
+        foreach (var element in new UIElement[] { HeroImage, HeroScrim })
+        {
+            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.SetIsTranslationEnabled(element, true);
+            Microsoft.UI.Xaml.Hosting.ElementCompositionPreview.GetElementVisual(element).StartAnimation("Translation.Y", drift);
+        }
+    }
+
     private void BuildTabs()
     {
-        var current = _tabs.FirstOrDefault(t => t.Underline.Opacity > 0).Label?.Text;
+        var current = _tabs.FirstOrDefault(t => t.Fill.Opacity > 0).Label?.Text;
         _tabs.Clear();
         Tabs.Children.Clear();
         AddTab("Overview", null);
@@ -364,22 +381,25 @@ public sealed partial class ArtistPage : Page
 
     private void AddTab(string title, FrameworkElement? target)
     {
-        var label = new TextBlock { Text = title, VerticalAlignment = VerticalAlignment.Center };
-        var underline = new Rectangle
+        var resources = Application.Current.Resources;
+        var label = new TextBlock
         {
-            Height = 2,
-            RadiusX = 1,
-            RadiusY = 1,
-            VerticalAlignment = VerticalAlignment.Bottom,
-            Fill = Accent.DarkFill ?? new Microsoft.UI.Xaml.Media.SolidColorBrush(Microsoft.UI.Colors.White),
+            Text = title,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(UiScale.Size(16), 0, UiScale.Size(16), 0),
+        };
+        var fill = new Border
+        {
+            Background = (Microsoft.UI.Xaml.Media.Brush)resources["MelodayOnColorFillBrush"],
+            CornerRadius = (CornerRadius)resources["MelodayRadiusPill"],
             Opacity = 0,
         };
-        var content = new Grid { Children = { label, underline } };
-        underline.Margin = new Thickness(0, 0, 0, -1);
+        var content = new Grid { Children = { fill, label } };
         var button = new Button
         {
             Style = (Style)Application.Current.Resources["MelodayTabButtonStyle"],
             Content = content,
+            HorizontalContentAlignment = HorizontalAlignment.Stretch,
             VerticalContentAlignment = VerticalAlignment.Stretch,
         };
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(button, title);
@@ -389,7 +409,7 @@ public sealed partial class ArtistPage : Page
             Select(index);
             ScrollTo(target);
         };
-        _tabs.Add((button, label, underline, target));
+        _tabs.Add((button, label, fill, target));
         Tabs.Children.Add(button);
     }
 
@@ -398,13 +418,10 @@ public sealed partial class ArtistPage : Page
         for (var i = 0; i < _tabs.Count; i++)
         {
             var on = i == index;
-            var (button, label, underline, _) = _tabs[i];
+            var (button, label, fill, _) = _tabs[i];
             label.OpacityTransition ??= Helpers.Motion.Scalar(Helpers.Motion.Standard);
-            underline.OpacityTransition ??= Helpers.Motion.Scalar(Helpers.Motion.Standard);
-            underline.ScaleTransition ??= Helpers.Motion.Vector(Helpers.Motion.Standard);
-            underline.CenterPoint = new System.Numerics.Vector3((float)underline.ActualWidth / 2, 1, 0);
-            underline.Opacity = on ? 1 : 0;
-            underline.Scale = on ? System.Numerics.Vector3.One : new System.Numerics.Vector3(0.4f, 1, 1);
+            fill.OpacityTransition ??= Helpers.Motion.Scalar(Helpers.Motion.Standard);
+            fill.Opacity = on ? 1 : 0;
             button.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["MelodayOnColorPrimaryBrush"];
             label.Opacity = on ? 1 : 0.7;
         }
@@ -474,7 +491,8 @@ public sealed partial class ArtistPage : Page
 
     private void OnPlayLatest(object sender, RoutedEventArgs e)
     {
-        if (ViewModel.LatestRelease is { } album) _ = Actions.PlayAsync(album);
+        if (ViewModel.LatestTrack is { } song) _ = Actions.PlayAsync(song);
+        else if (ViewModel.LatestRelease is { } album) _ = Actions.PlayAsync(album);
     }
 
     private void OnSummaryTrimmedChanged(TextBlock sender, IsTextTrimmedChangedEventArgs args)

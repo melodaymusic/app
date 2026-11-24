@@ -55,20 +55,21 @@ public sealed partial class CoverSymbolLayer : Grid
         }
     }
 
-    internal event Action<uint>? GroundChanged;
+    /// <summary>Raised with the cover's accent whenever it changes, so the edge bars can follow it.</summary>
+    internal event Action<uint>? AccentChanged;
 
-    internal void SetGround(uint rgb)
-    {
-        SetColour(CoverInk.Symbol(rgb));
-        GroundChanged?.Invoke(rgb);
-    }
+    /// <summary>Sets the ground the mark sits on; the mark takes the cover's accent, the edge bars' colour.</summary>
+    internal void SetGround(uint rgb) => SetColour(CoverEdge.Colour(rgb));
 
     internal void SetColour(uint ink)
     {
         var brush = new SolidColorBrush(Windows.UI.Color.FromArgb(255, (byte)(ink >> 16), (byte)(ink >> 8), (byte)ink));
         _symbol.Foreground = brush;
         _badge.Foreground = brush;
+        AccentChanged?.Invoke(ink);
     }
 
-    internal void SetStation(MelodayMusic.Core.Models.Station station) => SetGround(StationColours.Ground(station));
+    /// <summary>A station's mark, badge and edge bars take the colour of its moving wave.</summary>
+    internal void SetStation(MelodayMusic.Core.Models.Station station) =>
+        SetColour(MelodayMusic.Core.Radio.StationWave.Highlight(StationColours.Ground(station)));
 }

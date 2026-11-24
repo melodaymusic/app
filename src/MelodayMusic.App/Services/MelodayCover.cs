@@ -17,8 +17,8 @@ public static class MelodayCover
 
     private static readonly string[] Fonts =
     [
-        new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "Nunito.ttf")).AbsoluteUri + "#Nunito",
-        "ms-appx:///Assets/Fonts/Nunito.ttf#Nunito",
+        new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "DMSans.ttf")).AbsoluteUri + "#DM Sans",
+        "ms-appx:///Assets/Fonts/DMSans.ttf#DM Sans",
         "Segoe UI Variable Display",
     ];
     private static string? _font;
@@ -70,37 +70,38 @@ public static class MelodayCover
         throw new InvalidOperationException("No typeface for the Meloday cover.");
     }
 
-    internal static float? DrawLabels(CanvasDrawingSession ds, string name, string label, float width, float height, Microsoft.Extensions.Logging.ILogger log,
-        Windows.UI.Color? ink = null, int labelLines = CoverType.LabelLines)
+    /// <summary>Draws the playlist label top right and the name bottom left; returns the name's baseline, if there is a name.</summary>
+    internal static float? DrawLabels(CanvasDrawingSession ds, string label, string name, float width, float height, Microsoft.Extensions.Logging.ILogger log,
+        Windows.UI.Color? ink = null, int nameLines = CoverType.NameLines)
     {
         var colour = ink ?? Colors.White;
         var k = width / (float)CoverType.Unit;
-        var box = (float)CoverType.NameWidth * k;
-        if (!string.IsNullOrWhiteSpace(name))
+        var box = (float)CoverType.LabelWidth * k;
+        if (!string.IsNullOrWhiteSpace(label))
         {
-            using var layout = Fit(ds, name, CoverType.NameSize * k, CoverType.NameLine / CoverType.NameSize, CoverType.NameBaseline / CoverType.NameSize,
-                FontWeights.Black, CanvasHorizontalAlignment.Right, box, (float)CoverType.BoxHeight * k, CoverType.NameLines, log);
-            ds.DrawTextLayout(layout, new Vector2(width - (float)CoverType.NameRight * k - box, (float)CoverType.NameTop * k), colour);
+            using var layout = Fit(ds, label, CoverType.LabelSize * k, CoverType.LabelLine / CoverType.LabelSize, CoverType.LabelBaseline / CoverType.LabelSize,
+                CoverType.LabelWeight, CanvasHorizontalAlignment.Right, box, (float)CoverType.BoxHeight * k, CoverType.LabelLines, log);
+            ds.DrawTextLayout(layout, new Vector2(width - (float)CoverType.LabelRight * k - box, (float)CoverType.LabelTop * k), colour);
         }
-        return DrawLabel(ds, label, width, height, log, colour, labelLines);
+        return DrawName(ds, name, width, height, log, colour, nameLines);
     }
 
-    private static float? DrawLabel(CanvasDrawingSession ds, string label, float width, float height, Microsoft.Extensions.Logging.ILogger log,
-        Windows.UI.Color? ink = null, int lines = CoverType.LabelLines)
+    private static float? DrawName(CanvasDrawingSession ds, string name, float width, float height, Microsoft.Extensions.Logging.ILogger log,
+        Windows.UI.Color? ink = null, int lines = CoverType.NameLines)
     {
-        if (string.IsNullOrWhiteSpace(label)) return null;
+        if (string.IsNullOrWhiteSpace(name)) return null;
         var k = width / (float)CoverType.Unit;
-        using var layout = Fit(ds, label, CoverType.LabelSize * k, CoverType.LabelLine / CoverType.LabelSize, CoverType.LabelBaseline / CoverType.LabelSize,
-            FontWeights.Bold, CanvasHorizontalAlignment.Left, (float)CoverType.BoxWidth * k, (float)CoverType.BoxHeight * k, lines, log);
-        ds.DrawTextLayout(layout, new Vector2((float)CoverType.LabelLeft * k, height - (float)(CoverType.LabelBottom + CoverType.BoxHeight) * k), ink ?? Colors.White);
-        return height - (float)CoverType.LabelBottom * k
-            - (float)((CoverType.LabelLine - CoverType.LabelBaseline) / CoverType.LabelSize) * layout.DefaultFontSize;
+        using var layout = Fit(ds, name, CoverType.NameSize * k, CoverType.NameLine / CoverType.NameSize, CoverType.NameBaseline / CoverType.NameSize,
+            CoverType.NameWeight, CanvasHorizontalAlignment.Left, (float)CoverType.NameWidth * k, (float)CoverType.BoxHeight * k, lines, log);
+        ds.DrawTextLayout(layout, new Vector2((float)CoverType.NameLeft * k, height - (float)(CoverType.NameBottom + CoverType.BoxHeight) * k), ink ?? Colors.White);
+        return height - (float)CoverType.NameBottom * k
+            - (float)((CoverType.NameLine - CoverType.NameBaseline) / CoverType.NameSize) * layout.DefaultFontSize;
     }
 
     internal static float? DrawTitleBottomLeft(CanvasDrawingSession ds, string title, float size, Microsoft.Extensions.Logging.ILogger log) =>
-        string.IsNullOrWhiteSpace(title) ? null : DrawLabel(ds, title, size, size, log);
+        string.IsNullOrWhiteSpace(title) ? null : DrawName(ds, title, size, size, log);
 
-    internal const string FilePrefix = "cover-v12-";
+    internal const string FilePrefix = "cover-v18-";
 
     public static async Task<string?> RenderAsync(MelodayPeriod period, string title, DateTime now, Microsoft.Extensions.Logging.ILogger log)
     {
@@ -133,10 +134,10 @@ public static class MelodayCover
                 foreach (var ring in style.Rings)
                     ds.FillCircle(centre, (float)(sun * ring.Size / 2), Rgb(ring.Colour, ring.Opacity));
                 var name = title.StartsWith(MelodayNaming.Prefix, StringComparison.OrdinalIgnoreCase) ? title[MelodayNaming.Prefix.Length..] : title;
-                DrawLabels(ds, name, "Meloday", width, height, log);
+                DrawLabels(ds, "Meloday", name, width, height, log);
             }
 
-            await CoverSymbol.DrawAsync(target);
+            await CoverSymbol.DrawAsync(target, CoverEdge.Colour(style.Background));
             Directory.CreateDirectory(Path.GetDirectoryName(path)!);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             return path;

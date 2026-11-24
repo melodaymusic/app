@@ -5,8 +5,9 @@ namespace MelodayMusic.ViewModels;
 
 public sealed class PulseGuideEntry
 {
-    public PulseGuideEntry(DateTimeOffset startsAt, DateTimeOffset endsAt, string title, string detail, PulseScheduleRule? rule, bool isNow)
+    public PulseGuideEntry(DateTimeOffset startsAt, DateTimeOffset endsAt, string title, string detail, PulseScheduleRule? rule, bool isNow, PulseSlot? slot = null)
     {
+        Slot = slot;
         StartsAt = startsAt;
         EndsAt = endsAt;
         Title = title;
@@ -20,6 +21,8 @@ public sealed class PulseGuideEntry
     public string Title { get; set; }
     public string Detail { get; set; }
     internal PulseScheduleRule? Rule { get; }
+    /// <summary>The built-in program shown, or null for a gap filled by Continuous Pulse.</summary>
+    internal PulseSlot? Slot { get; }
     public object? EditValue => Rule;
     public bool IsNow { get; set; }
 

@@ -1,6 +1,6 @@
 <Project>
   <PropertyGroup>
-    <Version>0.97.0</Version>
+    <Version>0.98.0</Version>
     <Copyright>Copyright © 2026 Meloday Music</Copyright>
   </PropertyGroup>
   <!-- Release binaries and their stack traces show source paths relative to the repository, not the build machine's folders. -->

@@ -117,7 +117,7 @@ public class VisualizerTests
     [Fact]
     public void Every_picture_has_a_name_and_a_description_and_off_is_the_default()
     {
-        Assert.Equal(14, VisualizerStyles.All.Count);
+        Assert.Equal(18, VisualizerStyles.All.Count);
         Assert.Equal(Enum.GetValues<VisualizerStyle>().Distinct().OrderBy(s => s), VisualizerStyles.All.OrderBy(s => s));
         Assert.Equal(VisualizerStyle.Off, new Core.Settings.AppSettings().Visualizer);
         foreach (var style in VisualizerStyles.All)
@@ -150,7 +150,7 @@ public class VisualizerTests
     [Fact]
     public void The_pictures_are_offered_once_each_under_their_new_names()
     {
-        Assert.Equal(["Off", "Bars", "Halo", "M-Wave", "Sun", "Pillars", "Tiles", "Lyric Video", "Lyric Glow", "Airhandler", "Neon Space", "Spiral Artifact", "Cosmic Dust", "Molten Glass"], VisualizerStyles.All.Select(VisualizerStyles.Name));
+        Assert.Equal(["Off", "Bars", "Halo", "M-Wave", "Sun", "Pillars", "Tiles", "Ribbons", "Light Wall", "Bloom", "Retrowave", "Lyric Video", "Lyric Glow", "Airhandler", "Neon Space", "Spiral Artifact", "Cosmic Dust", "Molten Glass"], VisualizerStyles.All.Select(VisualizerStyles.Name));
     }
 
     [Fact]
@@ -158,6 +158,7 @@ public class VisualizerTests
     {
         Assert.Equal(6, (int)VisualizerStyle.LyricGlow);
         Assert.Equal([12, 15], new[] { VisualizerStyle.Pillars, VisualizerStyle.Tiles }.Select(s => (int)s));
+        Assert.Equal([22, 23, 24, 25], new[] { VisualizerStyle.Ribbons, VisualizerStyle.LightWall, VisualizerStyle.Bloom, VisualizerStyle.Retrowave }.Select(s => (int)s));
         var presets = VisualizerStyles.All.Where(VisualizerStyles.IsProjectM).Select(VisualizerStyles.PresetFile).ToArray();
         Assert.Equal(5, presets.Length);
         Assert.Equal(5, presets.Distinct().Count());

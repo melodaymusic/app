@@ -187,6 +187,9 @@ public sealed partial class HomeViewModel : ViewModelBase
 
             var recentlyPlayed = client.GetAlbumsAsync(sk, 0, 25, "lastViewedAt:desc", default, new KeyValuePair<string, string?>("viewCount>>", "0"));
             var recentlyAdded = client.GetAlbumsAsync(sk, 0, 24, "addedAt:desc");
+            var newestReleases = SafeAsync(client.GetAlbumsAsync(sk, 0, 40, "originallyAvailableAt:desc"));
+            var newestArtists = SafeAsync(client.GetArtistsAsync(sk, 0, 24, "addedAt:desc"));
+            var newestAdditions = SafeAsync(client.GetAlbumsAsync(sk, 0, 80, "addedAt:desc"));
             var mostPlayedArtists = client.GetArtistsAsync(sk, 0, 24, "viewCount:desc", default, new KeyValuePair<string, string?>("viewCount>>", "0"));
             var mostPlayedAlbums = client.GetAlbumsAsync(sk, 0, 16, "viewCount:desc", default, new KeyValuePair<string, string?>("viewCount>>", "0"));
             var playlists = client.GetPlaylistsAsync(0, 24, default, "lastViewedAt:desc");
@@ -195,7 +198,17 @@ public sealed partial class HomeViewModel : ViewModelBase
             var mixes = _mixes.GetMixesAsync();
             var stations = _stations.GetCatalogAsync();
 
-            await Task.WhenAll(recentlyPlayed, recentlyAdded, mostPlayedArtists, mostPlayedAlbums, playlists, collections, hubs);
+            await Task.WhenAll(recentlyPlayed, recentlyAdded, mostPlayedArtists, mostPlayedAlbums, playlists, collections, hubs, newestReleases, newestArtists, newestAdditions);
+            // Releases dated ahead of today are pre-saves or bad tags, not new music.
+            var releasedLately = (newestReleases.Result?.Items ?? []).Where(a => a.ReleaseDate is { } d && d <= refreshContext
+                && refreshContext - d <= TimeSpan.FromDays(120)).ToList();
+            var arrivedLately = (newestArtists.Result?.Items ?? []).Where(a => a.AddedAt is { } d && d <= refreshContext
+                && refreshContext - d <= TimeSpan.FromDays(45) && !Core.Mixes.ListeningProfile.IsPlaceholderArtist(a.Title)).ToList();
+            // Older music that just came into the library; brand-new releases have their own rail.
+            var addedLately = (newestAdditions.Result?.Items ?? []).Where(a => a.AddedAt is { } d && d <= refreshContext
+                && refreshContext - d <= TimeSpan.FromDays(45) && !IsRecentRelease(a)).Take(24).ToList();
+            bool IsRecentRelease(Album a) => a.ReleaseDate is { } r ? refreshContext - r <= TimeSpan.FromDays(120)
+                : a.Year is { } y && y >= refreshContext.Year;
             var extras = Task.WhenAll(mixes, stations);
             if (!extras.IsCompleted && await Task.WhenAny(extras, Task.Delay(250)) != extras)
                 _ = extras.ContinueWith(_ => _dispatcher.TryEnqueue(async () => await LoadCoreAsync(quiet: true)), TaskScheduler.Default);
@@ -211,15 +224,21 @@ public sealed partial class HomeViewModel : ViewModelBase
             }
 
             var spotlights = Core.Home.SpotlightSelection.Pick(refreshContext, recentlyAdded.Result.Items,
-                mostPlayedArtists.Result.Items, mostPlayedAlbums.Result.Items).Select(p => p.Item switch
+                mostPlayedArtists.Result.Items, mostPlayedAlbums.Result.Items, releasedLately, arrivedLately).Select(p => p.Item switch
                 {
                     Album a => new BoardItem { Item = a, Eyebrow = p.Tag, Title = a.Title, Subtitle = a.ArtistTitle,
                         Detail = a.Year?.ToString(), ArtPath = a.Art, CoverPath = a.Thumb },
                     Artist a => new BoardItem { Item = a, Eyebrow = p.Tag, Title = a.Title,
-                        Subtitle = a.Genres.FirstOrDefault(), Detail = Helpers.Format.Plays(a.ViewCount), ArtPath = a.Art },
+                        Subtitle = a.Genres.FirstOrDefault(), Detail = a.ViewCount > 0 ? Helpers.Format.Plays(a.ViewCount) : null, ArtPath = a.Art },
                     _ => new BoardItem { Item = p.Item, Eyebrow = p.Tag, Title = p.Item.Title, ArtPath = p.Item.Art },
                 });
             Add("Spotlight", spotlights, style: CardStyle.EditorialBoard, id: "spotlight");
+
+            Add("New Releases", releasedLately.Take(24), SeeAll(typeof(AlbumsPage), "year:desc,titleSort"),
+                "Out in the last few months", id: "new.releases");
+
+            Add("New Additions", addedLately, SeeAll(typeof(AlbumsPage), "addedAt:desc"),
+                "Older music, just added to your library", id: "new.additions");
 
             Add("Recently Played", recentlyPlayed.Result.Items.Where(a => a.RatingKey != featured?.RatingKey),
                 SeeAll(typeof(AlbumsPage), "lastViewedAt:desc"), id: "recent.played");
@@ -239,8 +258,9 @@ public sealed partial class HomeViewModel : ViewModelBase
                     id: "stations", style: CardStyle.SquareBoard);
 
             Add("Recently Added", recentlyAdded.Result.Items, SeeAll(typeof(AlbumsPage), "addedAt:desc"), id: "recent.added");
+            Add("New Artists", arrivedLately, SeeAll(typeof(ArtistsPage), "addedAt:desc"), "Just arrived in your library", id: "new.artists");
             Add("Your Top Artists", mostPlayedArtists.Result.Items, SeeAll(typeof(ArtistsPage), "viewCount:desc"), id: "top.artists");
-            Add("Playlists", App.Services.GetRequiredService<MadePlaylistService>().WithoutCopies(_trending.ForDisplay(playlists.Result.Items)),
+            Add("Playlists", PlaylistCopies.ForDisplay(playlists.Result.Items),
                 SeeAll(typeof(PlaylistsPage), "lastViewedAt:desc"), id: "playlists", style: CardStyle.ColourBoard);
             Add("Collections", collections.Result?.Items ?? [], SeeAll(typeof(CollectionsPage), "addedAt:desc"), id: "collections", style: CardStyle.ColourBoard);
 

@@ -11,6 +11,9 @@ namespace MelodayMusic.Controls;
 
 public sealed record MixCoverData(MixInfo Info, MixArtist Main, IReadOnlyList<MixArtist> Orbit, uint Colour)
 {
+    /// <summary>The bubbles show album covers (a mix about a sound rather than artists), not artist photos.</summary>
+    public bool Albums => Info.Pictures is { Count: > 0 };
+
     private static uint ToRgb(Color c) => (uint)(c.R << 16 | c.G << 8 | c.B);
 
     public static async Task<MixCoverData?> LoadAsync(MediaItem mix, uint? tintRgb = null)
@@ -54,11 +57,23 @@ public sealed class MixCover : Grid
         _symbol.SetGround(0x2A2930);
     }
 
+    /// <summary>The mix's full title; the cover shows the name bottom left and "Mix" top right.</summary>
     public string Title
     {
-        get => _title.Label;
-        set => _title.Label = value ?? string.Empty;
+        get => _fullTitle;
+        set
+        {
+            _fullTitle = value ?? string.Empty;
+            var (name, label) = Helpers.Format.MixCoverText(_fullTitle, Radio);
+            _title.Title = name;
+            _title.Label = label;
+        }
     }
+
+    private string _fullTitle = string.Empty;
+
+    /// <summary>A radio mix, labelled "Radio" rather than "Mix".</summary>
+    public bool Radio { get; set; }
 
     private Border Ringed(ArtworkImage circle) =>
         new() { CornerRadius = new CornerRadius(999), Background = _field, Padding = new Thickness(Ring), Child = circle };
@@ -68,6 +83,8 @@ public sealed class MixCover : Grid
 
     public void Show(MixCoverData? data)
     {
+        var icon = data?.Albums == true ? "Disc3" : "MicVocal";
+        _main.PlaceholderIcon = _first.PlaceholderIcon = _second.PlaceholderIcon = icon;
         _main.SourcePath = data?.Main.Thumb;
         _first.SourcePath = data?.Orbit.ElementAtOrDefault(0)?.Thumb;
         _second.SourcePath = data?.Orbit.ElementAtOrDefault(1)?.Thumb;

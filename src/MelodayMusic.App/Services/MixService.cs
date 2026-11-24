@@ -25,6 +25,16 @@ public sealed record MixInfo(string Title, IReadOnlyList<MixArtist> Artists, boo
             return featured.Count > 0 ? "Featuring " + string.Join(", ", featured) : string.Empty;
         }
     }
+
+    /// <summary>The first four featured artists and how many more there are: "Featuring A, B, C, D + 5 more".</summary>
+    public string FeaturingWithMore => Line(Featured ?? Artists.Skip(LeadIsSubject ? 1 : 0).Select(a => a.Name).ToList());
+
+    public static string Line(IReadOnlyList<string> names, int shown = 4)
+    {
+        if (names.Count == 0) return string.Empty;
+        var line = "Featuring " + string.Join(", ", names.Take(shown));
+        return names.Count > shown ? $"{line} + {names.Count - shown} more" : line;
+    }
 }
 
 public sealed class MixService
@@ -332,9 +342,10 @@ public sealed class MixService
                         Pictures: covers.DistinctBy(c => c.Thumb).Take(11).ToList());
                 }
                 case TagMix t:
-                    return tracks.Count < 12 ? new MixInfo(t.Title, [], LeadIsSubject: false) : new MixInfo(t.Title, Unclaimed(RankArtists(tracks)), LeadIsSubject: false);
+                    return tracks.Count < 12 ? new MixInfo(t.Title, [], LeadIsSubject: false)
+                        : new MixInfo(t.Title, Unclaimed(RankArtists(tracks)), LeadIsSubject: false, Pictures: AlbumPictures(t, tracks));
                 case BuiltMix b:
-                    return new MixInfo(b.Title, Unclaimed(RankArtists(tracks)), LeadIsSubject: false);
+                    return new MixInfo(b.Title, Unclaimed(RankArtists(tracks)), LeadIsSubject: false, Pictures: AlbumPictures(b, tracks));
                 default:
                     return null;
             }
@@ -363,6 +374,21 @@ public sealed class MixService
             .GroupBy(t => t.ArtistTitle!, StringComparer.OrdinalIgnoreCase)
             .OrderByDescending(g => g.Count())
             .Select(g => new MixArtist(g.Key, g.Select(t => t.ArtistThumb).FirstOrDefault(p => p is not null)));
+
+    /// <summary>
+    /// Whether a mix is about artists, so its cover bubbles show artist photos; the rest (genre, mood, sound, Discovery) show album covers.
+    /// </summary>
+    public static bool IsArtistBased(MediaItem item) => item switch
+    {
+        ArtistMix => true,
+        NicheMix niche => niche.ArtistNames.Count >= 2,
+        TagMix tag => NicheMixRecipe.TryFrom(tag, out var recipe) && recipe.Artists.Count >= 2,
+        BuiltMix built => built.RatingKey != "mix:discovery" && built.ArtistKeys.Count > 0,
+        _ => false,
+    };
+
+    private static IReadOnlyList<MixArtist>? AlbumPictures(MediaItem mix, IReadOnlyList<Track> tracks) =>
+        IsArtistBased(mix) ? null : RankAlbums(tracks).DistinctBy(c => c.Thumb).Take(11).ToList() is { Count: > 0 } albums ? albums : null;
 
     private static IEnumerable<MixArtist> RankAlbums(IEnumerable<Track> tracks) =>
         tracks.Where(t => t.DisplayThumb is not null)

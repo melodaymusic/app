@@ -19,7 +19,7 @@ public sealed partial class SquareBoard : UserControl
     public SquareBoard()
     {
         InitializeComponent();
-        StationSymbol.GroundChanged += StationEdges.SetGround;
+        StationSymbol.AccentChanged += StationEdges.SetColour;
         Helpers.CardHover.Attach(Plate, null, cardRadius: 16);
         var meloday = App.Services.GetRequiredService<MelodayService>();
         void OnMix(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() =>
@@ -67,18 +67,22 @@ public sealed partial class SquareBoard : UserControl
         var station = item as Station;
         var byTag = station is { StationKind: StationKind.Genre or StationKind.Style or StationKind.Mood or StationKind.Decade };
         var meloday = station?.StationKind == StationKind.Meloday;
-        TitleText.Text = item?.Title ?? string.Empty;
         var covered = station is not null;
-        StationLabels.Visibility = covered && !meloday ? Visibility.Visible : Visibility.Collapsed;
-        StationSymbol.Visibility = StationLabels.Visibility;
-        StationEdges.Visibility = StationLabels.Visibility;
+        // Every board is set like a generated cover: the label top right, the name bottom left.
+        StationLabels.Visibility = item is not null && !meloday ? Visibility.Visible : Visibility.Collapsed;
+        StationSymbol.Visibility = covered && !meloday ? Visibility.Visible : Visibility.Collapsed;
+        StationEdges.Visibility = StationSymbol.Visibility;
         if (covered && !meloday)
         {
-            StationLabels.Title = Helpers.Format.StationCoverTitle(station!);
-            StationLabels.Label = Helpers.Format.StationCoverLabel(station!);
+            StationLabels.Label = Helpers.Format.StationCoverTitle(station!);
+            StationLabels.Title = Helpers.Format.StationCoverLabel(station!);
             StationSymbol.Badge = Helpers.Format.StationBadge(station!);
         }
-        TitleText.Visibility = covered ? Visibility.Collapsed : Visibility.Visible;
+        else if (!covered)
+        {
+            StationLabels.Label = item is TagItem tag ? tag.TagKind.ToString() : string.Empty;
+            StationLabels.Title = item?.Title ?? string.Empty;
+        }
         MelodayCover.Visibility = meloday ? Visibility.Visible : Visibility.Collapsed;
         if (meloday) ShowMeloday();
         Portrait.Visibility = byTag ? Visibility.Visible : Visibility.Collapsed;

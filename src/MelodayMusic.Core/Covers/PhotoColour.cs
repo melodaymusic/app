@@ -19,7 +19,13 @@ public static class PhotoColour
     private sealed record Candidate(double Score, Rgb Colour, double Saturation, double Brightness, double Share, bool Skin);
 
     /// <summary>The edge colour for a photo given as BGRA pixels (Win2D's byte order), ideally 100–200 pixels square.</summary>
-    public static uint Pick(ReadOnlySpan<byte> bgra, int width, int height)
+    public static uint Pick(ReadOnlySpan<byte> bgra, int width, int height) => Analyse(bgra, width, height).Colour;
+
+    /// <summary>
+    /// The edge colour, and whether the photo has too little colour of its own to go on (black and white, or nearly). Such a photo
+    /// is matched by its cast instead: a cool grey to the palette's light cool shades, a warm grey to its light warm ones.
+    /// </summary>
+    public static (uint Colour, bool Muted) Analyse(ReadOnlySpan<byte> bgra, int width, int height)
     {
         var all = new List<(Rgb Colour, int X, int Y)>(width * height);
         for (var y = 0; y < height; y++)
@@ -30,10 +36,10 @@ public static class PhotoColour
             all.Add((new Rgb(bgra[i + 2], bgra[i + 1], bgra[i]), x, y));
         }
         var image = all.Select(p => p.Colour).ToList();
-        if (image.Count == 0) return ByBrightness(0.5);
+        if (image.Count == 0) return (ByBrightness(0.5), true);
 
         var mid = image.Where(c => Brightness(c) is > 0.08 and < 0.92).ToList();
-        if (mid.Count < 50) return ByBrightness(AverageBrightness(image));
+        if (mid.Count < 50) return (ByBrightness(AverageBrightness(image)), true);
 
         var saturations = mid.Select(Saturation).OrderBy(s => s).ToList();
         var median = saturations[saturations.Count / 2];
@@ -43,7 +49,8 @@ public static class PhotoColour
         Rgb? accent = edges.FirstOrDefault(e => e.Saturation >= 0.25) is { } found && found.Saturation > 0 ? found.Colour : null;
 
         if (colourful < 0.20 || median < 0.15)
-            return accent is { } edge ? Nearest(edge) : ByBrightness(AverageBrightness(image));
+            // Only a vivid, light colour at the edges (a coloured backdrop, say) beats the cast; dark browns and shadows do not.
+            return (accent is { } edge && Saturation(edge) >= 0.4 && Brightness(edge) >= 0.45 ? Nearest(edge) : ByCast(mid), true);
 
         var lab = mid.Select(ToLab).ToList();
         var (centres, labels) = Cluster(lab, Math.Min(10, lab.Distinct().Count()), tries: 3);
@@ -79,7 +86,7 @@ public static class PhotoColour
             scored.Add(new Candidate(score, e.Colour, e.Saturation, Brightness(e.Colour), e.Share, IsSkin(e.Colour)));
         }
 
-        if (scored.Count == 0) return ByBrightness(AverageBrightness(image));
+        if (scored.Count == 0) return (ByCast(mid), true);
         scored.Sort((a, b) => b.Score.CompareTo(a.Score));
         var winner = scored.FirstOrDefault(c => !c.Skin) ?? scored[0];
         var best = winner.Colour;
@@ -87,7 +94,7 @@ public static class PhotoColour
         if (winner.Brightness is < 0.08 or > 0.92)
         {
             var next = scored.Skip(1).FirstOrDefault(c => c.Brightness is >= 0.08 and <= 0.92);
-            if (next is null) return ByBrightness(AverageBrightness(image));
+            if (next is null) return (ByCast(mid), true);
             best = next.Colour;
         }
 
@@ -99,12 +106,49 @@ public static class PhotoColour
             if (spread > 0.5) spread = 1 - spread;
             if (spread < 0.10 && top.Sum(c => c.Share) > 0.50)
             {
+                // A washed-out photo of one hue is a tinted black and white one: match its cast, not the opposite hue.
+                if (median < MutedOneHue) return (ByCast(mid), true);
                 var (h, s, v) = Hsv(best);
-                return Nearest(FromHsv((h + 0.5) % 1, s, v));
+                return (Nearest(FromHsv((h + 0.5) % 1, s, v)), false);
             }
         }
-        return Nearest(best);
+        return (Nearest(best), false);
     }
+
+    /// <summary>A photo of one hue whose median saturation is below this is treated as a tinted black and white one.</summary>
+    private const double MutedOneHue = 0.25;
+
+    /// <summary>Below this much average colour (Lab chroma) a grey photo counts as having no cast at all.</summary>
+    private const double NoCast = 0.6;
+
+    /// <summary>
+    /// For a black and white photo: the direction its greys lean (the average of a* and b* in Lab, so a cool grey points blue and a
+    /// warm one points orange), matched to the palette's lighter shade whose own hue points closest that way. A grey with no lean
+    /// at all takes Navy Indigo's lighter shade, the palette's most neutral.
+    /// </summary>
+    internal static uint ByCast(IReadOnlyCollection<(int R, int G, int B)> pixels)
+    {
+        double a = 0, b = 0;
+        foreach (var (r, g, bl) in pixels)
+        {
+            var lab = ToLab(new Rgb(r, g, bl));
+            a += lab.A;
+            b += lab.B;
+        }
+        var neutral = MelodayPalette.Families.First(f => f.Name == "Navy Indigo").Lighter;
+        if (pixels.Count == 0) return neutral;
+        a /= pixels.Count;
+        b /= pixels.Count;
+        var chroma = Math.Sqrt(a * a + b * b);
+        if (chroma < NoCast) return neutral;
+        return MelodayPalette.Families.Select(f => f.Lighter)
+            .Select(c => (Colour: c, Lab: ToLab(Rgb.From(c))))
+            .Where(c => Math.Sqrt(c.Lab.A * c.Lab.A + c.Lab.B * c.Lab.B) >= 8)
+            .OrderByDescending(c => (c.Lab.A * a + c.Lab.B * b) / (Math.Sqrt(c.Lab.A * c.Lab.A + c.Lab.B * c.Lab.B) * chroma))
+            .First().Colour;
+    }
+
+    private static uint ByCast(List<Rgb> pixels) => ByCast(pixels.Select(p => (p.R, p.G, p.B)).ToList());
 
     /// <summary>The main colours round the edges of the photo, outside the middle where the subject usually is; biggest first.</summary>
     private static List<(Rgb Colour, double Saturation, double Share)> Edges(List<(Rgb Colour, int X, int Y)> pixels, int width, int height)

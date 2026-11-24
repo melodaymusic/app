@@ -3,6 +3,7 @@
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:controls="using:MelodayMusic.Controls"
+    xmlns:helpers="using:MelodayMusic.Helpers"
     IsTabStop="False">
 
     <Grid x:Name="Root" RowSpacing="2" Background="Transparent"
@@ -24,7 +25,7 @@
                 <controls:CoverSymbolLayer x:Name="StationSymbol" />
             </Grid>
             <controls:MixCover x:Name="MixArt" x:Load="False" />
-            <TextBlock x:Name="ChartRankText" Style="{StaticResource MelodayHeroText}" FontSize="36" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,-8" Visibility="Collapsed" IsHitTestVisible="False"/>
+            <TextBlock x:Name="ChartRankText" Style="{StaticResource MelodayHeroText}" helpers:Leading.Ratio="0" FontSize="36" Foreground="White" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,-8" Visibility="Collapsed" IsHitTestVisible="False"/>
             <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource MelodayOverlayButtonStyle}"
                     HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10"
                     IsTabStop="False" ToolTipService.ToolTip="Play" AutomationProperties.Name="Play"

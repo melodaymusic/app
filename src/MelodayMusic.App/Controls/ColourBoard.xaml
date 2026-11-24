@@ -28,15 +28,7 @@
                     <controls:ArtworkImage x:Name="MixArtist6" DecodeSize="120" ArtworkCornerRadius="999" ShowOutline="False" PlaceholderIcon="MicVocal" Visibility="Collapsed" />
                 </controls:MixCircles>
             </Border>
-            <Border x:Name="ShapeArt" Visibility="Collapsed" CornerRadius="{StaticResource MelodayRadiusBoardTop}">
-                <Viewbox Stretch="Fill">
-                    <Canvas Width="1000" Height="1000">
-                        <Image x:Name="ShapeBack" Stretch="Fill" />
-                        <Image x:Name="ShapeFront" Stretch="Fill" />
-                        <Image x:Name="ShapeOverlay" Width="1000" Height="1000" Stretch="Fill" />
-                    </Canvas>
-                </Viewbox>
-            </Border>
+            <controls:CoverLabels x:Name="MixLabels" Visibility="Collapsed" />
             <controls:CoverSymbolLayer x:Name="MixSymbol" Visibility="Collapsed" />
             <Button x:Name="PlayButton" x:Load="False" Style="{StaticResource MelodayOverlayButtonStyle}" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                     Margin="0,0,12,12" IsTabStop="False" ToolTipService.ToolTip="Play" AutomationProperties.Name="Play" Click="OnPlayClick">
@@ -48,7 +40,7 @@
         <Border x:Name="Panel" Grid.Row="1" Height="{StaticResource MelodayColourPanel}" Padding="{StaticResource MelodayColourPanelPadding}" CornerRadius="{StaticResource MelodayRadiusBoardBottom}"
                 Background="{StaticResource MelodayColourBoardFallbackBrush}">
             <Grid>
-                <StackPanel Spacing="2">
+                <StackPanel x:Name="PanelText" Spacing="2">
                     <TextBlock x:Name="TitleText" Style="{StaticResource MelodayTextBase}" FontSize="{StaticResource MelodayFontColourTitle}" FontWeight="SemiBold" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
                                TextTrimming="CharacterEllipsis" Margin="0,0,18,0" />
                     <TextBlock x:Name="SummaryText" Style="{StaticResource MelodayTextBase}" FontSize="{StaticResource MelodayFontCaption}" Foreground="{StaticResource MelodayOnColorBodyBrush}"

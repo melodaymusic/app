@@ -8,8 +8,8 @@ using Windows.UI;
 
 namespace MelodayMusic.Helpers;
 
-// One blur pass, then cheap per-pixel layers: vibrancy, tint, a top sheen and a tiled grain
-// that breaks up banding so the surface reads as frosted material rather than plain blur.
+// One blur pass, then cheap per-pixel layers: vibrancy, tint, an optional top sheen and tiled grain.
+// The app uses it as a flat iOS-style frost: heavy blur, colour pulled through, no sheen or grain.
 public sealed partial class LiquidGlassBrush : XamlCompositionBrushBase
 {
     private const int NoiseSize = 128;

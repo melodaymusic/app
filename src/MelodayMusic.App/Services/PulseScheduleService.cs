@@ -11,14 +11,16 @@ public sealed class PulseScheduleService
 {
     private readonly PlexSession _session;
     private readonly PulseScheduleStore _store;
+    private readonly PulseLineupStore _lineup;
     private readonly LocalRadio _local;
     private readonly Dislikes _dislikes;
     private readonly ILogger<PulseScheduleService> _log;
 
-    public PulseScheduleService(PlexSession session, PulseScheduleStore store, LocalRadio local, Dislikes dislikes, ILogger<PulseScheduleService> log)
+    public PulseScheduleService(PlexSession session, PulseScheduleStore store, PulseLineupStore lineup, LocalRadio local, Dislikes dislikes, ILogger<PulseScheduleService> log)
     {
         _session = session;
         _store = store;
+        _lineup = lineup;
         _local = local;
         _dislikes = dislikes;
         _log = log;
@@ -26,8 +28,8 @@ public sealed class PulseScheduleService
 
     public event EventHandler? Changed
     {
-        add => _store.Changed += value;
-        remove => _store.Changed -= value;
+        add { _store.Changed += value; _lineup.Changed += value; }
+        remove { _store.Changed -= value; _lineup.Changed -= value; }
     }
 
     public string? Scope => _session.Server?.MachineIdentifier is { } server && _session.Section?.Key is { } section
@@ -35,8 +37,40 @@ public sealed class PulseScheduleService
         : null;
 
     public IReadOnlyList<PulseScheduleRule> Rules => Scope is { } scope ? _store.Get(scope) : [];
-    public string Version => Scope is { } scope ? _store.Version(scope) : "NO-LIBRARY";
-    public string? SaveError => _store.SaveError;
+    public string Version => Scope is { } scope ? _store.Version(scope) + "-" + _lineup.Version(scope) : "NO-LIBRARY";
+    public string? SaveError => _store.SaveError ?? _lineup.SaveError;
+
+    /// <summary>Pulse's own programs for this library: the built-in lineup until it's edited.</summary>
+    public IReadOnlyList<PulseSlot> Lineup => Scope is { } scope ? _lineup.Get(scope) : PulseLineup.Defaults;
+    public bool IsLineupEdited => Scope is { } scope && _lineup.IsEdited(scope);
+
+    public PulseProgramme Programme(DateTimeOffset airtime) => PulseLineup.At(Lineup, airtime);
+    public DateTimeOffset ProgrammeBoundary(DateTimeOffset airtime) => PulseLineup.NextBoundary(Lineup, airtime);
+
+    /// <summary>Saves a program into the lineup, making room by shortening whatever it overlaps.</summary>
+    public bool SaveSlot(PulseSlot slot)
+    {
+        if (!slot.IsValid || Scope is not { } scope) return false;
+        _lineup.Set(scope, PulseLineup.Place(Lineup, slot));
+        return _lineup.SaveError is null;
+    }
+
+    public bool RemoveSlot(string id)
+    {
+        if (Scope is not { } scope) return false;
+        var lineup = Lineup;
+        if (lineup.All(s => s.Id != id)) return false;
+        _lineup.Set(scope, lineup.Where(s => s.Id != id));
+        return _lineup.SaveError is null;
+    }
+
+    /// <summary>Brings back the built-in lineup, and with <paramref name="clearAdded"/> also removes the programs added to Pulse.</summary>
+    public void Reset(bool clearAdded)
+    {
+        if (Scope is not { } scope) return;
+        _lineup.Reset(scope);
+        if (clearAdded) _store.Set(scope, []);
+    }
 
     public PulseScheduleOccurrence? At(DateTimeOffset airtime) => PulseSchedule.At(Rules, airtime);
 
@@ -79,7 +113,8 @@ public sealed class PulseScheduleService
             var disliked = await _dislikes.GetAsync().ConfigureAwait(false);
             var songs = new SongSet();
             var eligible = pool.Where(t => disliked.Eligible(t) && songs.Add(t)).ToList();
-            if (source.Kind is not (PulseScheduleSourceKind.Album or PulseScheduleSourceKind.Playlist or PulseScheduleSourceKind.Track or PulseScheduleSourceKind.Programme))
+            // Shuffled afresh for each airing, so a repeating block doesn't play the same songs every time.
+            if (occurrence.Rule.PlayOrder == PulseScheduleOrder.Shuffle)
                 Shuffle(eligible, Seed(occurrence.Rule.Id, occurrence.StartsAt));
             return Limit(eligible, occurrence.Rule.Length);
         }

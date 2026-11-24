@@ -195,11 +195,11 @@
                             <ResourceDictionary>
                                 <ResourceDictionary.ThemeDictionaries>
                                     <ResourceDictionary x:Key="Dark">
-                                        <AcrylicBrush x:Key="TextControlBackground" TintColor="#16161B" TintOpacity="0.38" TintLuminosityOpacity="0.5" FallbackColor="#1C1B21" />
-                                        <AcrylicBrush x:Key="TextControlBackgroundPointerOver" TintColor="#16161B" TintOpacity="0.3" TintLuminosityOpacity="0.45" FallbackColor="#22212A" />
-                                        <AcrylicBrush x:Key="TextControlBackgroundFocused" TintColor="#16161B" TintOpacity="0.5" TintLuminosityOpacity="0.6" FallbackColor="#1C1B21" />
-                                        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#24FFFFFF" />
-                                        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#33FFFFFF" />
+                                        <AcrylicBrush x:Key="TextControlBackground" TintColor="#2A2A2F" TintOpacity="0.36" TintLuminosityOpacity="0.5" FallbackColor="#2A2A2F" />
+                                        <AcrylicBrush x:Key="TextControlBackgroundPointerOver" TintColor="#303035" TintOpacity="0.36" TintLuminosityOpacity="0.5" FallbackColor="#303035" />
+                                        <AcrylicBrush x:Key="TextControlBackgroundFocused" TintColor="#2A2A2F" TintOpacity="0.5" TintLuminosityOpacity="0.6" FallbackColor="#2A2A2F" />
+                                        <SolidColorBrush x:Key="TextControlBorderBrush" Color="#0FFFFFFF" />
+                                        <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="#1AFFFFFF" />
                                         <SolidColorBrush x:Key="TextControlForeground" Color="#F4F2EE" />
                                         <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#B3AFA8" />
                                         <SolidColorBrush x:Key="TextControlPlaceholderForegroundPointerOver" Color="#C9C5BE" />

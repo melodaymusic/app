@@ -10,9 +10,15 @@
         <StackPanel Padding="{StaticResource MelodayPagePadding}" Spacing="{StaticResource MelodaySpaceGroup}">
             <controls:PageHeader Title="Pulse Guide"
                                  Subtitle="Your station, on your time. Pulse finishes the current song before a scheduled program begins.">
-                <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnAdd" AutomationProperties.AutomationId="PulseGuideAddButton">
-                    <controls:IconLabel Icon="Plus" Text="Add to Pulse" />
-                </Button>
+                <StackPanel Orientation="Horizontal" Spacing="{StaticResource MelodaySpaceS}">
+                    <Button Style="{StaticResource MelodaySecondaryButtonStyle}" Click="OnReset" AutomationProperties.AutomationId="PulseGuideResetButton"
+                            ToolTipService.ToolTip="Bring back Pulse's own programs at their usual times">
+                        <controls:IconLabel Icon="ListRestart" Text="Reset" />
+                    </Button>
+                    <Button Style="{StaticResource MelodayPrimaryButtonStyle}" Click="OnAdd" AutomationProperties.AutomationId="PulseGuideAddButton">
+                        <controls:IconLabel Icon="Plus" Text="Add to Pulse" />
+                    </Button>
+                </StackPanel>
             </controls:PageHeader>
 
             <Grid ColumnSpacing="{StaticResource MelodaySpaceS}">
@@ -111,7 +117,7 @@
                 </Border>
             </StackPanel>
 
-            <TextBlock Text="Built-in Pulse programs stay in the guide wherever you leave room. Your programs take priority and never overlap."
+            <TextBlock Text="Select any program to change its time, make it longer or remove it, or select an empty stretch to put a Pulse program there. Programs you add take priority over Pulse's own."
                        Style="{StaticResource MelodaySecondaryText}" Foreground="{ThemeResource MelodayTextTertiaryBrush}" TextWrapping="Wrap" />
         </StackPanel>
     </ScrollViewer>

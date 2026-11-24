@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Text;
 using MelodayMusic.Core;
+using MelodayMusic.Core.Covers;
 using MelodayMusic.Core.Playlists;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;
@@ -12,7 +13,7 @@ namespace MelodayMusic.Services;
 public static class EssentialsCover
 {
     private const float Size = 1000, Margin = 40, Join = 500;
-    private const int Version = 18;
+    private const int Version = 24;
 
     public static async Task<string?> RenderAsync(string identity, string artistName, byte[]? backdrop, ILogger log)
     {
@@ -47,10 +48,10 @@ public static class EssentialsCover
                     ds.DrawImage(picture, destination, Crop(picture.SizeInPixels.Width, picture.SizeInPixels.Height, width / height), 1f, CanvasImageInterpolation.HighQualityCubic);
                 }
                 MelodayCover.DrawLabels(ds, "Essentials", string.Empty, Size, Size, log, Rgb(0x000000));
-                var baseline = MelodayCover.DrawLabels(ds, string.Empty, artistName, Size, Size, log, Rgb(Essentials.InkIsDark(colour) ? 0x000000u : 0xFFFFFFu), labelLines: 1);
+                var baseline = MelodayCover.DrawLabels(ds, string.Empty, artistName, Size, Size, log, Rgb(Essentials.InkIsDark(colour) ? 0x000000u : 0xFFFFFFu), nameLines: 1);
                 CoverEdges.Draw(ds, colour, Size, baseline);
             }
-            await CoverSymbol.DrawAsync(target);
+            await CoverSymbol.DrawAsync(target, CoverEdge.Colour(colour));
             Directory.CreateDirectory(folder);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             return path;

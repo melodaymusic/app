@@ -82,8 +82,8 @@ public static class UiScale
         d["MelodayRadiusSurface"] = new CornerRadius(BoardRadius, 0, 0, 0);
         R("ListViewItemCornerRadius", Size(12));
         R("GridViewItemCornerRadius", ArtworkRadius + Size(10));
-        R("MelodayRadiusGlass", Size(20));
-        R("MelodayRadiusNavItem", Math.Max(0, Size(20) - Size(8)));
+        R("MelodayRadiusGlass", Size(14));
+        R("MelodayRadiusNavItem", Math.Max(0, Size(14) - Size(8)));
         R("MelodayRadiusBoard", BoardRadius);
         d["MelodayRadiusBoardTop"] = new CornerRadius(BoardRadius, BoardRadius, 0, 0);
         d["MelodayRadiusBoardBottom"] = new CornerRadius(0, 0, BoardRadius, BoardRadius);
@@ -105,10 +105,6 @@ public static class UiScale
         N("MelodayFontHero", Text(48));
         N("MelodayFontHeroLarge", Text(64));
         N("MelodayLineParagraph", Text(24));
-        N("MelodayLineDisplay", Text(44));
-        N("MelodayLineFeature", Text(48));
-        N("MelodayLineHero", Text(56));
-        N("MelodayLineHeroLarge", Text(70));
         N("MelodayFontBoardEyebrow", Text(14));
         N("MelodayFontBoardTitle", Text(21));
         N("MelodayFontBoardSubtitle", Text(16));
@@ -163,7 +159,7 @@ public static class UiScale
 
         N("MelodaySectionSpacing", Size(48, 32));
         N("MelodayPlayerHeight", Size(80, 72));
-        d["MelodayRadiusPlayer"] = new CornerRadius(Size(80, 72) / 2);
+        R("MelodayRadiusPlayer", Size(14));
         var bar = TopInset;
         N("MelodayTopBarHeight", TopBarHeight);
         d["MelodayTitleBarInset"] = new Thickness(0, TitleBarHeight, 0, 0);

@@ -1,18 +1,14 @@
 Meloday Music includes the following third-party works.
 
-Nunito (typeface)
-  Copyright 2014 The Nunito Project Authors (https://github.com/googlefonts/nunito)
+DM Sans (typeface)
+  Copyright 2014 The DM Sans Project Authors (https://github.com/googlefonts/dm-fonts)
   Licensed under the SIL Open Font License, Version 1.1.
-  Full licence: Assets/Fonts/NUNITO-LICENSE.txt
+  Full licence: Assets/Fonts/DMSANS-LICENSE.txt
 
 Lucide (icons)
   Copyright (c) Lucide Icons and Contributors
   Licensed under the ISC License.
   Full licence: Assets/LUCIDE-LICENSE.txt, and https://lucide.dev/license
-
-Shape Icons (cover shapes in Assets/Shapes)
-  Shape Icons by SVGBackgrounds.com: https://www.svgbackgrounds.com
-  Shape Icons by shapes.gallery: https://shapes.gallery
 
 Genre Essentials covers (Assets/Genres)
   Based on Apple Music's genre artwork, redesigned in the Meloday palette.

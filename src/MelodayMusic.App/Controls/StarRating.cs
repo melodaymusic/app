@@ -69,6 +69,16 @@ public sealed partial class StarRating : UserControl
         set => SetValue(OnArtworkProperty, value);
     }
 
+    public static readonly DependencyProperty TintedProperty = DependencyProperty.Register(
+        nameof(Tinted), typeof(bool), typeof(StarRating), new PropertyMetadata(false, (d, _) => ((StarRating)d).Render()));
+
+    /// <summary>Empty stars take the secondary brush (tinted by the accent where a host sets one, as the player bar does).</summary>
+    public bool Tinted
+    {
+        get => (bool)GetValue(TintedProperty);
+        set => SetValue(TintedProperty, value);
+    }
+
     public double Stars => Item is null ? 0 : Math.Clamp((Changed.TryGetValue(Item.RatingKey, out var r) ? r : Original(Item)) / 2, 0, 5);
 
     public bool HasRating => Stars > 0;
@@ -92,8 +102,9 @@ public sealed partial class StarRating : UserControl
     {
         var stars = _hover > 0 ? _hover : Stars;
         var on = new SolidColorBrush(Helpers.ThemeColors.Get("MelodayTextPrimaryBrush", ActualTheme, Microsoft.UI.Colors.White));
-        var off = OnArtwork
+        Brush off = OnArtwork
             ? new SolidColorBrush(Windows.UI.Color.FromArgb(0xD9, 0xFF, 0xFF, 0xFF))
+            : Tinted && TryFind("MelodayTextSecondaryBrush") is { } secondary ? secondary
             : new SolidColorBrush(Helpers.ThemeColors.Get("MelodayTextTertiaryBrush", ActualTheme, Microsoft.UI.Colors.Gray));
         for (var i = 0; i < 5; i++)
         {
@@ -104,6 +115,24 @@ public sealed partial class StarRating : UserControl
         var label = Item is null ? "Rating" : $"Rating for {Item.Title}";
         AutomationProperties.SetName(this, label);
         AutomationProperties.SetHelpText(this, Stars > 0 ? $"{Stars:0.#} of 5 stars" : "Not rated");
+    }
+
+    // The nearest resource up the tree (the player bar keeps its own copy of the brushes), else the app's.
+    private Brush? TryFind(string key)
+    {
+        for (DependencyObject? at = this; at is not null; at = Microsoft.UI.Xaml.Media.VisualTreeHelper.GetParent(at))
+            if (at is FrameworkElement fe && Lookup(fe.Resources, key) is Brush found) return found;
+        return Lookup(Application.Current.Resources, key) as Brush;
+    }
+
+    private object? Lookup(ResourceDictionary resources, string key)
+    {
+        var theme = ActualTheme == ElementTheme.Light ? "Light" : "Dark";
+        if (resources.ThemeDictionaries.TryGetValue(theme, out var t) && t is ResourceDictionary themed && themed.TryGetValue(key, out var v)) return v;
+        if (resources.TryGetValue(key, out var plain)) return plain;
+        foreach (var merged in resources.MergedDictionaries)
+            if (Lookup(merged, key) is { } found) return found;
+        return null;
     }
 
     public async Task SetAsync(int stars)

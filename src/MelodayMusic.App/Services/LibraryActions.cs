@@ -162,6 +162,16 @@ public sealed class LibraryActions
         if (tracks.Count > 0) await _player.PlayTracksAsync(tracks, 0, shuffle);
     }
 
+    /// <summary>Plays a playlist or album in the order a page is showing it (after a sort or search) rather than its saved order.</summary>
+    public async Task PlayAsync(MediaItem item, IReadOnlyList<Track> tracks, bool shuffle = false)
+    {
+        if (tracks.Count == 0) return;
+        item = Real(item);
+        RecordPlayed(item);
+        _player.From(item);
+        await _player.PlayTracksAsync(tracks, 0, shuffle);
+    }
+
     public void RecordPlayed(MediaItem item)
     {
         if (_session.Server?.MachineIdentifier is { } server) _recents.Record(server, Real(item));
@@ -205,7 +215,7 @@ public sealed class LibraryActions
                 var opening = await radio.NextAsync(LocalRadio.BatchSize);
                 if (opening.Count == 0)
                 {
-                    _notifications.ShowInfo("Nothing to play yet", "The chosen artists or albums have no available tracks.");
+                    _notifications.ShowInfo("Nothing to play yet", "None of those artists or albums have songs Plex can play.");
                     return;
                 }
                 await _player.PlayMixAsync(opening, ct => radio.NextAsync(LocalRadio.BatchSize, ct));
@@ -233,7 +243,7 @@ public sealed class LibraryActions
         var mix = await _meloday.GetAsync();
         if (mix is null || mix.Tracks.Count == 0)
         {
-            _notifications.ShowInfo("No Meloday yet", "There isn't enough listening history to make one yet.");
+            _notifications.ShowInfo("No Meloday yet", "Play a little more music first, so it has some listening to learn from.");
             return;
         }
         await _player.PlayTracksAsync(mix.Tracks, 0, shuffle);

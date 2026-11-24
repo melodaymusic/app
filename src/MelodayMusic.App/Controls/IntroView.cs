@@ -47,7 +47,7 @@ public sealed partial class IntroView : UserControl
         _log = App.Services.GetRequiredService<ILogger<IntroView>>();
         AutomationProperties.SetName(this, "Meloday Music");
         AutomationProperties.SetHelpText(this, "Press any key or click to skip the opening animation.");
-        _fontFamily = new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "Nunito.ttf")).AbsoluteUri + "#Nunito";
+        _fontFamily = new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "DMSans.ttf")).AbsoluteUri + "#DM Sans";
         _canvas = new CanvasAnimatedControl { ClearColor = Colors.Black, IsHitTestVisible = false, IsFixedTimeStep = false };
         AutomationProperties.SetAccessibilityView(_canvas, Microsoft.UI.Xaml.Automation.Peers.AccessibilityView.Raw);
         _canvas.Draw += OnDraw;

@@ -23,14 +23,15 @@ public sealed partial class MixCircles : Panel
         (0.325, 0.775, 0.27),
     ];
 
+    // Kept clear of the bottom-left corner, where the board sets the mix's name.
     public static readonly (double X, double Y, double D)[] FloatSlots =
     [
-        (0.33, 0.30, 0.44),
-        (0.715, 0.57, 0.35),
-        (0.325, 0.775, 0.27),
-        (0.725, 0.225, 0.2025),
-        (0.155, 0.585, 0.2025),
-        (0.64, 0.845, 0.2025),
+        (0.36, 0.30, 0.42),
+        (0.76, 0.52, 0.32),
+        (0.80, 0.84, 0.22),
+        (0.76, 0.17, 0.20),
+        (0.13, 0.56, 0.18),
+        (0.50, 0.66, 0.18),
     ];
 
     public static readonly (double X, double Y, double D)[] OrbitSlots =

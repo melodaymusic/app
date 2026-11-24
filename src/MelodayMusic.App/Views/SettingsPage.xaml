@@ -1169,16 +1169,11 @@
                                 <TextBlock Text="Genre Essentials covers: based on Apple Music's genre artwork, redesigned in the Meloday palette."
                                            Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords" />
                                 <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
-                                    <Run Text="Typeface: Nunito by Vernon Adams, under the SIL Open Font License 1.1." />
+                                    <Run Text="Typeface: DM Sans by Colophon Foundry, under the SIL Open Font License 1.1." />
                                 </TextBlock>
                                 <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
                                     <Run Text="Icons: Lucide, Copyright Lucide Icons and Contributors, under the" />
                                     <Hyperlink NavigateUri="https://lucide.dev/license">ISC License</Hyperlink><Run Text="." />
-                                </TextBlock>
-                                <TextBlock Style="{StaticResource MelodaySecondaryText}" TextWrapping="WrapWholeWords">
-                                    <Run Text="Cover shapes: Shape Icons by" />
-                                    <Hyperlink NavigateUri="https://www.svgbackgrounds.com">SVGBackgrounds.com</Hyperlink><Run Text=" and Shape Icons by" />
-                                    <Hyperlink NavigateUri="https://shapes.gallery">shapes.gallery</Hyperlink><Run Text="." />
                                 </TextBlock>
                             </StackPanel>
                             <Button Grid.Column="2" Style="{StaticResource MelodaySecondaryButtonStyle}" Content="Open Log Folder" Command="{x:Bind ViewModel.OpenLogsCommand}" VerticalAlignment="Center" />

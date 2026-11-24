@@ -33,6 +33,16 @@ public sealed partial class UniformColumns : Panel
         set => SetValue(RowSpacingProperty, value);
     }
 
+    public static readonly DependencyProperty FitContentProperty = DependencyProperty.Register(
+        nameof(FitContent), typeof(bool), typeof(UniformColumns), new PropertyMetadata(false, OnLayoutChanged));
+
+    /// <summary>Columns shrink to the widest cell, so the panel can be centred as a block.</summary>
+    public bool FitContent
+    {
+        get => (bool)GetValue(FitContentProperty);
+        set => SetValue(FitContentProperty, value);
+    }
+
     private static void OnLayoutChanged(DependencyObject d, DependencyPropertyChangedEventArgs e) => ((UniformColumns)d).InvalidateMeasure();
 
     private int ColumnCount => Math.Max(1, Columns);
@@ -56,16 +66,20 @@ public sealed partial class UniformColumns : Panel
             }
             height += rowHeight + (row > 0 ? RowSpacing : 0);
         }
-        var width = double.IsInfinity(availableSize.Width)
-            ? widest * ColumnCount + ColumnSpacing * (ColumnCount - 1)
+        var columns = Math.Min(ColumnCount, Math.Max(1, visible.Count));
+        var width = double.IsInfinity(availableSize.Width) || FitContent
+            ? widest * columns + ColumnSpacing * (columns - 1)
             : availableSize.Width;
+        if (!double.IsInfinity(availableSize.Width)) width = Math.Min(width, availableSize.Width);
         return new Size(width, height);
     }
 
     protected override Size ArrangeOverride(Size finalSize)
     {
         var visible = Children.Where(c => c.Visibility == Visibility.Visible).ToList();
-        var columnWidth = ColumnWidth(finalSize.Width);
+        var columnWidth = FitContent
+            ? Math.Max(0, (finalSize.Width - ColumnSpacing * (Math.Min(ColumnCount, Math.Max(1, visible.Count)) - 1)) / Math.Min(ColumnCount, Math.Max(1, visible.Count)))
+            : ColumnWidth(finalSize.Width);
         double y = 0;
         for (var row = 0; row * ColumnCount < visible.Count; row++)
         {

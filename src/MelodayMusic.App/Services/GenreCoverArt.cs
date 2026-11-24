@@ -1,5 +1,6 @@
 using MelodayMusic.Core;
 using MelodayMusic.Core.Artwork;
+using MelodayMusic.Core.Covers;
 using MelodayMusic.Core.Playlists;
 using Microsoft.Extensions.Logging;
 using Microsoft.Graphics.Canvas;
@@ -10,7 +11,7 @@ namespace MelodayMusic.Services;
 
 public static class GenreCoverArt
 {
-    private const int Version = 6;
+    private const int Version = 12;
     private const float Size = 1000;
 
     public static async Task<string?> RenderAsync(GenreCover genre, ILogger log)
@@ -31,13 +32,14 @@ public static class GenreCoverArt
             var topRight = Average(target, new Rect(Size * 0.55, Size * 0.04, Size * 0.41, Size * 0.12));
             var bottomLeft = Average(target, new Rect(Size * 0.04, Size * 0.72, Size * 0.80, Size * 0.24));
             var bottom = Average(target, new Rect(0, Size * 0.94, Size, Size * 0.06));
+            var ground = MelodayPalette.Nearest(bottom);
             using (var ds = target.CreateDrawingSession())
             {
                 MelodayCover.DrawLabels(ds, "Essentials", string.Empty, Size, Size, log, Ink(topRight));
-                var baseline = MelodayCover.DrawLabels(ds, string.Empty, genre.Genre, Size, Size, log, Ink(bottomLeft), labelLines: 2);
-                CoverEdges.Draw(ds, MelodayPalette.Nearest(bottom), Size, baseline);
+                var baseline = MelodayCover.DrawLabels(ds, string.Empty, genre.Genre, Size, Size, log, Ink(bottomLeft), nameLines: 2);
+                CoverEdges.Draw(ds, ground, Size, baseline);
             }
-            await CoverSymbol.DrawAsync(target);
+            await CoverSymbol.DrawAsync(target, CoverEdge.Colour(ground));
             Directory.CreateDirectory(folder);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             return path;

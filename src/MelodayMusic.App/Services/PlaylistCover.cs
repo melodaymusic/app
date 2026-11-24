@@ -16,7 +16,7 @@ public static class PlaylistCover
     {
         var folder = Path.Combine(AppPaths.ArtworkCache, "playlists");
         var hash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(identity + "|" + title)));
-        var path = Path.Combine(folder, "v18-" + hash + ".png");
+        var path = Path.Combine(folder, "v24-" + hash + ".png");
         if (File.Exists(path)) return path;
         try
         {
@@ -42,7 +42,7 @@ public static class PlaylistCover
                 var baseline = MelodayCover.DrawLabels(ds, "", title, 1000, 1000, log);
                 CoverEdges.Draw(ds, palette[layout.Palette].Darker, 1000, baseline);
             }
-            await CoverSymbol.DrawAsync(target);
+            await CoverSymbol.DrawAsync(target, CoverEdge.Colour(palette[layout.Palette].Darker));
             Directory.CreateDirectory(folder);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             return path;

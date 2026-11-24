@@ -28,7 +28,6 @@ public static class MuteDialog
             SmallChange = 1,
             LargeChange = 7,
             Value = mutes.DefaultDays,
-            SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline,
             MinWidth = Dialogs.ContentWidth(320),
             HorizontalAlignment = HorizontalAlignment.Stretch,
         };

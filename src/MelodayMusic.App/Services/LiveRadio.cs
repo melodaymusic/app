@@ -218,7 +218,7 @@ public sealed class LiveRadio
     {
         if (station.StationKind != StationKind.Flagship || batch.Tracks.Count == 0) return 20;
         if (batch.Custom is not null) return batch.Tracks.Count;
-        var boundary = PulseProgramme.NextBoundary(airtime);
+        var boundary = _pulse?.ProgrammeBoundary(airtime) ?? PulseProgramme.NextBoundary(airtime);
         if (_pulse?.NextBoundary(airtime) is { } custom && custom < boundary) boundary = custom;
         var remaining = (boundary - airtime).TotalMilliseconds;
         var duration = batch.Tracks.Average(t => t.DurationMs > 0 ? t.DurationMs : LiveSchedule.FallbackDurationMs);
@@ -262,7 +262,8 @@ public sealed class LiveRadio
                         if (custom.Count > 0) return new Batch(custom, occurrence);
                     }
                 }
-                var picks = await _local.ForBlocks(round).NextAsync(Off(station), ct, recordFeatures: false, airtime: airtime, rotation: rotation).ConfigureAwait(false);
+                var picks = await _local.ForBlocks(round).NextAsync(Off(station), ct, recordFeatures: false, airtime: airtime, rotation: rotation,
+                    forcedProgramme: _pulse?.Programme(airtime)).ConfigureAwait(false);
                 return new Batch(picks);
             }
             var off = Off(station);

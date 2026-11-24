@@ -118,16 +118,17 @@ public partial class App : Application
         try
         {
             using var fonts = new Microsoft.Graphics.Canvas.Text.CanvasFontSet(
-                new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "Nunito.ttf")));
-            if (fonts.Fonts.Count == 0) _log.LogWarning("The bundled Nunito typeface has no faces");
+                new Uri(Path.Combine(AppContext.BaseDirectory, "Assets", "Fonts", "DMSans.ttf")));
+            if (fonts.Fonts.Count == 0) _log.LogWarning("The bundled DM Sans typeface has no faces");
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "The bundled Nunito typeface could not be loaded");
+            _log.LogWarning(ex, "The bundled DM Sans typeface could not be loaded");
         }
 
         UiScale.Apply(UiScale.Default);
         Helpers.Motion.Initialize(Services.GetRequiredService<SettingsStore>().Current.Motion);
+        Services.GetRequiredService<TagFamilyMoves>().Apply();
         _window = new MainWindow();
         var navigation = Services.GetRequiredService<NavigationService>();
         Services.GetRequiredService<PlayerService>().PageItem = () => navigation.CurrentItem;
@@ -245,7 +246,6 @@ public partial class App : Application
         services.AddSingleton<LogoImport>();
         services.AddSingleton<TagCovers>();
         services.AddSingleton<StaticCovers>();
-        services.AddSingleton<ShapeCovers>();
         services.AddSingleton<VisualizerService>();
         services.AddSingleton<StageService>();
         services.AddSingleton(_ => new Core.Home.ListeningClock(System.IO.Path.Combine(AppPaths.Root, "listening.json")));
@@ -260,6 +260,7 @@ public partial class App : Application
         services.AddSingleton<MoodTagService>();
         services.AddSingleton(_ => new Core.Radio.LiveScheduleStore(AppPaths.LiveStations));
         services.AddSingleton(_ => new Core.Radio.PulseScheduleStore(AppPaths.PulseSchedule));
+        services.AddSingleton(_ => new Core.Radio.PulseLineupStore(AppPaths.PulseLineup));
         services.AddSingleton(_ => new Core.Radio.RadioPlaybackStore(Path.Combine(AppPaths.Root, "radio", "played.json")));
         services.AddSingleton(_ => new Core.Radio.StationFeedbackStore(AppPaths.StationFeedback));
         services.AddSingleton(_ => new Core.Radio.HeadlinerHistory(AppPaths.HeadlinerHistory));
@@ -326,6 +327,7 @@ public partial class App : Application
         services.AddSingleton<PlaylistsViewModel>();
         services.AddSingleton<CollectionsViewModel>();
         services.AddSingleton<BrowseViewModel>();
+        services.AddSingleton<TagFamilyMoves>();
         services.AddSingleton<SearchViewModel>();
         services.AddSingleton<SettingsViewModel>();
         services.AddTransient<ArtistViewModel>();

@@ -100,11 +100,13 @@ public sealed partial class PlaylistPage : Page
 
     private void OnPlay(object? sender, EventArgs e)
     {
-        if (ViewModel.Playlist is { } p) _ = Actions.PlayAsync(p);
+        if (ViewModel.Playlist is not { } p) return;
+        _ = ViewModel.ViewTracks is { } view ? Actions.PlayAsync(p, view) : Actions.PlayAsync(p);
     }
 
     private void OnShuffle(object? sender, EventArgs e)
     {
-        if (ViewModel.Playlist is { } p) _ = Actions.PlayAsync(p, shuffle: true);
+        if (ViewModel.Playlist is not { } p) return;
+        _ = ViewModel.ViewTracks is { } view ? Actions.PlayAsync(p, view, shuffle: true) : Actions.PlayAsync(p, shuffle: true);
     }
 }

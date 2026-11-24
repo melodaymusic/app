@@ -32,18 +32,18 @@
 
                 <StackPanel x:Name="HeroText" VerticalAlignment="Bottom" Padding="{StaticResource MelodayGutterPadding}"
                             Spacing="{StaticResource MelodayPanelSpacing}">
-                    <StackPanel x:Name="HeroIdentity" HorizontalAlignment="Left" Spacing="{StaticResource MelodayPanelSpacing}">
+                    <StackPanel x:Name="HeroIdentity" HorizontalAlignment="Center" Spacing="{StaticResource MelodayPanelSpacing}">
                         <Grid>
                             <TextBlock x:Name="NameText" Text="{x:Bind ViewModel.Artist.Title, Mode=OneWay}" Style="{StaticResource MelodayHeroText}"
-                                       FontSize="{StaticResource MelodayFontHeroLarge}" LineHeight="{StaticResource MelodayLineHeroLarge}" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
+                                       FontSize="{StaticResource MelodayFontHeroLarge}" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
                                        TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" IsTextSelectionEnabled="True"
-                                       VerticalAlignment="Bottom" />
-                            <controls:ArtistLogo x:Name="LogoImage" HorizontalAlignment="Left" VerticalAlignment="Bottom" Visibility="Collapsed"
+                                       TextAlignment="Center" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                            <controls:ArtistLogo x:Name="LogoImage" HorizontalAlignment="Center" VerticalAlignment="Bottom" Visibility="Collapsed"
                                                  AutomationProperties.AutomationId="ArtistLogo" />
                         </Grid>
                     </StackPanel>
 
-                    <StackPanel x:Name="HeroActions" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0">
+                    <StackPanel x:Name="HeroActions" Orientation="Horizontal" Spacing="8" Margin="0,8,0,0" HorizontalAlignment="Center">
                         <Button Style="{StaticResource MelodayHeroPlayButtonStyle}" Click="OnPlay"
                                 AutomationProperties.Name="Play artist" AutomationProperties.AutomationId="PlayArtistButton">
                             <controls:IconLabel Icon="Play" IsFilled="True" Text="Play" />
@@ -69,10 +69,11 @@
                 </StackPanel>
             </Grid>
 
-            <ItemsControl x:Name="FactsList" ItemsSource="{x:Bind ViewModel.Facts}" IsTabStop="False" Margin="{StaticResource MelodayGutterPadding}">
+            <ItemsControl x:Name="FactsList" ItemsSource="{x:Bind ViewModel.Facts}" IsTabStop="False" Margin="{StaticResource MelodayGutterPadding}"
+                          HorizontalAlignment="Center">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <controls:UniformColumns Columns="4" ColumnSpacing="{StaticResource MelodayPanelSpacing}" RowSpacing="{StaticResource MelodayPanelSpacing}" />
+                        <controls:UniformColumns Columns="4" FitContent="True" ColumnSpacing="56" RowSpacing="{StaticResource MelodayPanelSpacing}" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
@@ -95,8 +96,7 @@
             </ItemsControl>
 
             <Grid x:Name="TabsRow" Padding="{StaticResource MelodayGutterPadding}">
-                <Rectangle Height="1" VerticalAlignment="Bottom" Fill="{StaticResource MelodayOnColorHairlineBrush}" />
-                <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="24" />
+                <StackPanel x:Name="Tabs" Orientation="Horizontal" Spacing="4" />
             </Grid>
 
             <controls:PageStateView SkeletonKind="Rows" SkeletonPadding="{StaticResource MelodayGutterPadding}" IsLoading="{x:Bind ViewModel.IsLoading, Mode=OneWay}"
@@ -136,11 +136,11 @@
                         <controls:SectionHeader Title="Latest Release" />
                         <Button x:Name="LatestCover" Style="{StaticResource MelodayTileButtonStyle}" Click="OnOpenLatest" HorizontalAlignment="Left" Margin="-10"
                                 AutomationProperties.Name="{x:Bind ViewModel.LatestRelease.Title, Mode=OneWay}">
-                            <controls:ArtworkImage x:Name="LatestArt" Width="{StaticResource MelodayArtLatest}" Height="{StaticResource MelodayArtLatest}"
+                            <controls:ArtworkImage x:Name="LatestArt" SourcePath="{x:Bind ViewModel.LatestThumb, Mode=OneWay}" Width="{StaticResource MelodayArtLatest}" Height="{StaticResource MelodayArtLatest}"
                                                    DecodeSize="400" ArtworkCornerRadius="{StaticResource MelodayRadiusControl}" />
                         </Button>
                         <StackPanel Spacing="2">
-                            <TextBlock Text="{x:Bind ViewModel.LatestRelease.Title, Mode=OneWay}" Style="{StaticResource MelodayHeadlineText}" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
+                            <TextBlock Text="{x:Bind ViewModel.LatestTitle, Mode=OneWay}" Style="{StaticResource MelodayHeadlineText}" Foreground="{StaticResource MelodayOnColorPrimaryBrush}"
                                        TextWrapping="WrapWholeWords" MaxLines="2" TextTrimming="CharacterEllipsis" />
                             <TextBlock Text="{x:Bind ViewModel.LatestReleaseMeta, Mode=OneWay}" Style="{StaticResource MelodaySecondaryText}" />
                         </StackPanel>

@@ -87,6 +87,10 @@
                                        Visibility="{x:Bind Player.HasLiveProgramme, Mode=OneWay}" AutomationProperties.AutomationId="PulseProgramme" />
                         </StackPanel>
                     </StackPanel>
+                <!-- The rating sits under the time, right-aligned with it. -->
+                <controls:StarRating x:Name="RatingBox" Grid.Row="1" Grid.Column="1" helpers:Anim.Appear="True" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                     Tinted="True" Item="{x:Bind Player.Track, Mode=OneWay}" StarSize="{StaticResource MelodayStarS}" AutomationProperties.Name="Rating"
+                                     Visibility="{x:Bind Player.ShowTime, Mode=OneWay}" />
                 <HyperlinkButton Grid.Row="1" Style="{StaticResource MelodayLinkButtonStyle}" Command="{x:Bind Player.OpenArtistCommand}"
                                  HorizontalAlignment="Left" Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
                     <TextBlock Text="{x:Bind Player.Artist, Mode=OneWay}" TextTrimming="CharacterEllipsis" MaxLines="1" FontSize="{StaticResource MelodayFontCaption}" />
@@ -101,12 +105,8 @@
 
         <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Spacing="12">
             <StackPanel x:Name="RatingVolume" VerticalAlignment="Center" Spacing="2">
-                <Viewbox x:Name="RatingBox" helpers:Anim.Appear="True" Stretch="Uniform" HorizontalAlignment="Stretch" Margin="6,0,4,0"
-                         Visibility="{x:Bind Player.HasTrack, Mode=OneWay}">
-                    <controls:StarRating x:Name="BarRating" Item="{x:Bind Player.Track, Mode=OneWay}" StarSize="{StaticResource MelodayStarS}" AutomationProperties.Name="Rating" />
-                </Viewbox>
                 <StackPanel x:Name="VolumeRow" Orientation="Horizontal">
-                    <Button x:Name="MuteButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Command="{x:Bind Player.ToggleMuteCommand}"
+                    <Button x:Name="MuteButton" Foreground="{ThemeResource MelodayTextSecondaryBrush}" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Command="{x:Bind Player.ToggleMuteCommand}"
                             ToolTipService.ToolTip="Mute (Ctrl+M)" AutomationProperties.Name="Mute">
                         <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
                     </Button>
@@ -115,7 +115,7 @@
                 </StackPanel>
             </StackPanel>
             <StackPanel x:Name="Tools" Orientation="Horizontal" VerticalAlignment="Center">
-                <Button x:Name="VolumeFlyoutButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Visibility="Collapsed"
+                <Button x:Name="VolumeFlyoutButton" Foreground="{ThemeResource MelodayTextSecondaryBrush}" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" Visibility="Collapsed"
                     ToolTipService.ToolTip="Volume" AutomationProperties.Name="Volume">
                 <controls:LucideIcon Icon="{x:Bind Player.VolumeIcon, Mode=OneWay}" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
                 <Button.Flyout>
@@ -133,7 +133,7 @@
                 <controls:CastButton x:Name="CastToggle" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" Visibility="Collapsed" />
                 <controls:CuratorButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
                 <controls:StationFeedbackButton Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}" IconSize="{StaticResource MelodayIconM}" />
-                <Button x:Name="MoreButton" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
+                <Button x:Name="MoreButton" Foreground="{ThemeResource MelodayTextSecondaryBrush}" Style="{StaticResource MelodayIconButtonStyle}" Width="{StaticResource MelodayButtonXS}" Height="{StaticResource MelodayButtonXS}"
                         Click="OnMore" Tag="SidePanelToggle" ToolTipService.ToolTip="More options" AutomationProperties.Name="More options" AutomationProperties.AutomationId="PlayerMoreButton">
                     <controls:LucideIcon Icon="Ellipsis" Width="{StaticResource MelodayIconM}" Height="{StaticResource MelodayIconM}" />
                 </Button>

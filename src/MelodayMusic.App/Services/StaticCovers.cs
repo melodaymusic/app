@@ -3,6 +3,7 @@ using System.Text;
 using MelodayMusic.Controls;
 using MelodayMusic.Core;
 using MelodayMusic.Core.Artwork;
+using MelodayMusic.Core.Covers;
 using MelodayMusic.Core.Meloday;
 using MelodayMusic.Core.Models;
 using MelodayMusic.Core.Radio;
@@ -15,20 +16,18 @@ namespace MelodayMusic.Services;
 
 public sealed class StaticCovers
 {
-    private const int Version = 31;
+    private const int Version = 40;
 
     private readonly ArtworkService _artwork;
     private readonly MelodayService _meloday;
-    private readonly ShapeCovers _shapes;
     private readonly ILogger<StaticCovers> _log;
     private readonly SemaphoreSlim _gate = new(1, 1);
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, Task<string?>> _loads = new();
 
-    public StaticCovers(ArtworkService artwork, MelodayService meloday, ShapeCovers shapes, ILogger<StaticCovers> log)
+    public StaticCovers(ArtworkService artwork, MelodayService meloday, ILogger<StaticCovers> log)
     {
         _artwork = artwork;
         _meloday = meloday;
-        _shapes = shapes;
         _log = log;
     }
 
@@ -40,7 +39,6 @@ public sealed class StaticCovers
     {
         if (item is PinnedCover cover) item = cover.Target;
         if (!Applies(item)) return Task.FromResult<string?>(null);
-        if (ShapeCovers.Applies(item)) return _shapes.GetAsync(item);
         var (name, label) = Text(item);
         var mix = (item as Station)?.StationKind == StationKind.Meloday ? _meloday.Current : null;
         var key = $"{item.RatingKey}|{name}|{label}|{mix?.Period.Name}|{mix?.PeriodStart:O}|v{Version}";
@@ -57,12 +55,12 @@ public sealed class StaticCovers
         }, TaskScheduler.Default);
     }
 
+    // The playlist label goes top right, the name bottom left.
     private static (string Name, string Label) Text(MediaItem item) => item switch
     {
         Station { StationKind: StationKind.Meloday } => ("Meloday", "Meloday"),
-        Station s => (Helpers.Format.StationCoverTitle(s), Helpers.Format.StationCoverLabel(s)),
-        BuiltMix { RatingKey: not "mix:discovery" } => (string.Empty, item.Title.EndsWith(" Radio", StringComparison.Ordinal) ? item.Title[..^6] : item.Title),
-        ArtistMix or TagMix or BuiltMix => (item.Title.EndsWith(" Mix", StringComparison.Ordinal) ? item.Title[..^4] : item.Title, "Mix"),
+        Station s => (Helpers.Format.StationCoverLabel(s), Helpers.Format.StationCoverTitle(s)),
+        ArtistMix or TagMix or BuiltMix => Helpers.Format.MixCoverText(item),
         TagItem t => (t.Title, t.TagKind.ToString()),
         _ => (item.Title, string.Empty),
     };
@@ -82,14 +80,14 @@ public sealed class StaticCovers
             if (item is Station { StationKind: StationKind.Meloday })
             {
                 var period = mix?.Period ?? MelodayPeriods.At(DateTime.Now);
-                return await MelodayCover.RenderToAsync(period, mix?.Title ?? "Meloday", path, _log).ConfigureAwait(false);
+                return await MelodayCover.RenderToAsync(period, mix?.Title ?? period.Name, path, _log).ConfigureAwait(false);
             }
 
             var device = CanvasDevice.GetSharedDevice();
             const float size = 1000;
             using var target = new CanvasRenderTarget(device, size, size, 96);
-            string? bottomTitle = null;
             uint? ground = null;
+            uint? accent = null;
             using (var ds = target.CreateDrawingSession())
             {
                 if (item is Station station)
@@ -106,6 +104,7 @@ public sealed class StaticCovers
                     else
                     {
                         ground = StationColours.Ground(station);
+                        accent = StationWave.Highlight(ground.Value);
                         WaveField.Draw(ds, size, size, StationWave.Phase(0.8), ground.Value);
                     }
                 }
@@ -120,7 +119,6 @@ public sealed class StaticCovers
                         if (i > 0) ds.FillCircle((float)(x * size), (float)(y * size), (float)((d / 2 + MixCircles.RingShare) * size), Rgb(mixCover.Colour));
                         await DrawCircleAsync(device, ds, artists[i].Thumb, (float)(x * size), (float)(y * size), (float)(d * size / 2)).ConfigureAwait(false);
                     }
-                    bottomTitle = mixCover.Info.Title;
                 }
                 else
                 {
@@ -131,12 +129,11 @@ public sealed class StaticCovers
             ground ??= CoverSymbol.Dominant(target);
             using (var ds = target.CreateDrawingSession())
             {
-                var baseline = bottomTitle is not null
-                    ? MelodayCover.DrawTitleBottomLeft(ds, bottomTitle, size, _log)
-                    : MelodayCover.DrawLabels(ds, name, label, size, size, _log);
-                if (item is not TagItem) CoverEdges.Draw(ds, ground.Value, size, baseline);
+                var baseline = MelodayCover.DrawLabels(ds, label, name, size, size, _log);
+                accent ??= CoverEdge.Colour(ground.Value);
+                if (item is not TagItem) CoverEdges.DrawIn(ds, accent.Value, size, baseline);
             }
-            await CoverSymbol.DrawAsync(target, badge: item is Station live ? Helpers.Format.StationBadge(live) : null);
+            await CoverSymbol.DrawAsync(target, accent.Value, badge: item is Station live ? Helpers.Format.StationBadge(live) : null);
             await target.SaveAsync(path, CanvasBitmapFileFormat.Png);
             return path;
         }

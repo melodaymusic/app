@@ -33,9 +33,11 @@ public sealed partial class CoverEdgeLayer : Grid
         SetGround(0x2A2930);
     }
 
-    internal void SetGround(uint ground)
+    internal void SetGround(uint ground) => SetColour(CoverEdge.Colour(ground));
+
+    /// <summary>The bars in a given colour (a station's wave colour, say) rather than one worked out from the ground.</summary>
+    internal void SetColour(uint rgb)
     {
-        var rgb = CoverEdge.Colour(ground);
         _colour.Color = Windows.UI.Color.FromArgb(255, (byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb);
     }
 }

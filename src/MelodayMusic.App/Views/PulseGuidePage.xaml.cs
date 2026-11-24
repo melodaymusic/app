@@ -97,7 +97,8 @@ public sealed partial class PulseGuidePage : Page
         foreach (var day in days) Days.Add(new PulseGuideDay(day.ToString("ddd"), day.ToString("MMM d"), day == today, day < today));
 
         var rules = _schedule.Rules;
-        BuildTimeline(days, days.Select(d => BuildGuide(d, rules)).ToList(), today);
+        var lineup = _schedule.Lineup;
+        BuildTimeline(days, days.Select(d => BuildGuide(d, rules, lineup)).ToList(), today);
     }
 
     private static Brush Resource(string key) => (Brush)Application.Current.Resources[key];
@@ -240,27 +241,53 @@ public sealed partial class PulseGuidePage : Page
             block.Child = content;
         }
 
-        if (entry.Rule is not null) block.Tapped += OnBlockTapped;
+        // Every block opens something to change: your program, Pulse's own, or a new program for an empty stretch.
+        block.Tag = entry;
+        block.Tapped += OnBlockTapped;
+        block.IsTabStop = true;
+        block.UseSystemFocusVisuals = true;
+        block.KeyDown += (s, e) =>
+        {
+            if (e.Key is not (Windows.System.VirtualKey.Enter or Windows.System.VirtualKey.Space)) return;
+            e.Handled = true;
+            _ = OpenAsync(entry);
+        };
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetHelpText(block, entry.Rule is not null || entry.Slot is not null ? "Select to edit" : "Select to put a program here");
         return block;
     }
 
-    private static async void OnBlockTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
+    private static void OnBlockTapped(object sender, Microsoft.UI.Xaml.Input.TappedRoutedEventArgs e)
     {
-        if (sender is FrameworkElement { Tag: PulseScheduleRule rule }) await PulseScheduleDialog.ShowAsync(rule: rule);
+        if (sender is FrameworkElement { Tag: PulseGuideEntry entry }) _ = OpenAsync(entry);
     }
 
-    private static IReadOnlyList<PulseGuideEntry> BuildGuide(DateOnly day, IReadOnlyList<PulseScheduleRule> rules)
+    private static async Task OpenAsync(PulseGuideEntry entry)
+    {
+        if (entry.Rule is { } rule) await PulseScheduleDialog.ShowAsync(rule: rule);
+        else if (entry.Slot is { } slot) await PulseSlotDialog.ShowAsync(slot);
+        else
+        {
+            var from = entry.StartsAt.LocalDateTime;
+            var until = entry.EndsAt.LocalDateTime;
+            await PulseSlotDialog.ShowAsync(null, TimeOnly.FromDateTime(from),
+                until.TimeOfDay == TimeSpan.Zero ? TimeOnly.MinValue : TimeOnly.FromDateTime(until), from.DayOfWeek);
+        }
+    }
+
+    private static IReadOnlyList<PulseGuideEntry> BuildGuide(DateOnly day, IReadOnlyList<PulseScheduleRule> rules, IReadOnlyList<PulseSlot> lineup)
     {
         var zone = TimeZoneInfo.Local;
         var start = PulseSchedule.AtLocal(day, TimeOnly.MinValue, zone);
         var end = PulseSchedule.AtLocal(day.AddDays(1), TimeOnly.MinValue, zone);
         var custom = rules.SelectMany(r => PulseSchedule.Occurrences(r, start, end, zone)).OrderBy(o => o.StartsAt).ToList();
         var boundaries = new List<DateTimeOffset> { start, end };
-        foreach (var hour in new[] { 6, 9, 12, 14, 16, 18, 19, 20, 22 })
-        {
-            var boundary = PulseSchedule.AtLocal(day, new TimeOnly(hour, 0), zone);
-            if (boundary > start && boundary < end) boundaries.Add(boundary);
-        }
+        foreach (var slot in lineup.Where(s => s.IsValid && s.AirsOn(day.DayOfWeek)))
+            foreach (var time in new[] { slot.From, slot.Until })
+            {
+                if (time <= TimeSpan.Zero || time >= TimeSpan.FromDays(1)) continue;
+                var boundary = PulseSchedule.AtLocal(day, TimeOnly.FromTimeSpan(time), zone);
+                if (boundary > start && boundary < end) boundaries.Add(boundary);
+            }
         foreach (var occurrence in custom)
         {
             boundaries.Add(occurrence.StartsAt < start ? start : occurrence.StartsAt);
@@ -278,12 +305,14 @@ public sealed partial class PulseGuidePage : Page
             var middle = from + TimeSpan.FromTicks((to - from).Ticks / 2);
             var scheduled = custom.FirstOrDefault(o => o.StartsAt < to && o.EndsAt > from);
             var rule = scheduled?.Rule;
-            var programme = PulseProgramme.At(TimeZoneInfo.ConvertTime(middle, zone));
+            var slot = PulseLineup.SlotAt(lineup, TimeZoneInfo.ConvertTime(middle, zone));
+            var programme = slot?.Programme ?? PulseLineup.Between;
             var title = rule?.ProgrammeTitle ?? programme.Title;
             var detail = rule is null ? programme.Description : Describe(rule);
-            var item = new PulseGuideEntry(from, to, title, detail, rule, now >= from && now < to);
+            var item = new PulseGuideEntry(from, to, title, detail, rule, now >= from && now < to, rule is null ? slot : null);
 
-            if (rule is null && entries.LastOrDefault() is { Rule: null } previous && previous.Title == title && previous.EndsAt == from)
+            if (rule is null && entries.LastOrDefault() is { Rule: null } previous && previous.Slot?.Id == item.Slot?.Id
+                && previous.Title == title && previous.EndsAt == from)
             {
                 previous.EndsAt = to;
                 previous.IsNow |= item.IsNow;
@@ -320,6 +349,21 @@ public sealed partial class PulseGuidePage : Page
     {
         var today = DateOnly.FromDateTime(DateTime.Today);
         await PulseScheduleDialog.ShowAsync(day: WeekContains(today) ? today : StartOfWeek(_day));
+    }
+
+    private async void OnReset(object sender, RoutedEventArgs e)
+    {
+        var dialog = Dialogs.Create("Reset the Pulse Guide?");
+        var clear = new CheckBox { Content = "Also remove the programs you've added", IsChecked = false };
+        var body = new StackPanel { Spacing = UiScale.Size(12) };
+        body.Children.Add(Dialogs.Text("Pulse's own programs go back to their usual times."));
+        if (_schedule.Rules.Count > 0) body.Children.Add(clear);
+        dialog.Content = body;
+        dialog.PrimaryButtonText = "Reset";
+        dialog.CloseButtonText = "Cancel";
+        dialog.DefaultButton = ContentDialogButton.Close;
+        if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        _schedule.Reset(clear.IsChecked == true);
     }
 
     private void OnTimelineWheel(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)

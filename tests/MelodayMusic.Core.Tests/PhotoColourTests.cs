@@ -63,6 +63,41 @@ public class PhotoColourTests
     }
 
     [Fact]
+    public void A_cool_black_and_white_photo_gets_a_light_cool_shade()
+    {
+        var colour = PhotoColour.Pick(Photo((x, y) => Middle(x, y) ? (150, 158, 168) : (200, 208, 218)), Side, Side);
+        Assert.Contains(colour, MelodayPalette.Families.Select(f => f.Lighter));
+        Assert.InRange(Hue(colour), 180, 270);
+    }
+
+    [Fact]
+    public void A_warm_black_and_white_photo_gets_a_light_warm_shade()
+    {
+        var colour = PhotoColour.Pick(Photo((x, y) => Middle(x, y) ? (170, 160, 148) : (215, 205, 192)), Side, Side);
+        Assert.Contains(colour, MelodayPalette.Families.Select(f => f.Lighter));
+        var hue = Hue(colour);
+        Assert.True(hue < 60 || hue > 330, $"hue {hue}");
+    }
+
+    [Fact]
+    public void A_washed_out_warm_photo_of_one_hue_keeps_a_warm_shade()
+    {
+        var colour = PhotoColour.Pick(Photo((x, y) => Middle(x, y) ? (150, 132, 115) : (200, 180, 160)), Side, Side);
+        Assert.Contains(colour, MelodayPalette.Families.Select(f => f.Lighter));
+        var hue = Hue(colour);
+        Assert.True(hue < 60 || hue > 330, $"hue {hue}");
+    }
+
+    [Fact]
+    public void Dark_brown_shadows_at_the_edges_of_a_grey_photo_do_not_pick_its_colour()
+    {
+        var colour = PhotoColour.Pick(Photo((x, y) => x < 12 && y < 40 ? (100, 70, 50) : Middle(x, y) ? (170, 160, 148) : (215, 205, 192)), Side, Side);
+        Assert.Contains(colour, MelodayPalette.Families.Select(f => f.Lighter));
+        var hue = Hue(colour);
+        Assert.True(hue < 60 || hue > 330, $"hue {hue}");
+    }
+
+    [Fact]
     public void A_photo_all_of_one_hue_takes_the_opposite_one()
     {
         var colour = PhotoColour.Pick(Photo((x, y) => ((x + y) % 3) switch { 0 => (20, 60, 200), 1 => (40, 90, 220), _ => (30, 75, 180) }), Side, Side);

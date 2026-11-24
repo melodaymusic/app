@@ -37,7 +37,7 @@ public sealed class PlaylistCatalog
         try
         {
             var page = await client.GetPlaylistsAsync(0, 200, default, "updatedAt:desc").ConfigureAwait(false);
-            Editable = page.Items.Where(p => !p.IsSmart).ToList();
+            Editable = PlaylistCopies.Hide(page.Items).Where(p => !p.IsSmart).ToList();
         }
         catch (PlexException ex)
         {

@@ -291,8 +291,12 @@ public sealed class StationService
     {
         if (station.Tag is not { } tag || station.Key is null && !station.IsLocal) return Task.FromResult<string?>(null);
         var key = station.RatingKey;
-        if (!_covers.TryGetValue(key, out var load) || load.IsFaulted) _covers[key] = load = LoadCoverAsync(station.StationKind, tag);
-        return load;
+        // Pins and boards ask for covers from several threads at once.
+        lock (_covers)
+        {
+            if (!_covers.TryGetValue(key, out var load) || load.IsFaulted) _covers[key] = load = LoadCoverAsync(station.StationKind, tag);
+            return load;
+        }
     }
 
     private async Task<string?> LoadCoverAsync(StationKind kind, string tag)
@@ -344,7 +348,7 @@ public sealed class StationService
 
     public void Clear()
     {
-        _covers.Clear();
+        lock (_covers) _covers.Clear();
         lock (_pictured) _pictured.Clear();
         _catalog = null;
         _picks = null;

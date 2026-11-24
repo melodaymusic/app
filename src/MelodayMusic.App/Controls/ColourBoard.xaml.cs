@@ -23,25 +23,18 @@ public sealed partial class ColourBoard : UserControl
         InitializeComponent();
         Helpers.CardHover.Attach(Plate, null, cardRadius: 16);
         ApplyNeutral();
-        MixSymbol.Visibility = Visibility.Collapsed;
-        Loaded += (_, _) =>
-        {
-            Motion.Changed += OnMotionChanged;
-            if (_layers is not null && ShapeArt.Visibility == Visibility.Visible) StartShapes(_layers);
-        };
-        Unloaded += (_, _) =>
-        {
-            Motion.Changed -= OnMotionChanged;
-            StopShapes();
-        };
+        ShowMixLayers(false);
     }
 
-    private ShapeCoverLayers? _layers;
-
-    private void OnMotionChanged(object? sender, EventArgs e) => DispatcherQueue.TryEnqueue(() =>
+    // A mix board is set like a generated cover: the M-wave top left, "Mix" top right, the name bottom left over the bubbles,
+    // with no edge bars (they stay on the still covers); the colour panel below carries only who is featured.
+    private void ShowMixLayers(bool on)
     {
-        if (_layers is not null && ShapeArt.Visibility == Visibility.Visible) StartShapes(_layers);
-    });
+        var visibility = on ? Visibility.Visible : Visibility.Collapsed;
+        MixSymbol.Visibility = MixLabels.Visibility = visibility;
+        TitleText.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
+        PanelText.VerticalAlignment = on ? VerticalAlignment.Center : VerticalAlignment.Top;
+    }
 
     private uint? _colour;
 
@@ -76,20 +69,16 @@ public sealed partial class ColourBoard : UserControl
         _colour = null;
         Panel.BackgroundTransition = Motion.Brush(Motion.Emphasized);
         ApplyNeutral();
-        MixSymbol.Visibility = Visibility.Collapsed;
+        ShowMixLayers(false);
         if (item is Station { StationKind: StationKind.Meloday } meloday)
         {
             UpdateMeloday(meloday);
             return;
         }
-        var shaped = ShapeCovers.Applies(item);
-        var mix = item is ArtistMix or TagMix && !shaped ? item : null;
-        StopShapes();
-        _layers = null;
-        ShapeArt.Visibility = Visibility.Collapsed;
+        var mix = item is ArtistMix or TagMix or BuiltMix ? item : null;
         SmartIcon.Visibility = item is Playlist { IsSmart: true } ? Visibility.Visible : Visibility.Collapsed;
         MixArt.Visibility = mix is not null ? Visibility.Visible : Visibility.Collapsed;
-        MixSymbol.Visibility = MixArt.Visibility;
+        ShowMixLayers(mix is not null);
         Art.Visibility = mix is not null ? Visibility.Collapsed : Visibility.Visible;
         if (mix is not null)
         {
@@ -98,11 +87,6 @@ public sealed partial class ColourBoard : UserControl
         }
         TitleText.Text = item?.Title ?? string.Empty;
         Art.SourcePath = null;
-        if (shaped)
-        {
-            UpdateShapes(item!);
-            return;
-        }
         var art = item switch { Playlist p => p.DisplayThumb, _ => item?.Thumb };
         Art.SourcePath = art;
         Art.PlaceholderIcon = item is MusicCollection ? "Layers" : "ListMusic";
@@ -115,8 +99,7 @@ public sealed partial class ColourBoard : UserControl
         if (item is null) return;
 
         var colourTask = App.Services.GetRequiredService<ArtworkService>().GetDominantColorAsync(art);
-        var artistsTask = shaped ? FeaturingAsync(item)
-            : string.IsNullOrWhiteSpace(summary) && !ArtistLines.ContainsKey(item.RatingKey) ? LoadArtistsAsync(item) : null;
+        var artistsTask = string.IsNullOrWhiteSpace(summary) && !ArtistLines.ContainsKey(item.RatingKey) ? LoadArtistsAsync(item) : null;
 
         var colour = await colourTask;
         if (!ReferenceEquals(item, Item)) return;
@@ -163,7 +146,7 @@ public sealed partial class ColourBoard : UserControl
                 ? ((await App.Services.GetRequiredService<TrendingService>().GetAsync())?.InLibrary ?? [])
                     .Select(t => t.DisplayArtist).Where(a => !string.IsNullOrWhiteSpace(a)).Distinct().ToList()
                 : await client.GetContainerArtistsAsync(item);
-            var line = string.Join(", ", artists.Take(12));
+            var line = MixInfo.Line(artists);
             ArtistLines[item.RatingKey] = line;
             return line;
         }
@@ -182,7 +165,11 @@ public sealed partial class ColourBoard : UserControl
     {
         var artistMix = mix as ArtistMix;
         TitleText.Text = mix.Title;
+        var (name, label) = Helpers.Format.MixCoverText(mix);
+        MixLabels.Title = name;
+        MixLabels.Label = label;
         SummaryText.Text = string.Empty;
+        SetCircleIcons("MicVocal");
         MixArtist1.SourcePath = artistMix?.Artist.Thumb;
         MixArtist2.SourcePath = null;
         MixArtist3.SourcePath = null;
@@ -201,136 +188,57 @@ public sealed partial class ColourBoard : UserControl
             ArtistMix artist => artist.Artist.Title,
             _ => mix.Title,
         };
-        ApplyColour(colour, colourSeed);
-        if (_colour is { } panel)
-        {
-            var dark = MelodayMusic.Core.Artwork.MelodayPalette.DarkerShade(panel);
-            MixArt.Background = new SolidColorBrush(Color.FromArgb(255, (byte)(dark >> 16), (byte)(dark >> 8), (byte)dark));
-        }
+        ApplyMixColour(colour, colourSeed);
 
         if (await infoTask is not { } info || !ReferenceEquals(mix, Item)) return;
         TitleText.Text = info.Title;
-        SummaryText.Text = info.Featuring;
-        AutomationProperties.SetName(this, $"{info.Title}, {info.Featuring}");
+        SummaryText.Text = info.FeaturingWithMore;
+        AutomationProperties.SetName(this, $"{info.Title}, {info.FeaturingWithMore}");
+        // A mix about a sound rather than artists shows its album covers in the bubbles.
+        var albums = info.Pictures is { Count: > 0 };
+        var shown = albums ? info.Pictures! : info.Artists;
+        SetCircleIcons(albums ? "Disc3" : "MicVocal");
         var circles = new[] { MixArtist1, MixArtist2, MixArtist3 };
         for (var i = artistMix is null ? 0 : 1; i < circles.Length; i++)
         {
-            var artist = i < info.Artists.Count ? info.Artists[i] : null;
+            var artist = i < shown.Count ? shown[i] : null;
             circles[i].SourcePath = artist?.Thumb;
             circles[i].Visibility = artist is null ? Visibility.Collapsed : Visibility.Visible;
         }
         var random = new Random(HashCode.Combine(mix.RatingKey, DateTime.Today));
-        var more = info.Artists.Skip(3).Where(a => a.Thumb is not null).OrderBy(_ => random.Next()).Take(3).ToList();
+        var more = shown.Skip(3).Where(a => a.Thumb is not null).OrderBy(_ => random.Next()).Take(3).ToList();
         var extra = new[] { MixArtist4, MixArtist5, MixArtist6 };
         for (var i = 0; i < extra.Length; i++)
         {
             extra[i].SourcePath = i < more.Count ? more[i].Thumb : null;
             extra[i].Visibility = i < more.Count ? Visibility.Visible : Visibility.Collapsed;
         }
+        if (albums && artistMix is null)
+        {
+            var cover = await App.Services.GetRequiredService<ArtworkService>().GetDominantColorAsync(shown[0].Thumb);
+            if (ReferenceEquals(mix, Item) && cover is not null) ApplyMixColour(cover, colourSeed);
+        }
     }
 
-    private async void UpdateShapes(MediaItem mix)
+    private void ApplyMixColour(uint? artworkColour, string seed)
     {
-        Art.Visibility = Visibility.Collapsed;
-        SummaryText.Text = string.Empty;
-        AutomationProperties.SetName(this, mix.Title);
-        SetPlayName($"Play {mix.Title}");
-        var featuring = FeaturingAsync(mix);
-        var layers = await App.Services.GetRequiredService<ShapeCovers>().GetLayersAsync(mix);
-        if (!ReferenceEquals(mix, Item)) return;
-        if (layers is null || layers.Shapes.Count < 2)
-        {
-            Art.Visibility = Visibility.Visible;
-            Art.SourcePath = await App.Services.GetRequiredService<ShapeCovers>().GetAsync(mix);
-        }
-        else
-        {
-            ShapeArt.Background = new SolidColorBrush(Color.FromArgb(255, (byte)(layers.Ground >> 16), (byte)(layers.Ground >> 8), (byte)layers.Ground));
-            Place(ShapeBack, layers.Shapes[0]);
-            Place(ShapeFront, layers.Shapes[1]);
-            ShapeOverlay.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(layers.Overlay)) { DecodePixelWidth = 640 };
-            ShapeArt.Visibility = Visibility.Visible;
-            _layers = layers;
-            StartShapes(layers);
-        }
-        ApplyColour(layers?.Ground, mix.Title);
-        if (await featuring is { } line && ReferenceEquals(mix, Item))
-        {
-            SummaryText.Text = line;
-            AutomationProperties.SetName(this, $"{mix.Title}, {line}");
-        }
-
-        static void Place(Image image, ShapeLayer shape)
-        {
-            var side = shape.Side * 1000;
-            image.Width = image.Height = side;
-            Canvas.SetLeft(image, shape.X * 1000);
-            Canvas.SetTop(image, shape.Y * 1000);
-            image.Source = new Microsoft.UI.Xaml.Media.Imaging.BitmapImage(new Uri(shape.File)) { DecodePixelWidth = (int)Math.Min(640, Math.Max(64, side * 0.64)) };
-            image.RenderTransform = new CompositeTransform { CenterX = side / 2, CenterY = side / 2 };
-        }
+        ApplyColour(artworkColour, seed);
+        if (_colour is not { } panel) return;
+        var dark = MelodayMusic.Core.Artwork.MelodayPalette.DarkerShade(panel);
+        MixArt.Background = new SolidColorBrush(Color.FromArgb(255, (byte)(dark >> 16), (byte)(dark >> 8), (byte)dark));
+        MixSymbol.SetGround(dark);
     }
 
-    private readonly List<Microsoft.UI.Xaml.Media.Animation.Storyboard> _shapeMotion = [];
-
-    private void StartShapes(ShapeCoverLayers layers)
+    private void SetCircleIcons(string icon)
     {
-        StopShapes();
-        if (!Motion.IsActive) return;
-        var random = new Random(MelodayMusic.Core.Playlists.MadePlaylists.Stable(layers.Overlay));
-        var turning = false;
-        foreach (var (image, shape) in new[] { (ShapeBack, layers.Shapes[0]), (ShapeFront, layers.Shapes[1]) })
-        {
-            var story = new Microsoft.UI.Xaml.Media.Animation.Storyboard();
-            if (shape.Round && !turning)
-            {
-                turning = true;
-                var turns = random.Next(2) == 0 ? 360 : -360;
-                var spin = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
-                {
-                    From = 0, To = turns, Duration = TimeSpan.FromSeconds(60 + random.Next(40)),
-                    RepeatBehavior = Microsoft.UI.Xaml.Media.Animation.RepeatBehavior.Forever,
-                };
-                Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(spin, image.RenderTransform);
-                Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(spin, "Rotation");
-                story.Children.Add(spin);
-            }
-            else
-            {
-                var seconds = 6 + random.NextDouble() * 4;
-                foreach (var axis in new[] { "ScaleX", "ScaleY" })
-                {
-                    var breathe = new Microsoft.UI.Xaml.Media.Animation.DoubleAnimation
-                    {
-                        From = 0.95, To = 1.05, Duration = TimeSpan.FromSeconds(seconds), AutoReverse = true,
-                        RepeatBehavior = Microsoft.UI.Xaml.Media.Animation.RepeatBehavior.Forever,
-                        EasingFunction = new Microsoft.UI.Xaml.Media.Animation.SineEase { EasingMode = Microsoft.UI.Xaml.Media.Animation.EasingMode.EaseInOut },
-                    };
-                    Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTarget(breathe, image.RenderTransform);
-                    Microsoft.UI.Xaml.Media.Animation.Storyboard.SetTargetProperty(breathe, axis);
-                    story.Children.Add(breathe);
-                }
-            }
-            story.Begin();
-            story.Seek(TimeSpan.FromSeconds(random.NextDouble() * 6));
-            _shapeMotion.Add(story);
-        }
+        foreach (var circle in new[] { MixArtist1, MixArtist2, MixArtist3, MixArtist4, MixArtist5, MixArtist6 }) circle.PlaceholderIcon = icon;
     }
-
-    private void StopShapes()
-    {
-        foreach (var story in _shapeMotion) story.Stop();
-        _shapeMotion.Clear();
-    }
-
-    private static async Task<string?> FeaturingAsync(MediaItem mix) =>
-        (await App.Services.GetRequiredService<MixService>().GetAsync(mix))?.Featuring is { Length: > 0 } featuring ? featuring : null;
 
     private void ApplyNeutral()
     {
         Panel.Background = new SolidColorBrush(Color.FromArgb(255, 0x2A, 0x29, 0x30));
         MixArt.Background = Panel.Background;
-        MixSymbol.SetColour(0xFFFFFF);
+        MixSymbol.SetGround(0x2A2930);
     }
 
     private void ApplyColour(uint? artworkColour, string title)
@@ -339,7 +247,6 @@ public sealed partial class ColourBoard : UserControl
         var rgb = MelodayMusic.Core.Artwork.MelodayPalette.ForWhiteText(baseColour);
         _colour = rgb;
         Panel.Background = new SolidColorBrush(Color.FromArgb(255, (byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb));
-        MixSymbol.SetColour(MelodayMusic.Core.Covers.CoverInk.Symbol(rgb));
     }
 
     private static uint ToRgb(Color c) => (uint)(c.R << 16 | c.G << 8 | c.B);

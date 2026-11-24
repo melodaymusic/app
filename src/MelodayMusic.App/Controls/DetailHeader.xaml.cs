@@ -285,6 +285,16 @@ public sealed partial class DetailHeader : UserControl
         SetCompact(false, animate: false);
     }
 
+    // The header sits above the scrolling content, so the wheel is passed on to it.
+    private void OnWheel(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+    {
+        if (_scroller is null || _scroller.ScrollableHeight <= 0) return;
+        var delta = e.GetCurrentPoint(this).Properties.MouseWheelDelta;
+        if (delta == 0) return;
+        _scroller.ChangeView(null, Math.Clamp(_scroller.VerticalOffset - delta, 0, _scroller.ScrollableHeight), null);
+        e.Handled = true;
+    }
+
     private void AttachScroller()
     {
         DetachScroller();
@@ -363,7 +373,6 @@ public sealed partial class DetailHeader : UserControl
     {
         var cover = _compact ? CompactCover : ExpandedCover;
         var title = _compact ? UiScale.Text(28) : UiScale.Text(48);
-        var lineHeight = _compact ? UiScale.Text(34) : UiScale.Text(56);
         var detail = _compact ? Visibility.Collapsed : Visibility.Visible;
         Actions.Margin = new Thickness(0, _compact ? UiScale.Size(8) : UiScale.Size(16), 0, 0);
         ApplyLogoLook(animate: false);
@@ -385,7 +394,6 @@ public sealed partial class DetailHeader : UserControl
         {
             Cover.Width = Cover.Height = cover;
             TitleText.FontSize = title;
-            TitleText.LineHeight = lineHeight;
             SetDetailVisibility(detail);
             return;
         }
@@ -413,7 +421,6 @@ public sealed partial class DetailHeader : UserControl
             _animation = null;
             Cover.Width = Cover.Height = cover;
             TitleText.FontSize = title;
-            TitleText.LineHeight = lineHeight;
             if (!_compact) SetDetailVisibility(Visibility.Visible);
         };
         _animation = story;

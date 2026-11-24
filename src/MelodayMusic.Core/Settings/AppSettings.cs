@@ -55,6 +55,9 @@ public sealed class AppSettings
 
     public Dictionary<string, string> LibraryLayouts { get; set; } = [];
 
+    /// <summary>Genres, styles and moods the listener moved to another family ("genre:pop rock" → "Pop"; "" for none).</summary>
+    public Dictionary<string, string> TagFamilyMoves { get; set; } = [];
+
     public string SettingsTab { get; set; } = "general";
     public bool ShowJumpBackIn { get; set; } = true;
     public bool ShowArtistLogos { get; set; } = true;
@@ -75,6 +78,7 @@ public sealed class AppSettings
     public bool LastFmPlexPlaylist { get; set; }
     public bool CanadianBroadcast { get; set; }
     public Dictionary<string, string> LastFmPlaylistKeys { get; set; } = [];
+    [System.Text.Json.Serialization.JsonConverter(typeof(VisualizerSettingConverter))]
     public Playback.VisualizerStyle Visualizer { get; set; } = Playback.VisualizerStyle.Off;
     public bool Motion { get; set; } = true;
 

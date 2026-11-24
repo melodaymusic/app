@@ -21,6 +21,9 @@ public sealed partial class SetupViewModel : ObservableObject
         _log = log;
         _dispatcher = DispatcherQueue.GetForCurrentThread();
         _session.StateChanged += (_, _) => _dispatcher.TryEnqueue(Refresh);
+        // The view model is made the first time the setup screen shows, after the state change that brought it there,
+        // so it reads the current state now rather than waiting for the next change.
+        Refresh();
     }
 
     public ObservableCollection<PlexServer> Servers { get; } = [];
@@ -69,6 +72,16 @@ public sealed partial class SetupViewModel : ObservableObject
                 Message = _session.StatusMessage ?? "The server is offline or unreachable.";
                 Fill(Servers, _session.Servers);
                 ShowServers = _session.Servers.Count > 1;
+                ShowSections = false;
+                ShowRetry = true;
+                break;
+            case SessionState.Ready:
+            case SessionState.SignedOut:
+                break;
+            default:
+                Heading = "Connecting to Plex";
+                Message = _session.StatusMessage ?? "Meloday Music is still connecting to your Plex server.";
+                ShowServers = false;
                 ShowSections = false;
                 ShowRetry = true;
                 break;

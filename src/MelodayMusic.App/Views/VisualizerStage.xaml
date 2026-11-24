@@ -6,7 +6,7 @@
     IsTabStop="True"
     Visibility="Collapsed">
 
-    <Grid x:Name="Root" PointerMoved="OnActivity" PointerPressed="OnActivity" KeyDown="OnKeyDown">
+    <Grid x:Name="Root" PointerMoved="OnActivity" PointerPressed="OnActivity">
         <controls:VisualizerView x:Name="View" />
 
         <Grid x:Name="Chrome" Opacity="0" IsHitTestVisible="False">

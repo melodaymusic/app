@@ -23,6 +23,13 @@ public enum PulseScheduleRepeat
     SelectedDays,
 }
 
+/// <summary>How a scheduled program plays its source's songs.</summary>
+public enum PulseScheduleOrder
+{
+    InOrder,
+    Shuffle,
+}
+
 public enum PulseScheduleLengthKind
 {
     OneSong,
@@ -64,6 +71,21 @@ public sealed record PulseScheduleRule
     public PulseScheduleLength Length { get; init; } = PulseScheduleLength.OneSong();
     public string? Title { get; init; }
     public bool IsEnabled { get; init; } = true;
+
+    /// <summary>The order chosen for this program; unset on programs saved before there was a choice.</summary>
+    public PulseScheduleOrder? Order { get; init; }
+
+    /// <summary>
+    /// How the songs actually play: the chosen order, else the source's usual one (albums and playlists in order, everything
+    /// else shuffled). A single song and a Pulse program have no order to choose.
+    /// </summary>
+    public PulseScheduleOrder PlayOrder => !HasOrderChoice(Source.Kind) ? PulseScheduleOrder.InOrder : Order ?? DefaultOrder(Source.Kind);
+
+    public static bool HasOrderChoice(PulseScheduleSourceKind kind) => kind is not (PulseScheduleSourceKind.Track or PulseScheduleSourceKind.Programme);
+
+    public static PulseScheduleOrder DefaultOrder(PulseScheduleSourceKind kind) =>
+        kind is PulseScheduleSourceKind.Album or PulseScheduleSourceKind.Playlist or PulseScheduleSourceKind.Track or PulseScheduleSourceKind.Programme
+            ? PulseScheduleOrder.InOrder : PulseScheduleOrder.Shuffle;
 
     public string ProgrammeTitle => string.IsNullOrWhiteSpace(Title) ? Source.Title : Title.Trim();
 
