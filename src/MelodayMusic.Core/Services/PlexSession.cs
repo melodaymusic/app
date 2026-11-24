@@ -19,6 +19,15 @@ public enum SessionState
     Ready,
 }
 
+public enum RestoreResult
+{
+    /// <summary>The connection in use still answers.</summary>
+    Unchanged,
+    /// <summary>The server answers again, possibly at another address.</summary>
+    Reconnected,
+    Offline,
+}
+
 public sealed class PlexSession
 {
     private readonly PlexTvClient _plexTv;
@@ -66,7 +75,11 @@ public sealed class PlexSession
     public MusicSection? Section { get; private set; }
     public bool IsReady => State == SessionState.Ready && Client is not null && Section is not null;
 
+    /// <summary>The server stopped answering while its library was open. The library stays open and the app keeps trying.</summary>
+    public bool IsOffline { get; private set; }
+
     public event EventHandler? StateChanged;
+    public event EventHandler? OfflineChanged;
 
     /// <summary>Someone else's profile is to be used (or the signed-in account's again); the app restarts into their folder.</summary>
     public event EventHandler? ProfileChanged;
@@ -345,13 +358,53 @@ public sealed class PlexSession
         }
     }
 
-    private async Task<bool> ConnectServerAsync(PlexServer server, CancellationToken ct)
+    /// <summary>
+    /// Checks the open server after the network changes or a retry comes due, without leaving the library.
+    /// A connection that still answers is kept as it is. Windows reports a change before the network is back,
+    /// so the server gets a few tries before it counts as offline.
+    /// </summary>
+    public async Task<RestoreResult> RestoreAsync(int attempts = 4, TimeSpan? spacing = null, CancellationToken ct = default)
+    {
+        await _gate.WaitAsync(ct).ConfigureAwait(false);
+        try
+        {
+            if (Client is not { } client || State != SessionState.Ready) return RestoreResult.Offline;
+            var wait = spacing ?? TimeSpan.FromSeconds(4);
+            for (var attempt = 0; attempt < Math.Max(1, attempts); attempt++)
+            {
+                if (attempt > 0) await Task.Delay(wait, ct).ConfigureAwait(false);
+                if (await _selector.ProbeAsync(client.Connection, client.Server, ct).ConfigureAwait(false))
+                {
+                    var was = IsOffline;
+                    SetOffline(false);
+                    return was ? RestoreResult.Reconnected : RestoreResult.Unchanged;
+                }
+
+                var server = Servers.FirstOrDefault(s => s.MachineIdentifier == client.Server.MachineIdentifier) ?? client.Server;
+                var connection = await _selector.SelectAsync(server, client.Connection.Uri, ct, _settings.Current.AllowInsecureConnections).ConfigureAwait(false);
+                if (connection is null) continue;
+                return await ConnectServerAsync(server, ct, connection).ConfigureAwait(false) && IsReady
+                    ? RestoreResult.Reconnected
+                    : RestoreResult.Offline;
+            }
+
+            if (!IsOffline) _log.LogWarning("{Server} isn't answering; the library stays open while Meloday keeps trying", client.Server.Name);
+            SetOffline(true);
+            return RestoreResult.Offline;
+        }
+        finally
+        {
+            _gate.Release();
+        }
+    }
+
+    private async Task<bool> ConnectServerAsync(PlexServer server, CancellationToken ct, ServerConnection? chosen = null)
     {
         SetState(SessionState.Connecting, $"Connecting to {server.Name}…");
         var s = _settings.Current;
         Uri? lastGood = s.ServerId == server.MachineIdentifier && Uri.TryCreate(s.LastConnectionUri, UriKind.Absolute, out var u) ? u : null;
 
-        var connection = await _selector.SelectAsync(server, lastGood, ct, s.AllowInsecureConnections).ConfigureAwait(false);
+        var connection = chosen ?? await _selector.SelectAsync(server, lastGood, ct, s.AllowInsecureConnections).ConfigureAwait(false);
         if (connection is null)
         {
             Client = null;
@@ -471,8 +524,16 @@ public sealed class PlexSession
         }
     }
 
+    private void SetOffline(bool offline)
+    {
+        if (IsOffline == offline) return;
+        IsOffline = offline;
+        OfflineChanged?.Invoke(this, EventArgs.Empty);
+    }
+
     private void SetState(SessionState state, string? message = null)
     {
+        if (state != SessionState.Ready) SetOffline(false);
         State = state;
         StatusMessage = message;
         _log.LogInformation("Session state: {State} {Message}", state, message);

@@ -45,8 +45,9 @@ public sealed partial class ShellViewModel : ObservableObject
         _dispatcher = DispatcherQueue.GetForCurrentThread();
         _recoveryTimer = _dispatcher.CreateTimer();
         _recoveryTimer.IsRepeating = false;
-        _recoveryTimer.Tick += (_, _) => _ = ReconnectAndRefreshAsync(delay: false);
+        _recoveryTimer.Tick += (_, _) => _ = ReconnectAndRefreshAsync(delay: false, refresh: true, quick: true);
         _session.StateChanged += (_, _) => _dispatcher.TryEnqueue(OnSessionStateChanged);
+        _session.OfflineChanged += (_, _) => _dispatcher.TryEnqueue(OnOfflineChanged);
         NetworkInformation.NetworkStatusChanged += _ => _dispatcher.TryEnqueue(OnNetworkChanged);
     }
 
@@ -130,12 +131,32 @@ public sealed partial class ShellViewModel : ObservableObject
         }
     }
 
+    private bool CanReconnect =>
+        _session.State != SessionState.SignedOut && (_session.Server is not null || _session.State == SessionState.ServerUnavailable);
+
     private void OnNetworkChanged()
     {
-        if (_session.Server is null || _session.State == SessionState.SignedOut || (DateTime.UtcNow - _lastNetworkReconnect).TotalSeconds < 10) return;
+        if (!CanReconnect || (DateTime.UtcNow - _lastNetworkReconnect).TotalSeconds < 10) return;
         _lastNetworkReconnect = DateTime.UtcNow;
-        _log.LogInformation("Network status changed; re-evaluating server connection");
-        _ = ReconnectAndRefreshAsync(delay: true);
+        _log.LogInformation("Network status changed; checking the server connection");
+        _recoveryAttempt = 0;
+        _ = ReconnectAndRefreshAsync(delay: true, refresh: false);
+    }
+
+    private const string OfflineTitle = "Can't reach your server";
+
+    private void OnOfflineChanged()
+    {
+        var notices = App.Services.GetRequiredService<NotificationService>();
+        if (_session.IsOffline)
+        {
+            notices.ShowWarning(OfflineTitle, $"{ServerName} isn't answering. Your library stays open, and Meloday keeps trying in the background.", autoHide: false);
+            ScheduleRecovery();
+            return;
+        }
+        _recoveryTimer.Stop();
+        _recoveryAttempt = 0;
+        if (notices.IsOpen && notices.Title == OfflineTitle) notices.ShowSuccess("Back online", $"{ServerName} is answering again.");
     }
 
     public void PrepareForSleep()
@@ -147,26 +168,38 @@ public sealed partial class ShellViewModel : ObservableObject
         _ = _player.SaveQueueAsync();
     }
 
-    public Task ResumeAfterSleepAsync() => ReconnectAndRefreshAsync(delay: true);
+    public Task ResumeAfterSleepAsync() => ReconnectAndRefreshAsync(delay: true, refresh: true);
 
-    private async Task ReconnectAndRefreshAsync(bool delay)
+    private async Task ReconnectAndRefreshAsync(bool delay, bool refresh, bool quick = false)
     {
-        if (_reconnecting || _session.Server is null || _session.State == SessionState.SignedOut) return;
+        if (_reconnecting || !CanReconnect) return;
         _reconnecting = true;
         _recoveryTimer.Stop();
         try
         {
-            if (delay) await Task.Delay(1500);
-            if (!await Task.Run(() => _session.ReconnectAsync())) return;
-            _session.Client?.MarkStale();
-            App.Services.GetRequiredService<MelodayService>().CatchUp();
-            App.Services.GetRequiredService<Dislikes>().Invalidate();
+            if (delay) await Task.Delay(2000);
+            bool changed;
+            if (_session.Client is not null && _session.State == SessionState.Ready)
+            {
+                var result = await Task.Run(() => _session.RestoreAsync(attempts: quick ? 1 : 4));
+                if (result == RestoreResult.Offline) return;
+                changed = result == RestoreResult.Reconnected;
+            }
+            else
+            {
+                if (!await Task.Run(() => _session.ReconnectAsync())) return;
+                changed = true;
+            }
             if (_resumePlayback && _player.CurrentTrack?.RatingKey == _sleepTrack)
             {
                 _resumePlayback = false;
                 _player.Play();
             }
             else _resumePlayback = false;
+            if (!changed && !refresh) return;
+            _session.Client?.MarkStale();
+            App.Services.GetRequiredService<MelodayService>().CatchUp();
+            App.Services.GetRequiredService<Dislikes>().Invalidate();
             await App.Services.GetRequiredService<HomeViewModel>().RefreshAsync();
         }
         catch (Exception ex) { _log.LogWarning(ex, "Background reconnection failed; saved playback is preserved"); }
@@ -175,8 +208,8 @@ public sealed partial class ShellViewModel : ObservableObject
 
     private void ScheduleRecovery()
     {
-        if (_session.State != SessionState.ServerUnavailable || _session.Server is null || _recoveryTimer.IsRunning) return;
-        _recoveryTimer.Interval = TimeSpan.FromSeconds(Math.Min(300, 30 * Math.Pow(2, Math.Min(4, _recoveryAttempt++))));
+        if (!(_session.State == SessionState.ServerUnavailable || _session.IsOffline) || !CanReconnect || _recoveryTimer.IsRunning) return;
+        _recoveryTimer.Interval = TimeSpan.FromSeconds(Math.Min(300, 5 * Math.Pow(2, Math.Min(6, _recoveryAttempt++))));
         _recoveryTimer.Start();
     }
 
