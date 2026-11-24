@@ -14,6 +14,7 @@ Changed
 - Mix, station and playlist covers have a new layout, with the name bottom left and the label top right.
 - Playlists Meloday keeps on Plex (your Meloday, Made by Meloday, the Last.fm chart) appear once, as Meloday's own pages.
 - Artist pages switch sections with filled tabs.
+- The genre Essentials covers are compressed by 33%, so the app is about 3 MB lighter with no visible change.
 
 Fixed
 - Meloday stays connected to your server when Windows reports a network change. If the server does stop answering, your library stays open and Meloday keeps trying until it's back.
