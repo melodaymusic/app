@@ -8,8 +8,6 @@ if (-not $Version) { $Version = ([xml](Get-Content (Join-Path $root "Directory.B
 Write-Host "Building Meloday Music $Version"
 & (Join-Path $root 'tools/engine/download.ps1')
 $publish = [IO.Path]::GetFullPath((Join-Path $root "artifacts\publish\x64"))
-$expected = [IO.Path]::GetFullPath((Join-Path $root "artifacts\publish\x64"))
-if ($publish -ne $expected -or -not $publish.StartsWith([IO.Path]::GetFullPath($root) + [IO.Path]::DirectorySeparatorChar)) { throw "Publish path is outside the workspace" }
 
 if (Test-Path -LiteralPath $publish) { Remove-Item -LiteralPath $publish -Recurse -Force }
 dotnet publish (Join-Path $root "src\MelodayMusic.App") -c Release -p:Platform=x64 -r win-x64 --self-contained true -p:Version=$Version -o $publish

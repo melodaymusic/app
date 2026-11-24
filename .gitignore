@@ -4,6 +4,7 @@ obj/
 artifacts/
 publish/
 TestResults/
+*.binlog
 .vs/
 *.user
 *.suo
@@ -12,8 +13,10 @@ TestResults/
 *.token
 *.pfx
 *.pvk
+*.snk
 secrets*.json
 .env
+.env.*
 config.yml
 
 # Downloaded by tools/engine/download.ps1
@@ -22,10 +25,14 @@ config.yml
 # Local development files
 /dev/
 /promo/
+*.bundle
+*.tmp
+*.bak
 
-# Editor and Windows clutter
+# Editor and OS clutter
 .vscode/
 .idea/
 *.log
 Thumbs.db
 desktop.ini
+.DS_Store

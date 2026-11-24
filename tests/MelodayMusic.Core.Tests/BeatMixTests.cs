@@ -146,7 +146,7 @@ public class BeatMixTests
     [InlineData(0, 6, BeatMix.ShortestBars)]
     public void A_tight_loudness_plan_never_rushes_the_outgoing_song_out(int outKey, int inKey, int fewestBars)
     {
-        // As in a real log: the loudness plan left 0.8 s, and the beat mix used to follow it down to a bar or two.
+        // The loudness plan leaves only 0.8 s; the beat mix still takes its full bars rather than following it down.
         var plan = BeatMix.Plan(Loudness(196, 0.8), WithEnergy(Steady(123.9, 140, 200, key: outKey), -3), WithEnergy(Steady(123.2, 0, 45, key: inKey), -3))!;
         Assert.True(plan.Bars >= fewestBars, $"{plan.Bars} bars");
         AssertFades(plan);
