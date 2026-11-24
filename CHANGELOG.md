@@ -3,23 +3,20 @@
 ## 0.98.0
 
 New
-- Sonic order: sort a playlist so each song leads into the next by tempo, key and energy. It appears once Meloday has analysed most of the playlist.
+- Sonic order: sort a playlist so each song leads into the next by tempo, key and energy. It shows up in the sort menu once Meloday has analysed most of the playlist.
 - Play and Shuffle on a playlist follow the sort or search you have on screen.
 - Four new visualizers: Ribbons, Light Wall, Bloom and Retrowave.
-- Pulse's daily lineup can be edited: add, change or remove its programs, day by day.
+- Make Pulse's daily lineup your own: move its programs, change their days or take them out.
 - Move a genre, style or mood into another family from its right-click menu.
 
 Changed
-- The app now uses DM Sans throughout.
-- Mix, station and playlist covers have a cleaner layout, with the name bottom left and the label top right.
-- Playlists Meloday keeps on Plex (your Meloday, Made by Meloday, the Last.fm chart) no longer show up twice in playlist lists.
-- Text fields, number fields, date and time pickers and pop-up menus now share one style, and selected items show a soft highlight in place of a coloured bar.
-- Artist page sections switch with filled tabs.
+- A fresh look: DM Sans throughout, one consistent style for fields and menus, and a neutral colour scheme that takes its accent from the artwork.
+- Mix, station and playlist covers have a new layout, with the name bottom left and the label top right.
+- Playlists Meloday keeps on Plex (your Meloday, Made by Meloday, the Last.fm chart) appear once, as Meloday's own pages.
+- Artist pages switch sections with filled tabs.
 
 Fixed
-- Build-machine paths no longer appear in release builds or error reports.
-- If the app can't start, it says so and points to the log folder.
-- A settings file that can't be read is set aside instead of overwritten.
+- If the app can't start, it now says why and points to its log folder.
 - Screen readers announce icon buttons by name, and song mute is named apart from volume mute.
 
 ## 0.97.0

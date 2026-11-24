@@ -4,7 +4,7 @@
 param([string]$Version = "")
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-if (-not $Version) { $Version = ([xml](Get-Content (Join-Path $root "Directory.Build.props"))).Project.PropertyGroup.Version }
+if (-not $Version) { $Version = ([xml](Get-Content (Join-Path $root "Directory.Build.props"))).SelectSingleNode("/Project/PropertyGroup/Version").InnerText.Trim() }
 Write-Host "Building Meloday Music $Version"
 & (Join-Path $root 'tools/engine/download.ps1')
 $publish = [IO.Path]::GetFullPath((Join-Path $root "artifacts\publish\x64"))
