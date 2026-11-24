@@ -16,6 +16,7 @@ Changed
 - Artist pages switch sections with filled tabs.
 
 Fixed
+- Meloday stays connected to your server when Windows reports a network change. If the server does stop answering, your library stays open and Meloday keeps trying until it's back.
 - If the app can't start, it now says why and points to its log folder.
 - Screen readers announce icon buttons by name, and song mute is named apart from volume mute.
 
