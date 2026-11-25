@@ -58,7 +58,9 @@ public class SoundVocabularyTests
     public void Shipped_vocabulary_is_pinned_complete_and_normalised()
     {
         var vocabulary = SoundVocabulary.Load(Asset());
-        Assert.Equal(new[] { "mood", "energy", "genre", "instrument", "vocals", "setting" }, vocabulary.Categories.Select(c => c.Id));
+        Assert.Equal(new[] { "mood", "energy", "genre", "style", "era", "instrument", "vocals", "texture", "setting" }, vocabulary.Categories.Select(c => c.Id));
+        Assert.Equal(new[] { "era" }, vocabulary.Categories.Where(c => !c.Describe).Select(c => c.Id));
+        Assert.True(vocabulary.Terms.Count >= 180);
         Assert.All(vocabulary.Terms, t =>
         {
             Assert.Equal(SoundVocabulary.Dimensions, t.Vector.Length);
@@ -87,8 +89,9 @@ public class SoundVocabularyTests
     public void Shipped_words_describe_their_own_text_vectors()
     {
         var vocabulary = SoundVocabulary.Load(Asset());
-        foreach (var term in vocabulary.Terms)
+        foreach (var term in vocabulary.Categories.Where(c => c.Describe).SelectMany(c => c.Terms))
             Assert.Equal(term.Label, vocabulary.Describe(term.Vector)[term.Category]!.Top!.Label);
+        Assert.Null(vocabulary.Describe(vocabulary.Terms[0].Vector)["era"]);
     }
 
     [Fact]
@@ -148,6 +151,160 @@ public class SoundVocabularyTests
         var unknown = vocabulary.Query("polka with kazoo");
         Assert.True(unknown.IsEmpty);
         Assert.Equal(new[] { "polka", "kazoo" }, unknown.Unknown);
+    }
+
+    [Fact]
+    public void Every_shipped_alias_reads_as_its_own_word_alone()
+    {
+        var vocabulary = SoundVocabulary.Load(Asset());
+        Assert.True(vocabulary.Terms.Sum(t => t.Aliases.Count) > 1200);
+        foreach (var term in vocabulary.Terms)
+            foreach (var key in term.Aliases.Prepend(term.Label))
+            {
+                var query = vocabulary.Query(key);
+                Assert.True(query.Words.Count == 1 && query.Words[0].Term == term && !query.Words[0].Avoided && query.Unknown.Count == 0,
+                    $"'{key}' should read as {term.Label}, read as [{query.Phrase}] unknown [{string.Join(", ", query.Unknown)}]");
+            }
+    }
+
+    [Fact]
+    public void Shipped_vocabulary_reads_everyday_searches()
+    {
+        var vocabulary = SoundVocabulary.Load(Asset());
+        string Read(string text) => vocabulary.Query(text) is { Unknown.Count: 0 } q ? q.Phrase : "?";
+        Assert.Equal("Cozy · Rainy Day", Read("cozy rainy days"));
+        Assert.Equal("Instrumental", Read("no vocals"));
+        Assert.Equal("Instrumental", Read("songs without lyrics"));
+        Assert.Equal("Mellow · Not Sad", Read("chilling, not sad"));
+        Assert.Equal("Energetic · Workout · Party", Read("upbeat gym bangers"));
+        Assert.Equal("Metal", Read("heavy metal"));
+        Assert.Equal("Sensual · R&B", Read("slow jams rnb"));
+        Assert.Equal("Late Night · Lo-Fi", Read("3am lofi beats"));
+        Assert.Equal("80s · Synth-Pop", Read("80's synthpop"));
+        Assert.Equal("Cozy · Christmas", Read("cosy xmas songs"));
+        Assert.Equal("Pop", Read("k-pop"));
+        Assert.Equal("Bass-Heavy · Not Vocal Chops", Read("bass heavy, no vocal chops"));
+    }
+
+    [Fact]
+    public void Query_negates_the_next_known_word_and_forgives_word_forms()
+    {
+        var vocabulary = Synthetic();
+        var query = vocabulary.Query("jazz, not sad");
+        Assert.Equal(new[] { ("Jazz", 1.0), ("Sad", -1.0) }, query.Words.Select(w => (w.Term.Label, w.Weight)));
+        Assert.Equal("Jazz · Not Sad", query.Phrase);
+        Assert.Equal(-1, vocabulary.Query("doesn't sound sad").Words.Single().Weight);
+        Assert.Equal(-1, vocabulary.Query("without any really sad stuff").Words.Single().Weight);
+        Assert.Equal(new[] { ("Happy", 1.0) }, vocabulary.Query("not polka, happy").Words.Select(w => (w.Term.Label, w.Weight)));
+        Assert.Empty(vocabulary.Query("sad, not sad").Words);
+        Assert.Equal(new[] { "Mellow" }, vocabulary.Query("chilling").Terms.Select(t => t.Label));
+        Assert.Equal(new[] { "Rainy Day" }, vocabulary.Query("Rainy Days").Terms.Select(t => t.Label));
+        Assert.Equal(new[] { "Jazz" }, vocabulary.Query("jazzy").Terms.Select(t => t.Label));
+        Assert.Equal(new[] { "Happy" }, vocabulary.Query("HAPPIEST").Terms.Select(t => t.Label));
+        Assert.Equal(new[] { "R&B" }, vocabulary.Query("r&b").Terms.Select(t => t.Label));
+        Assert.Contains("happ", SoundVocabulary.Forms("happy"));
+        Assert.Equal(new[] { "kazoos" }, SoundVocabulary.Forms("kazoos").Take(1));
+    }
+
+    [Fact]
+    public void Query_folds_accents_and_apostrophes()
+    {
+        var vocabulary = Synthetic();
+        Assert.Equal("Rainy Day · Jazz", vocabulary.Query("rainy day's JÁZZ").Phrase);
+        Assert.Equal(-1, vocabulary.Query("don’t make it sad").Words.Single().Weight);
+    }
+
+    [Fact]
+    public void Query_keeps_runs_of_unknown_words_for_the_text_side()
+    {
+        var vocabulary = Synthetic();
+        var query = vocabulary.Query("walking in the city at night");
+        Assert.Equal(new[] { "Late Night" }, query.Terms.Select(t => t.Label));
+        var span = Assert.Single(query.Spans);
+        Assert.Equal("walking in the city", span.Text);
+        Assert.Equal(new[] { "walking", "city" }, span.Words);
+        Assert.False(span.Avoided);
+
+        var two = vocabulary.Query("jazz for a smoky bar, not polka");
+        Assert.Equal(new[] { ("smoky bar", false), ("polka", true) }, two.Spans.Select(s => (s.Text, s.Avoided)));
+        Assert.Empty(vocabulary.Query("rainy day jazz").Spans);
+        Assert.Empty(vocabulary.Query("the music").Spans);
+    }
+
+    [Fact]
+    public void A_phrase_the_text_side_read_joins_the_search_and_ranks_by_its_own_spread()
+    {
+        var vocabulary = Synthetic();
+        var query = vocabulary.Query("jazz in a smoky bar");
+        Assert.True(query.Unknown.Count > 0);
+        var read = vocabulary.Including(query, query.Spans[0], Axis(40));
+        Assert.True(read.HasPhrase);
+        Assert.Empty(read.Unknown);
+        Assert.Empty(read.Spans);
+        Assert.Equal("Jazz · “smoky bar”", read.Phrase);
+        Assert.Equal(new[] { "Jazz" }, read.Terms.Select(t => t.Label));
+        Assert.DoesNotContain(vocabulary.Related(read, 3), t => t.Label == "Jazz");
+
+        var library = new (string Key, float[] Vector)[]
+        {
+            ("smoky jazz", Axis(7, 1, 40, 1)),
+            ("plain jazz", Axis(7)),
+            ("smoke only", Axis(40)),
+            ("hip-hop", Axis(8)),
+        };
+        var calibration = vocabulary.Calibrate(library.Select(l => l.Vector).ToArray());
+        var results = vocabulary.Search(read, library, calibration);
+        Assert.Equal("smoky jazz", results[0].Key);
+        Assert.Equal("hip-hop", results[^1].Key);
+
+        var avoided = vocabulary.Query("jazz, not polka");
+        var away = vocabulary.Including(avoided, avoided.Spans[0], Axis(40));
+        Assert.Equal("Jazz · Not “polka”", away.Phrase);
+        Assert.Equal("smoke only", vocabulary.Search(away, library, calibration)[^1].Key);
+        Assert.Throws<InvalidDataException>(() => vocabulary.Including(query, query.Spans[0], [1, 2]));
+    }
+
+    [Fact]
+    public void Query_survives_broken_text_and_keeps_spans_short()
+    {
+        var vocabulary = Synthetic();
+        Assert.Equal("Jazz", vocabulary.Query("jazz \ud83d").Phrase);
+        Assert.Equal("Jazz", vocabulary.Query("\udc00jazz🎷").Phrase);
+        Assert.False(SoundVocabulary.Names("\ud83d", ["\ud83d"]));
+
+        var span = vocabulary.Query("walking " + string.Concat(Enumerable.Repeat("in the ", 40)) + "city").Spans.Single();
+        Assert.Equal("walking in the city", span.Text);
+        Assert.Equal("polka", vocabulary.Query("polka polka polka polka polka polka polka").Spans.Single().Text);
+        Assert.Equal(new[] { "walking", "city" }, vocabulary.Query("walking the the the city walking").Spans.Single().Words);
+    }
+
+    [Fact]
+    public void Names_matches_whole_titles_inside_a_search_either_way()
+    {
+        Assert.True(SoundVocabulary.Names("Radiohead", ["Radiohead"]));
+        Assert.True(SoundVocabulary.Names("radiohead songs", ["Radiohead"]));
+        Assert.True(SoundVocabulary.Names("beyonce", ["Beyoncé", "Halo"]));
+        Assert.True(SoundVocabulary.Names("halo", ["Halo (Live)"]));
+        Assert.False(SoundVocabulary.Names("sad", ["Sadie"]));
+        Assert.False(SoundVocabulary.Names("sea shanty", ["Se"]));
+        Assert.False(SoundVocabulary.Names("polka", []));
+        Assert.False(SoundVocabulary.Names("ab", ["ab"]));
+    }
+
+    [Fact]
+    public void Search_pushes_away_from_a_negated_word()
+    {
+        var vocabulary = Synthetic();
+        var library = new (string Key, float[] Vector)[]
+        {
+            ("sad jazz", Axis(7, 1, 1, 1)),
+            ("happy jazz", Axis(7, 1, 0, 1)),
+            ("plain jazz", Axis(7)),
+        };
+        var calibration = vocabulary.Calibrate(library.Select(l => l.Vector).ToArray());
+        var results = vocabulary.Search(vocabulary.Query("jazz not sad"), library, calibration);
+        Assert.Equal("sad jazz", results[^1].Key);
+        Assert.Equal("sad jazz", vocabulary.Search(vocabulary.Query("sad jazz"), library, calibration)[0].Key);
     }
 
     [Fact]

@@ -85,6 +85,8 @@ public sealed partial class SearchViewModel : ViewModelBase
             var heardTask = SoundsLikeAsync(query, ct);
             var results = await Client.SearchAsync(query, SectionKey, 12, ct);
             var (sound, heard) = await heardTask;
+            // A search ME read partly with its text side is often a name ("Radiohead"); when the library has it, it's Plex's to answer.
+            if (sound is { HasPhrase: true } && NamesSomething(query, results)) (sound, heard) = (null, []);
             var phrase = sound?.Phrase ?? string.Empty;
             if (ct.IsCancellationRequested || version != _searchVersion) return;
             Clear();
@@ -118,7 +120,17 @@ public sealed partial class SearchViewModel : ViewModelBase
         {
             return (null, []);
         }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            // Sounds Like is extra: if it fails, the rest of the search still shows.
+            Log.LogWarning(ex, "Sounds Like search failed: {Type}", ex.GetType().Name);
+            return (null, []);
+        }
     }
+
+    private static bool NamesSomething(string query, SearchResults r) => Core.Audio.SoundVocabulary.Names(query,
+        r.Artists.Select(a => a.Title).Concat(r.Albums.Select(a => a.Title)).Concat(r.Tracks.SelectMany(t => new[] { t.Title, t.DisplayArtist }))
+            .Concat(r.Playlists.Select(p => p.Title)).Concat(r.Collections.Select(c => c.Title)));
 
     private static MediaItem? PickTopResult(string query, SearchResults r)
     {

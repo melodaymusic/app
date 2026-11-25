@@ -44,12 +44,15 @@ Meloday Engine: LAION CLAP music audio model
   https://huggingface.co/laion/larger_clap_music. Apache-2.0 terms included in Assets/Engine.
   Authors: Yusong Wu, Ke Chen, Tianyu Zhang, Yuchen Hui, Taylor Berg-Kirkpatrick, Shlomo Dubnov.
 
-Meloday Engine words: LAION CLAP music text encoder (offline only; not shipped)
+Meloday Engine words: LAION CLAP music text encoder
   Same checkpoint (music_audioset_epoch_15_esc_90.14.pt, SHA-256 fae3e9c087f2909c28a09dc31c8dfcdacbc42ba44c70e972b58c1bd1caf6dedd), CC0-1.0.
   ONNX conversion: https://huggingface.co/muzaiten/clap-htsat-base-onnx, revision d4d4372c9894b975ec118589b4f4328103796e15, CC0-1.0.
   text.onnx SHA-256 069e323e309284ae9aca6587b884afcd38f943fa1cba260823f4673b18f09a26;
   tokenizer.json SHA-256 2bb1a22cfbe25b8e5a232b7fc4d7fc5073923b45724a5f813b00811bb6620f66.
-  The app ships only Assets/Engine/descriptors.json: text vectors for a fixed vocabulary, computed offline.
+  Assets/Engine/descriptors.json holds text vectors for a fixed vocabulary, computed offline from text.onnx.
+  Assets/Engine/text-w8.onnx is text.onnx with its weights stored in 8 bits (made by tools/engine/vocabulary/quantize.py,
+  SHA-256 1ef727d2f8dac2a51a23af0a9b52230f2cf5c139d6b43603a7a0493592521a81), shipped with the unmodified tokenizer.json to read
+  search words outside that vocabulary. Both remain CC0-1.0.
   The text tower and tokenizer derive from RoBERTa-base (https://github.com/facebookresearch/fairseq,
   https://huggingface.co/FacebookAI/roberta-base), Copyright (c) Facebook, Inc. and its affiliates, MIT License:
   Assets/Engine/ROBERTA-LICENSE.txt.

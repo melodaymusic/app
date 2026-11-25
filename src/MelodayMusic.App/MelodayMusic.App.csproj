@@ -60,6 +60,6 @@
     <Error Condition="!Exists('Native\win-x64\Meloday.ProjectM.dll') Or !Exists('Native\win-x64\projectM-4.dll') Or !Exists('Native\win-x64\glew32.dll')" Text="The projectM runtime is missing. Run tools/projectm/build.ps1 before building the x64 app." />
   </Target>
   <Target Name="CheckMelodayEngineModel" BeforeTargets="PrepareForBuild">
-    <Error Condition="!Exists('Assets\Engine\audio.onnx')" Text="The Meloday Engine audio model is missing. Run tools/engine/download.ps1 before building." />
+    <Error Condition="!Exists('Assets\Engine\audio.onnx') Or !Exists('Assets\Engine\text-w8.onnx') Or !Exists('Assets\Engine\tokenizer.json')" Text="The Meloday Engine models are missing. Run tools/engine/download.ps1 before building." />
   </Target>
 </Project>

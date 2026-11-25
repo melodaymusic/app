@@ -250,7 +250,7 @@ public static class SoundFingerprintDialog
         }
         panel.Children.Add(grid);
         panel.Children.Add(Caption($"{vocabulary.Terms.Count} words in {vocabulary.Categories.Count} groups, placed beside the songs ahead of time by the " +
-            $"model's text side, which doesn't run on this PC · {vocabulary.Revision}"));
+            $"model's text side, which also reads any other words you search for · {vocabulary.Revision}"));
         return panel;
     }
 

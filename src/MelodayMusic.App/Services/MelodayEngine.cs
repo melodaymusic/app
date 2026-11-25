@@ -33,6 +33,9 @@ public sealed class MelodayEngine : IDisposable
     private readonly Lazy<SoundVocabulary?> _vocabulary;
     private readonly SemaphoreSlim _calibrating = new(1, 1);
     private (string Scope, int Count, SoundCalibration Calibration)? _calibration;
+    private const int MostPhraseWords = 6;
+    private readonly TextSide _textSide;
+    private bool _textUnavailable;
     public event EventHandler? Changed;
     public string? Error { get; private set; }
     public string Scope => $"{_session.Server?.MachineIdentifier}|{_session.Section?.Key}";
@@ -53,6 +56,7 @@ public sealed class MelodayEngine : IDisposable
         _session = session;
         _log = log;
         _vocabulary = new(LoadVocabulary);
+        _textSide = new TextSide(Path.Combine(AppContext.BaseDirectory, "Assets", "Engine"), log);
     }
 
     public SoundVocabulary? Vocabulary => _vocabulary.Value;
@@ -114,6 +118,7 @@ public sealed class MelodayEngine : IDisposable
     {
         if (Vocabulary is not { } vocabulary) return (null, []);
         var query = vocabulary.Query(text);
+        if (query.Spans.Count > 0) query = await ReadPhrasesAsync(vocabulary, query, ct).ConfigureAwait(false);
         if (query.IsEmpty || query.Unknown.Count > 0) return (query, []);
         var profiles = Snapshot();
         if (profiles.Count == 0) return (query, []);
@@ -121,6 +126,35 @@ public sealed class MelodayEngine : IDisposable
         var ranked = await Task.Run(() => vocabulary.Search(query, profiles.Values.Select(p => (p.Track, p.Vector)), calibration, limit, ct), ct)
             .ConfigureAwait(false);
         return (query, ranked.Where(r => r.Score > 0).Select(r => r.Key).ToArray());
+    }
+
+    // Words ME's vocabulary lacks go to the text side, a span at a time ("sea shanty", "walking in the city"). ME stays out (leaving
+    // the search to Plex) when the text side isn't there, the search is long, or a word doesn't look like a word to the model.
+    private async Task<SoundQuery> ReadPhrasesAsync(SoundVocabulary vocabulary, SoundQuery query, CancellationToken ct)
+    {
+        if (_textUnavailable || query.Spans.Sum(s => s.Words.Count) > MostPhraseWords) return query;
+        try
+        {
+            return await Task.Run(() =>
+            {
+                var read = query;
+                foreach (var span in query.Spans)
+                {
+                    ct.ThrowIfCancellationRequested();
+                    if (_textSide.Read(span) is not { } vector) return query;
+                    read = vocabulary.Including(read, span, vector);
+                }
+                return read;
+            }, ct).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidDataException or OnnxRuntimeException
+            or JsonException or KeyNotFoundException)
+        {
+            // A model that won't load stays off for the session; anything else only costs this search its Sounds Like row.
+            if (!_textSide.Loaded) _textUnavailable = true;
+            _log.LogWarning(ex, "ME's text side couldn't read a search: {Type}", ex.GetType().Name);
+            return query;
+        }
     }
 
     private static string Key(string scope, Track track) => Convert.ToHexString(SHA256.HashData(
@@ -262,6 +296,7 @@ public sealed class MelodayEngine : IDisposable
 
     private void ReleaseIdleModel()
     {
+        _textSide.ReleaseIfIdle(ModelIdle);
         lock (_modelGate)
         {
             if (_model is null || _borrowed > 0 || DateTimeOffset.UtcNow - _modelUsed < ModelIdle) return;
@@ -280,6 +315,7 @@ public sealed class MelodayEngine : IDisposable
             _model?.Dispose();
             _model = null;
         }
+        _textSide.Dispose();
         _calibrating.Dispose();
     }
 }

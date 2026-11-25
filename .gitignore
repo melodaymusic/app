@@ -19,8 +19,10 @@ secrets*.json
 .env.*
 config.yml
 
-# Downloaded by tools/engine/download.ps1
+# Downloaded or made by tools/engine/download.ps1
 /src/MelodayMusic.App/Assets/Engine/audio.onnx
+/src/MelodayMusic.App/Assets/Engine/text-w8.onnx
+/src/MelodayMusic.App/Assets/Engine/tokenizer.json
 
 # Local development files
 /dev/
@@ -36,3 +38,6 @@ config.yml
 Thumbs.db
 desktop.ini
 .DS_Store
+
+# Downloaded by tools/engine/vocabulary/build.ps1
+/tools/engine/vocabulary/model/
