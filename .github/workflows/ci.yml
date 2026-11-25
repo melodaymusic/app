@@ -23,13 +23,16 @@ jobs:
         with:
           dotnet-version: 9.0.x
 
-      - name: Cache the audio model
+      - name: Cache the engine models
         uses: actions/cache@v4
         with:
-          path: src/MelodayMusic.App/Assets/Engine/audio.onnx
-          key: meloday-engine-9533ed82
+          path: |
+            src/MelodayMusic.App/Assets/Engine/audio.onnx
+            src/MelodayMusic.App/Assets/Engine/text-w8.onnx
+            src/MelodayMusic.App/Assets/Engine/tokenizer.json
+          key: meloday-engine-9533ed82-1ef727d2
 
-      - name: Download the audio model
+      - name: Download the engine models
         shell: pwsh
         run: ./tools/engine/download.ps1
 
